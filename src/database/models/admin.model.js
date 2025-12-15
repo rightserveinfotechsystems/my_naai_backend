@@ -9,21 +9,22 @@ module.exports = (sequelize) => {
             primaryKey: true,
             field: 'admin_id'
         },
-        username: {
-            type: DataTypes.STRING(50),
+        phoneNumber: {
+            type: DataTypes.STRING(10),
             allowNull: false,
-            unique: {
-                name: 'unique_admin_username',
-                msg: 'Username already exists'
-            },
             validate: {
-                notEmpty: true,
+                notEmpty: {
+                    msg: 'Phone number is required'
+                },
+                isNumeric: {
+                    msg: 'Phone number must contain only numbers'
+                },
                 len: {
-                    args: [3, 50],
-                    msg: 'Username must be between 3 and 50 characters'
+                    args: [10],
+                    msg: 'Phone number must be 10 digits'
                 }
             },
-            field: 'username'
+            field: 'phone_number'
         },
         email: {
             type: DataTypes.STRING(100),
@@ -39,89 +40,56 @@ module.exports = (sequelize) => {
             },
             field: 'email'
         },
-        passwordHash: {
+        password: {
             type: DataTypes.STRING(255),
             allowNull: false,
             field: 'password_hash'
         },
-        fullName: {
+        name: {
             type: DataTypes.STRING(100),
             allowNull: false,
             validate: {
                 notEmpty: true
             },
-            field: 'full_name'
-        },
-        role: {
-            type: DataTypes.ENUM('admin', 'super_admin'),
-            defaultValue: 'admin',
-            field: 'role'
-        },
-        permissions: {
-            type: DataTypes.JSONB,
-            allowNull: true,
-            defaultValue: {},
-            field: 'permissions'
         },
         isActive: {
             type: DataTypes.BOOLEAN,
             defaultValue: true,
-            field: 'is_active'
+            allowNull: true,
         },
         lastLogin: {
             type: DataTypes.DATE,
             allowNull: true,
-            field: 'last_login'
         },
-        createdAt: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            field: 'created_at'
-        },
-        updatedAt: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            field: 'updated_at'
-        }
     }, {
         sequelize,
         modelName: 'Admin',
         tableName: 'admins',
         timestamps: true,
-        underscored: true,
         indexes: [
-            {
-                unique: true,
-                fields: ['username']
-            },
             {
                 unique: true,
                 fields: ['email']
             },
             {
-                fields: ['is_active']
+                fields: ['isActive']
             }
         ],
         hooks: {
             beforeCreate: async (admin) => {
-                if (admin.passwordHash) {
+                if (admin.password) {
                     const salt = await bcrypt.genSalt(10);
-                    admin.passwordHash = await bcrypt.hash(admin.passwordHash, salt);
+                    admin.password = await bcrypt.hash(admin.password, salt);
                 }
-                if (admin.username) {
-                    admin.username = admin.username.toLowerCase().trim();
-                }
+
                 if (admin.email) {
                     admin.email = admin.email.toLowerCase().trim();
                 }
             },
             beforeUpdate: async (admin) => {
-                if (admin.changed('passwordHash')) {
+                if (admin.changed('password')) {
                     const salt = await bcrypt.genSalt(10);
-                    admin.passwordHash = await bcrypt.hash(admin.passwordHash, salt);
-                }
-                if (admin.changed('username')) {
-                    admin.username = admin.username.toLowerCase().trim();
+                    admin.password = await bcrypt.hash(admin.password, salt);
                 }
                 if (admin.changed('email')) {
                     admin.email = admin.email.toLowerCase().trim();
@@ -129,8 +97,6 @@ module.exports = (sequelize) => {
             }
         }
     });
-
-    // No associations for Admin (standalone)
 
     return Admin;
 };

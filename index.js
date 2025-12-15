@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const helmet = require('helmet');
 const { closeConnection, connectDb } = require("./src/database/config/db");
 const db = require("./src/database/models");
+const routes = require("./src/routes/routes");
 dotenv.config();
 
 const PORT = process.env.PORT || 8000;
@@ -24,6 +25,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/getFiles", express.static(path.join(__dirname, "")));
 
+// Routes
+app.use("/api", routes);
 app.get("/", (request, response) => {
     response.status(200).json({
         message: "MYNAAI.IN backend is running 🏃‍♂️🏃‍♂️",
