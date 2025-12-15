@@ -1,5 +1,5 @@
-const { Admin } = require('../database/models');
-const { verifyToken } = require('../utils/token.util');
+const  Admin  = require('../../database/models/admin.model');
+const verifyToken  = require('../../utils/middleware/token.util');
 
 /**
  * Authenticate admin

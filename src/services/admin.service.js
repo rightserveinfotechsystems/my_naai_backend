@@ -1,6 +1,5 @@
-const { Admin } = require('../../../database/models');
 const { Op } = require('sequelize');
-
+const Admin = require('../database/models/admin.model');
 /**
  * Get admin by email
  */

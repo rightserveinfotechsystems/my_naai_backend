@@ -1,6 +1,6 @@
-const { Salon, Barber, Service, Queue } = require('../../../database/models');
-const { Op } = require('sequelize');
 
+const { Op } = require('sequelize');
+const Salon = require("../database/models/salon.model");
 /**
  * Create salon
  */
