@@ -8,7 +8,7 @@ const db = require('../database/models');
  */
 const createUser = async (userData) => {
     try {
-        const user = await db.db.User.create(userData);
+        const user = await db.User.create(userData);
         return user;
     } catch (error) {
         throw error;
