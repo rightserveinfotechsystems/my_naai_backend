@@ -24,7 +24,7 @@ Object.keys(db).forEach(modelName => {
         db[modelName].associate(db);
     }
 });
-
+db.User = require('./user.model')(sequelize);
 db.sequelize = sequelize;
 
 module.exports = db;
