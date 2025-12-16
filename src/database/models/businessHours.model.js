@@ -68,7 +68,7 @@ module.exports = (sequelize) => {
         modelName: 'BusinessHours',
         tableName: 'business_hours',
         timestamps: true,
-        underscored: true,
+        
         indexes: [
             {
                 unique: true,

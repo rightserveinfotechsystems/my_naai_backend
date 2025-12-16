@@ -19,7 +19,7 @@ const dbConfig = {
         },
         define: {
             timestamps: true,
-            underscored: true,
+          
             freezeTableName: true
         }
     },
@@ -39,7 +39,6 @@ const dbConfig = {
         },
         define: {
             timestamps: true,
-            underscored: true,
             freezeTableName: true
         },
         dialectOptions: {

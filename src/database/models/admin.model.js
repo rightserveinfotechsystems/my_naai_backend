@@ -3,15 +3,14 @@ const bcrypt = require('bcryptjs');
 
 module.exports = (sequelize) => {
     const Admin = sequelize.define('Admin', {
-        adminId: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
+        id: {
+            type: DataTypes.INTEGER,
             primaryKey: true,
-            field: 'admin_id'
+            autoIncrement: true,
         },
-        phoneNumber: {
+        mobile: {
             type: DataTypes.STRING(10),
-            allowNull: false,
+            allowNull: true,
             validate: {
                 notEmpty: {
                     msg: 'Phone number is required'
@@ -24,7 +23,6 @@ module.exports = (sequelize) => {
                     msg: 'Phone number must be 10 digits'
                 }
             },
-            field: 'phone_number'
         },
         email: {
             type: DataTypes.STRING(100),
@@ -38,12 +36,10 @@ module.exports = (sequelize) => {
                     msg: 'Must be a valid email address'
                 }
             },
-            field: 'email'
         },
         password: {
             type: DataTypes.STRING(255),
             allowNull: false,
-            field: 'password_hash'
         },
         name: {
             type: DataTypes.STRING(100),

@@ -116,16 +116,6 @@ module.exports = (sequelize) => {
             allowNull: true,
             field: 'last_login'
         },
-        createdAt: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            field: 'created_at'
-        },
-        updatedAt: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            field: 'updated_at'
-        },
         deletedAt: {
             type: DataTypes.DATE,
             allowNull: true,
@@ -137,7 +127,7 @@ module.exports = (sequelize) => {
         tableName: 'barbers',
         timestamps: true,
         paranoid: true,
-        underscored: true,
+        
         indexes: [
             {
                 unique: true,

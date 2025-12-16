@@ -163,7 +163,7 @@ module.exports = (sequelize) => {
         tableName: 'salons',
         timestamps: true,
         paranoid: true,
-        underscored: true,
+        
         indexes: [
             {
                 fields: ['city']

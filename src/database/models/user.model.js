@@ -104,7 +104,7 @@ module.exports = (sequelize) => {
         tableName: 'users',
         timestamps: true,
         paranoid: true,
-        underscored: true,
+        
         indexes: [
             {
                 unique: true,

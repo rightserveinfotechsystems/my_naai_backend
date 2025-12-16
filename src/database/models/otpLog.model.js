@@ -73,7 +73,7 @@ module.exports = (sequelize) => {
         modelName: 'OtpLog',
         tableName: 'otp_logs',
         timestamps: false,
-        underscored: true,
+        
         indexes: [
             {
                 fields: ['phone_number']

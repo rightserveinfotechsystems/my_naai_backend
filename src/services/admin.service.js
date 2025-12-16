@@ -1,11 +1,12 @@
 const { Op } = require('sequelize');
-const Admin = require('../database/models/admin.model');
+const db = require('../database/models');
 /**
  * Get admin by email
  */
 const getAdminByEmail = async (email) => {
+
     try {
-        const admin = await Admin.findOne({
+        const admin = await db.Admin.findOne({
             where: { email: email.toLowerCase() }
         });
         return admin;
@@ -19,8 +20,8 @@ const getAdminByEmail = async (email) => {
  */
 const getAdminById = async (adminId) => {
     try {
-        const admin = await Admin.findByPk(adminId, {
-            attributes: { exclude: ['passwordHash'] }
+        const admin = await db.Admin.findByPk(adminId, {
+            attributes: { exclude: ['password'] }
         });
         return admin;
     } catch (error) {
@@ -33,7 +34,7 @@ const getAdminById = async (adminId) => {
  */
 const getAdminByUsernameOrEmail = async (identifier) => {
     try {
-        const admin = await Admin.findOne({
+        const admin = await db.Admin.findOne({
             where: {
                 [Op.or]: [
                     { username: identifier.toLowerCase() },
@@ -52,7 +53,7 @@ const getAdminByUsernameOrEmail = async (identifier) => {
  */
 const createAdmin = async (adminData) => {
     try {
-        const admin = await Admin.create(adminData);
+        const admin = await db.Admin.create(adminData);
         return admin;
     } catch (error) {
         throw error;
@@ -64,7 +65,7 @@ const createAdmin = async (adminData) => {
  */
 const updateAdmin = async (adminId, updateData) => {
     try {
-        const admin = await Admin.findByPk(adminId);
+        const admin = await db.Admin.findByPk(adminId);
         if (!admin) {
             return null;
         }
@@ -80,7 +81,7 @@ const updateAdmin = async (adminId, updateData) => {
  */
 const deleteAdmin = async (adminId) => {
     try {
-        const admin = await Admin.findByPk(adminId);
+        const admin = await db.Admin.findByPk(adminId);
         if (!admin) {
             return null;
         }
@@ -103,9 +104,8 @@ const listAdmins = async (filters = {}) => {
 
         if (search) {
             whereClause[Op.or] = [
-                { username: { [Op.iLike]: `%${search}%` } },
+                { name: { [Op.iLike]: `%${search}%` } },
                 { email: { [Op.iLike]: `%${search}%` } },
-                { fullName: { [Op.iLike]: `%${search}%` } }
             ];
         }
 
@@ -117,9 +117,9 @@ const listAdmins = async (filters = {}) => {
             whereClause.isActive = isActive;
         }
 
-        const { count, rows } = await Admin.findAndCountAll({
+        const { count, rows } = await db.Admin.findAndCountAll({
             where: whereClause,
-            attributes: { exclude: ['passwordHash'] },
+            attributes: { exclude: ['password'] },
             limit: parseInt(limit),
             offset: parseInt(offset),
             order: [['createdAt', 'DESC']]

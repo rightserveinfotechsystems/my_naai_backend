@@ -95,7 +95,7 @@ module.exports = (sequelize) => {
         modelName: 'Review',
         tableName: 'reviews',
         timestamps: true,
-        underscored: true,
+        
         indexes: [
             {
                 fields: ['salon_id']
