@@ -127,7 +127,7 @@ module.exports = (sequelize) => {
         modelName: 'Queue',
         tableName: 'queue',
         timestamps: true,
-        underscored: true,
+        
         indexes: [
             {
                 fields: ['salon_id', 'status']

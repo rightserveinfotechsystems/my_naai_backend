@@ -37,6 +37,7 @@ app.get("/", (request, response) => {
 app.get("/test-db", async (req, res) => {
     try {
         await db.sequelize.authenticate();
+        db.sequelize.sync({ alter: true });
         const models = Object.keys(db).filter(key => key !== 'sequelize');
 
         res.json({

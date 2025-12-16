@@ -80,7 +80,7 @@ module.exports = (sequelize) => {
         modelName: 'Service',
         tableName: 'services',
         timestamps: true,
-        underscored: true,
+        
         indexes: [
             {
                 fields: ['salon_id']

@@ -5,11 +5,11 @@ const adminService = require('../../services/admin.service');
 const createAdmin = async (request, response) => {
     try {
         // Extract data from request body
-        const { name, email, mobile, password, role } = request.body;
+        const { name, email, mobile, password } = request.body;
 
         // Validate input
         const validationResult = createAdminValidationSchema.validate(
-            { name, email, mobile: mobile?.toString(), password, role },
+            { name, email, mobile: mobile?.toString(), password },
             { abortEarly: true }
         );
 
@@ -36,6 +36,7 @@ const createAdmin = async (request, response) => {
         const dataToInsert = {
             name: name,
             email: email.toLowerCase(),
+            
             password: hashPassword,
             isActive: true
         };
@@ -59,6 +60,8 @@ const createAdmin = async (request, response) => {
             });
         }
     } catch (error) {
+        console.log("error", error);
+
         return response.status(500).json({
             status: 'FAILED',
             message: error.message

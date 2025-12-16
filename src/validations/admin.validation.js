@@ -19,7 +19,6 @@ const createAdminValidationSchema = Joi.object({
         'string.empty': 'Password is required',
         'string.min': 'Password must be at least 6 characters'
     }),
-    role: Joi.string().valid('admin', 'super_admin').default('admin')
 });
 
 // Login validation schema
