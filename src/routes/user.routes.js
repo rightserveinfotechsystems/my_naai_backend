@@ -9,6 +9,7 @@ const getUserById = require('../controller/user/getUserById');
 // const authenticateAdmin = require('../utils/middleware/authAdmin.middleware');
 const getUserList = require('../controller/user/getUserList');
 const {authenticateAdmin } = require('../utils/middleware/auth.middleware');
+const changeUserStatus = require('../controller/user/disableUser');
 
 
 // Define your user routes here
@@ -20,6 +21,7 @@ userRouter.post('/verify-otp', verifyOtpLogin)
 userRouter.post('/get-user-by-id', authenticateUser, getUserById)
 userRouter.post('/update', authenticateUser, updateUser);
 
-userRouter.post('/get-user-list',authenticateAdmin, getUserList);
+userRouter.post('/get-user-list', getUserList);
+userRouter.post('/change-user-status', changeUserStatus);
 
 module.exports = userRouter;
