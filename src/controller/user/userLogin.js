@@ -1,11 +1,12 @@
 // controllers/user/verifyOtp.controller.js
 const userService = require('../../services/user.service');
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 const { verifyOtpValidationSchema } = require('../../validations/user.validation');
+const db = require('../../database/models');
 
 const verifyOtpLogin = async (request, response) => {
     try {
-        const { phoneNumber, otp } = request.body;
+        const { phoneNumber, otp, deviceToken } = request.body;
 
         // Validate
         const validationResult = verifyOtpValidationSchema.validate({ phoneNumber, otp });
@@ -18,14 +19,6 @@ const verifyOtpLogin = async (request, response) => {
 
         const validData = validationResult.value;
 
-        // Demo OTP check ( from Redis/DB do verify in production)
-        const correctOtp = '123456'; // Demo OTP 
-        if (validData.otp !== correctOtp) {
-            return response.status(400).json({
-                status: 'FAILED',
-                message: 'Invalid OTP'
-            });
-        }
 
         // Get user
         const user = await userService.getUserByPhone(validData.phoneNumber);
@@ -36,17 +29,43 @@ const verifyOtpLogin = async (request, response) => {
             });
         }
 
-        // Update last login
-        await userService.updateUser(user.userId, { 
-            lastLogin: new Date(),
-            deviceToken: request.body.deviceToken || user.deviceToken
+        // 3) Verify OTP
+        const otpRow = await db.OtpLog.findOne({
+            where: {
+                phoneNumber: validData.phoneNumber,
+                otpCode: validData.otp,
+                purpose: 'login',
+                isVerified: false
+            },
+            order: [['createdAt', 'DESC']]
         });
 
+        // Otp Expired / not found
+        if (!otpRow || otpRow.expiresAt < new Date()) {
+            return response.status(400).json({
+                status: 'FAILED',
+                message: 'Invalid or expired OTP'
+            });
+        }
+
+        // 4) Mark OTP as used
+        await otpRow.update({
+            isVerified: true,
+            verifiedAt: new Date()
+        });
+
+        // Update last login
+        await userService.updateUser(user.userId, {
+            lastLogin: new Date(),
+            deviceToken: request?.body?.deviceToken || user?.deviceToken
+        });
+
+        // Generate JWT token   
         const token = jwt.sign(
-    { userId: user.userId }, 
-    process.env.JWT_SECRET || 'your-secret-key',
-    { expiresIn: '7d' }
-);
+            { userId: user.userId },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '7d' }
+        );
 
         return response.status(200).json({
             status: 'SUCCESS',
@@ -59,7 +78,7 @@ const verifyOtpLogin = async (request, response) => {
                 profileImageUrl: user.profileImageUrl || null,
                 isActive: user.isActive,
                 isVerified: user.isVerified,
-                 token: token // JWT generate 
+                token: token // JWT generate 
             }
         });
     } catch (error) {
