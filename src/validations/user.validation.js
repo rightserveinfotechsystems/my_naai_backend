@@ -40,16 +40,16 @@ const verifyOtpValidationSchema = Joi.object({
 const userIdValidationSchema = Joi.object({
        userId: Joi.string() .uuid() .required()
        .messages({
-      'any.required': 'User ID is required',
-      'string.guid': 'User ID must be a valid UUID'
+      'any.required': 'userId is required',
+      'string.guid': 'userId must be a valid UUID'
     }),
 });
 
 const updateUserValidationSchema = Joi.object({
    userId: Joi.string().uuid().required()
     .messages({
-      'any.required': 'User ID is required',
-      'string.guid': 'User ID must be a valid UUID'
+      'any.required': 'userId is required',
+      'string.guid': 'userId must be a valid UUID'
     }),
   
   phoneNumber: Joi.string() .trim().pattern(/^[0-9]+$/).min(10).max(15)
