@@ -1,6 +1,6 @@
 // middleware/authUser.js
 const jwt = require('jsonwebtoken');
-
+const userService = require('../../services/user.service'); 
 
 const authenticateUser = async (request, response, next) => {
     try {
@@ -35,6 +35,7 @@ const authenticateUser = async (request, response, next) => {
         
         next(); //call next middleware
     } catch (error) {
+        console.log("error : ", error)
         return response.status(401).json({
             status: 'FAILED',
             message: 'Invalid token'

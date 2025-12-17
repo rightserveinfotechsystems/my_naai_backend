@@ -62,17 +62,16 @@ const authenticateAdmin = async (request, response, next) => {
 /**
  * Check if super admin
  */
-const isSuperAdmin = (request, response, next) => {
-    if (request.admin.role !== 'super_admin') {
-        return response.status(403).json({
-            status: 'FAILED',
-            message: 'Access denied. Super admin only.'
-        });
-    }
-    next();
-};
+// const isSuperAdmin = (request, response, next) => {
+//     if (request.admin.role !== 'super_admin') {
+//         return response.status(403).json({
+//             status: 'FAILED',
+//             message: 'Access denied. Super admin only.'
+//         });
+//     }
+//     next();
+// };
 
 module.exports = {
     authenticateAdmin,
-    isSuperAdmin
 };

@@ -1,24 +1,26 @@
-// controllers/user/getUserById.controller.js
+
 const userService = require('../../services/user.service');
+const { userIdValidationSchema } = require('../../validations/user.validation');
 
 const getUserById = async (request, response) => {
     try {
         // Extract userId from params
-        const { userId } = request.params;
+        const { userId } = request.body;
 
-        // Validate userId present or not
-        if (!userId) {
-            return response.status(400).json({
-                status: 'FAILED',
-                message: 'User ID is required'
+           //check validation
+        const validationResult = await userIdValidationSchema.validate({ userId }, { abortEarly: true });
+        if (validationResult.error) {
+            response.status(200).json({
+                status: "FAILED",
+                message: validationResult?.error?.details[0]?.message,
             });
-        }
-
+            return;
+        };
         // Get user from service
         const user = await userService.getUserById(userId);
 
         if (!user) {
-            return response.status(404).json({
+            return response.status(200).json({
                 status: 'FAILED',
                 message: 'User not found'
             });
