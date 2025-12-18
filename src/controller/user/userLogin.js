@@ -9,7 +9,7 @@ const verifyOtpLogin = async (request, response) => {
         const { phoneNumber, otp, deviceToken } = request.body;
 
         // Validate
-        const validationResult = verifyOtpValidationSchema.validate({ phoneNumber, otp });
+        const validationResult = verifyOtpValidationSchema.validate({ phoneNumber, otp, deviceToken }, { abortEarly: true });
         if (validationResult.error) {
             return response.status(400).json({
                 status: 'FAILED',

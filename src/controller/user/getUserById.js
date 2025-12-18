@@ -12,7 +12,7 @@ const getUserById = async (request, response) => {
     //if user request
     else if (request.user) {
       userId = request.user?.id;      
-    }
+    }  
 
 
 // Validate userId
