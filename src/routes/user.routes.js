@@ -17,11 +17,12 @@ const userRouter = express.Router();
 
 userRouter.post('/create',createUser);
 userRouter.post('/send-otp', sendOtp);   
-userRouter.post('/verify-otp', verifyOtpLogin)
-userRouter.post('/get-user-by-id', authenticateUser, getUserById)
+userRouter.post('/verify-otp', verifyOtpLogin);
+userRouter.get('/profile', authenticateUser, getUserById);
 userRouter.post('/update', authenticateUser, updateUser);
 
-userRouter.post('/get-user-list', getUserList);
-userRouter.post('/change-user-status', changeUserStatus);
+
+userRouter.post('/get-user-list', authenticateAdmin, getUserList);
+userRouter.post('/change-user-status',authenticateAdmin, changeUserStatus);
 
 module.exports = userRouter;

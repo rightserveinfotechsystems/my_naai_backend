@@ -1,5 +1,6 @@
-const  Admin  = require('../../database/models/admin.model');
-const verifyToken  = require('../../utils/middleware/token.util');
+const db = require('../../database/models');
+const { verifyToken } = require('./token.util');
+
 
 /**
  * Authenticate admin
@@ -22,7 +23,6 @@ const authenticateAdmin = async (request, response, next) => {
 
         // Verify token
         const decoded = verifyToken(token);
-
         if (!decoded) {
             return response.status(401).json({
                 status: 'FAILED',
@@ -31,10 +31,9 @@ const authenticateAdmin = async (request, response, next) => {
         }
 
         // Get admin from token
-        const admin = await Admin.findByPk(decoded.adminId, {
-            attributes: { exclude: ['passwordHash'] }
+        const admin = await db.Admin.findByPk(decoded.adminId, {
+            attributes: { exclude: ['password'] }
         });
-
         if (!admin) {
             return response.status(401).json({
                 status: 'FAILED',
@@ -48,10 +47,10 @@ const authenticateAdmin = async (request, response, next) => {
                 message: 'Account is deactivated'
             });
         }
-
         request.admin = admin;
         next();
     } catch (error) {
+        console.log('❌ Token error:', error.message); // ADD THIS
         return response.status(500).json({
             status: 'FAILED',
             message: error.message
@@ -73,5 +72,5 @@ const authenticateAdmin = async (request, response, next) => {
 // };
 
 module.exports = {
-    authenticateAdmin,
+    authenticateAdmin
 };

@@ -49,7 +49,9 @@ const changePasswordValidationSchema = Joi.object({
     currentPassword: Joi.string().required().messages({
         'string.empty': 'Current password is required'
     }),
-    newPassword: Joi.string().min(6).required().messages({
+    newPassword: Joi.string().min(6).required()
+     .invalid(Joi.ref('currentPassword')).messages({
+         'any.invalid': 'New password cannot be same as current password',
         'string.empty': 'New password is required',
         'string.min': 'New password must be at least 6 characters'
     }),

@@ -29,7 +29,7 @@ const authenticateUser = async (request, response, next) => {
 
         //attach user to request object
         request.user = {
-            userId: user.userId,
+            id: user.userId,
             phoneNumber: user.phoneNumber
         };
         

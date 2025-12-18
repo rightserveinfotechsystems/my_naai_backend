@@ -6,10 +6,10 @@ const adminService = require('../../services/admin.service');
 const changePassword = async (request, response) => {
     try {
         // Get admin ID from authenticated request
-        const adminId = request.admin.adminId;
+        const adminId = request.admin.id;
 
         // Extract data from request body
-        const { currentPassword, newPassword } = request.body;
+        const { currentPassword, newPassword } = request.body || {};
 
         // Validate input
         const validationResult = changePasswordValidationSchema.validate(
@@ -33,10 +33,15 @@ const changePassword = async (request, response) => {
             });
         }
 
+        console.log('ADMIN FROM DB =>', admin?.toJSON?.() || admin);
+console.log('currentPassword =>', currentPassword);
+console.log('admin.password =>', admin?.password);
+
+
         // Verify current password
         const isPasswordValid = await bcrypt.compare(
             currentPassword,
-            admin.passwordHash
+            admin.password
         );
 
         if (!isPasswordValid) {
@@ -47,11 +52,11 @@ const changePassword = async (request, response) => {
         }
 
         // Hash new password
-        const hashPassword = await bcrypt.hash(newPassword, 10);
+        // const hashPassword = await bcrypt.hash(newPassword, 10);
 
         // Update password
         await adminService.updateAdmin(adminId, {
-            password: hashPassword
+            password: newPassword
         });
 
         return response.status(200).json({

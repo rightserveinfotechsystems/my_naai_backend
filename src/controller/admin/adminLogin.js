@@ -23,7 +23,7 @@ const loginAdmin = async (request, response) => {
         }
 
         // Find admin by email or username
-        const admin = await adminService.getAdminByUsernameOrEmail(email);
+        const admin = await adminService.getAdminByEmail(email);
         if (!admin) {
             return response.status(401).json({
                 status: 'FAILED',
@@ -39,8 +39,11 @@ const loginAdmin = async (request, response) => {
             });
         }
 
+
+
         // Verify password
-        const isPasswordValid = await bcrypt.compare(password, admin.passwordHash);
+        const isPasswordValid = await bcrypt.compare(password, admin.password);
+        console.log('isPasswordValid:', isPasswordValid);
         if (!isPasswordValid) {
             return response.status(401).json({
                 status: 'FAILED',
@@ -49,15 +52,16 @@ const loginAdmin = async (request, response) => {
         }
 
         // Update last login
-        await adminService.updateAdmin(admin.adminId, {
+        await adminService.updateAdmin(admin.id, {
             lastLogin: new Date()
         });
 
         // Generate JWT token
         const token = generateToken({
-            adminId: admin.adminId,
+            adminId: admin.id,
             name: admin.name,
             email: admin.email,
+            mobile: admin.mobile
         });
 
         return response.status(200).json({
@@ -65,9 +69,10 @@ const loginAdmin = async (request, response) => {
             message: 'Login successful',
             data: {
                 admin: {
-                    adminId: admin.adminId,
+                    adminId: admin.id,
                     name: admin.name,
                     email: admin.email,
+                    mobile: admin.mobile
                 },
                 token
             }
