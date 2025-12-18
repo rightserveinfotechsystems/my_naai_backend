@@ -92,7 +92,7 @@ const getUserList = async ({ page = 1, searchString = '' }) => {
 
     const where = {};
 
-    if (searchString) {
+    if (searchString=(searchString?.trim())) {
       const like = `%${searchString}%`;
       where[Op.or] = [
         { fullName:    { [Op.iLike]: like } },

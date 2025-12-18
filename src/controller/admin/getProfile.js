@@ -3,7 +3,7 @@ const adminService = require('../../services/admin.service');
 const getProfile = async (request, response) => {
     try {
         // Get admin ID from authenticated request
-        const adminId = request.admin.adminId;
+        const adminId = request.admin.id;
 
         // Get admin profile
         const admin = await adminService.getAdminById(adminId);

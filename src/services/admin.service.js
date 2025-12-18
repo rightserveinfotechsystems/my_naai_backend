@@ -21,7 +21,7 @@ const getAdminByEmail = async (email) => {
 const getAdminById = async (adminId) => {
     try {
         const admin = await db.Admin.findByPk(adminId, {
-            attributes: { exclude: ['password'] }
+            attributes: {include: ['password'] }
         });
         return admin;
     } catch (error) {
@@ -37,7 +37,7 @@ const getAdminByUsernameOrEmail = async (identifier) => {
         const admin = await db.Admin.findOne({
             where: {
                 [Op.or]: [
-                    { username: identifier.toLowerCase() },
+                    // { username: identifier.toLowerCase() },
                     { email: identifier.toLowerCase() }
                 ]
             }

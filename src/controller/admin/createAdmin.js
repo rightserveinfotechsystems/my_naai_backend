@@ -29,17 +29,16 @@ const createAdmin = async (request, response) => {
             });
         }
 
-        // Hash password
-        const hashPassword = await bcrypt.hash(password, 10);
-
         // Prepare data to insert
         const dataToInsert = {
             name: name,
             email: email.toLowerCase(),
-            
-            password: hashPassword,
+            mobile: mobile,
+            password,
             isActive: true
         };
+
+        console.log("dataToInsert", dataToInsert);
 
         // Insert data into database
         const result = await adminService.createAdmin(dataToInsert);
@@ -51,6 +50,7 @@ const createAdmin = async (request, response) => {
                     adminId: result.adminId,
                     email: result.email,
                     name: result.name,
+                    mobile: result.mobile
                 }
             });
         } else {
