@@ -4,14 +4,12 @@ const { toggleOpenCloseValidationSchema } = require('../../validations/salon.val
 
 const toggleOpenClose = async (request, response) => {
     try {
-        // Get salon ID from params
-        const { salonId } = request.params;
 
         // Extract data from request body
-        const { isOpen } = request.body;
+        const { salonId, isOpen } = request.body || {};
 
         // Validate input
-        const validationResult = toggleOpenCloseValidationSchema.validate({ isOpen }, {
+        const validationResult = toggleOpenCloseValidationSchema.validate({ salonId, isOpen }, {
             abortEarly: true
         });
 

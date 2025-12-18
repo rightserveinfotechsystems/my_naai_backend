@@ -4,14 +4,12 @@ const { toggleStatusValidationSchema } = require('../../validations/salon.valida
 
 const toggleStatus = async (request, response) => {
     try {
-        // Get salon ID from params
-        const { salonId } = request.params;
 
         // Extract data from request body
-        const { isActive } = request.body;
+        const { salonId,isActive } = request.body || {};
 
         // Validate input
-        const validationResult = toggleStatusValidationSchema.validate({ isActive }, {
+        const validationResult = toggleStatusValidationSchema.validate({ salonId, isActive }, {
             abortEarly: true
         });
 
@@ -38,10 +36,11 @@ const toggleStatus = async (request, response) => {
                 message: 'Salon not found'
             });
         }
-
+        //  Final status after update
+        const finalStatus = salon.isActive;
         return response.status(200).json({
             status: 'SUCCESS',
-            message: `Salon ${isActive ? 'enabled' : 'disabled'} successfully`,
+            message: `Salon ${finalStatus  ? 'enabled' : 'disabled'} successfully`,
             data: salon
         });
     } catch (error) {

@@ -4,39 +4,52 @@ const { updateSalonValidationSchema } = require('../../validations/salon.validat
 
 const updateSalon = async (request, response) => {
     try {
-        // Get salon ID from params
-        const { salonId } = request.params;
-
         // Extract data from request body
-        const updateData = request.body;
+        const { salonId, salonData, businessHours, services } = request.body || {};
 
-        // Validate input
-        const validationResult = updateSalonValidationSchema.validate(updateData, {
-            abortEarly: true
-        });
-
-        if (validationResult.error) {
+        if (!salonId) {
             return response.status(400).json({
                 status: 'FAILED',
-                message: validationResult.error.details[0].message
+                message: 'salonId is required',
             });
         }
-
+        // Validate input
+        const { error } = updateSalonValidationSchema.validate(request.body, { abortEarly: true });
+        if (error) {
+            return response.status(400).json({
+                status: 'FAILED',
+                message: error.details[0].message,
+            });
+        }
         // Update salon
-        const salon = await salonService.updateSalon(salonId, updateData);
-
-        if (!salon) {
+        const updatedSalon = await salonService.updateSalon(salonId, salonData);
+        if (!updatedSalon) {
             return response.status(404).json({
                 status: 'FAILED',
-                message: 'Salon not found'
+                message: 'Salon not found',
             });
         }
+
+        //BusinessHours update 
+        if (Array.isArray(businessHours)) {
+            for (const day of businessHours) {
+                await salonService.upsertBusinessHour(salonId, day);
+            }
+        }
+
+        //Services update 
+        if (Array.isArray(services)) {
+            await salonService.syncSalonServices(salonId, services);
+        }
+
+        const fullSalon = await salonService.getSalonWithDetails(salonId);
 
         return response.status(200).json({
             status: 'SUCCESS',
             message: 'Salon updated successfully',
-            data: salon
+            data: fullSalon
         });
+
     } catch (error) {
         console.error('Error in updateSalon:', error);
         return response.status(500).json({

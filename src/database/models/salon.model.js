@@ -30,6 +30,7 @@ module.exports = (sequelize) => {
         phoneNumber: {
             type: DataTypes.STRING(15),
             allowNull: false,
+            unique: true,
             validate: {
                 notEmpty: true,
                 isNumeric: true
@@ -39,6 +40,7 @@ module.exports = (sequelize) => {
         email: {
             type: DataTypes.STRING(100),
             allowNull: true,
+            unique: true,
             validate: {
                 isEmail: {
                     msg: 'Must be a valid email address'
@@ -67,6 +69,18 @@ module.exports = (sequelize) => {
             },
             field: 'city'
         },
+        genderType: {
+            type: DataTypes.ENUM('MALE', 'FEMALE', 'UNISEX'),
+            allowNull: false,
+            defaultValue: 'UNISEX',
+            field: 'gender_type',
+            validate: {
+                notEmpty: {
+                    msg: 'Gender type is required'
+                }
+            }
+        },
+
         state: {
             type: DataTypes.STRING(100),
             allowNull: false,
@@ -163,7 +177,7 @@ module.exports = (sequelize) => {
         tableName: 'salons',
         timestamps: true,
         paranoid: true,
-        
+
         indexes: [
             {
                 fields: ['city']

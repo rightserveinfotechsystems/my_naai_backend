@@ -1,12 +1,13 @@
-
 const { Op } = require('sequelize');
-const Salon = require("../database/models/salon.model");
+const db = require('../database/models');
 /**
  * Create salon
  */
-const createSalon = async (salonData) => {
+const createSalon = async (salonData, transaction = null) => {
     try {
-        const salon = await Salon.create(salonData);
+        const salon = await db.Salon.create(salonData, { 
+            transaction 
+        });
         return salon;
     } catch (error) {
         throw error;
@@ -18,7 +19,36 @@ const createSalon = async (salonData) => {
  */
 const getSalonById = async (salonId) => {
     try {
-        const salon = await Salon.findByPk(salonId);
+        const salon = await db.Salon.findByPk(salonId);
+        return salon;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Get salon by phone number
+ */
+const getSalonByPhone = async (phoneNumber) => {
+    try {
+        const salon = await db.Salon.findOne({
+            where: { phoneNumber }
+        });
+        return salon;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+/**
+ * Get salon by email
+ */
+const getSalonByEmail = async (email) => {
+    try {
+        const salon = await db.Salon.findOne({
+            where: { email }
+        });
         return salon;
     } catch (error) {
         throw error;
@@ -29,37 +59,51 @@ const getSalonById = async (salonId) => {
  * Get salon with details
  */
 const getSalonWithDetails = async (salonId) => {
-    try {
-        const salon = await Salon.findByPk(salonId, {
-            include: [
-                {
-                    model: Barber,
-                    as: 'barbers',
-                    where: { isActive: true },
-                    required: false,
-                    attributes: ['barberId', 'fullName', 'specialization', 'isAvailable']
-                },
-                {
-                    model: Service,
-                    as: 'services',
-                    where: { isActive: true },
-                    required: false,
-                    attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price']
-                }
-            ]
-        });
-        return salon;
-    } catch (error) {
-        throw error;
-    }
+  try {
+    const salon = await db.Salon.findByPk(salonId, {
+      include: [
+        // {
+        //   model: db.Barber,        
+        //   as: 'barbers',
+        //   where: { isActive: true },
+        //   required: false,
+        //   attributes: ['barberId', 'fullName', 'specialization', 'isAvailable'],
+        // },
+        {
+          model: db.Service,       
+          as: 'services',
+          where: { isActive: true },
+          required: false,
+          attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price'],
+        },
+         {
+        model: db.BusinessHours,
+        as: 'businessHours',
+        required: false,
+        attributes: [
+          'scheduleId',    
+          'dayOfWeek',
+          'isOpen',
+          'openingTime',
+          'closingTime',
+        ],
+      },
+      ],
+    });
+
+    return salon;
+  } catch (error) {
+    throw error;
+  }
 };
+
 
 /**
  * Update salon
  */
 const updateSalon = async (salonId, updateData) => {
     try {
-        const salon = await Salon.findByPk(salonId);
+        const salon = await db.Salon.findByPk(salonId);
         if (!salon) {
             return null;
         }
@@ -70,12 +114,50 @@ const updateSalon = async (salonId, updateData) => {
     }
 };
 
+// services/salon.service.js
+const upsertBusinessHour = async (salonId, bh) => {
+  const [row, created] = await db.BusinessHours.findOrCreate({
+    where: { salonId, dayOfWeek: bh.dayOfWeek },
+    defaults: {
+      isOpen: bh.isOpen,
+      openingTime: bh.openingTime,
+      closingTime: bh.closingTime,
+      breakStartTime: bh.breakStartTime,
+      breakEndTime: bh.breakEndTime,
+    },
+  });
+
+  if (!created) {
+    await row.update({
+      isOpen: bh.isOpen,
+      openingTime: bh.openingTime,
+      closingTime: bh.closingTime,
+      breakStartTime: bh.breakStartTime,
+      breakEndTime: bh.breakEndTime,
+    });
+  }
+};
+
+const syncSalonServices = async (salonId, services) => {
+  // simplest option: delete all + recreate (agar acceptable hai)
+  await db.Service.destroy({ where: { salonId } });
+
+  for (const s of services) {
+    await db.Service.create({
+      salonId,
+      serviceName: s.serviceName,
+      durationMinutes: s.durationMinutes,
+      price: s.price,
+    });
+  }
+};
+
 /**
  * Delete salon
  */
 const deleteSalon = async (salonId) => {
     try {
-        const salon = await Salon.findByPk(salonId);
+        const salon = await db.Salon.findByPk(salonId);
         if (!salon) {
             return null;
         }
@@ -89,61 +171,49 @@ const deleteSalon = async (salonId) => {
 /**
  * List salons with pagination
  */
-const listSalons = async (filters = {}) => {
-    try {
-        const {
-            page = 1,
-            limit = 10,
-            search,
-            city,
-            state,
-            pincode,
-            isActive,
-            isOpen
-        } = filters;
+const listSalons = async ({ page = 1, searchString = '', limit = 20 }) => {
+  try {
+    const offset = (page - 1) * limit;
+    const where = {};
 
-        const offset = (page - 1) * limit;
-        const whereClause = {};
-
-        if (search) {
-            whereClause[Op.or] = [
-                { salonName: { [Op.iLike]: `%${search}%` } },
-                { ownerName: { [Op.iLike]: `%${search}%` } },
-                { phoneNumber: { [Op.like]: `%${search}%` } }
-            ];
-        }
-
-        if (city) whereClause.city = { [Op.iLike]: `%${city}%` };
-        if (state) whereClause.state = { [Op.iLike]: `%${state}%` };
-        if (pincode) whereClause.pincode = pincode;
-        if (isActive !== undefined) whereClause.isActive = isActive;
-        if (isOpen !== undefined) whereClause.isOpen = isOpen;
-
-        const { count, rows } = await Salon.findAndCountAll({
-            where: whereClause,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            order: [['createdAt', 'DESC']]
-        });
-
-        return {
-            salons: rows,
-            total: count,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            totalPages: Math.ceil(count / limit)
-        };
-    } catch (error) {
-        throw error;
+    // ✅ SEARCH LOGIC HERE
+    if (searchString?.trim()) {
+      const like = `%${searchString.trim()}%`;
+      where[Op.or] = [
+        { salonName: { [Op.iLike]: like } },
+        { phoneNumber: { [Op.iLike]: like } },
+        { city: { [Op.iLike]: like } },
+        { addressLine1: { [Op.iLike]: like } }
+      ];
     }
+
+    const { count, rows } = await db.Salon.findAndCountAll({
+      where,
+      attributes: { exclude: ['deletedAt'] },
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
+
+    return {
+      salons: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit)
+    };
+  } catch (error) {
+    throw error;
+  }
 };
+
 
 /**
  * Check if salon has active queues
  */
 const hasActiveQueues = async (salonId) => {
     try {
-        const count = await Queue.count({
+        const count = await db.Queue.count({
             where: {
                 salonId,
                 status: ['waiting', 'in_service']
@@ -158,9 +228,13 @@ const hasActiveQueues = async (salonId) => {
 module.exports = {
     createSalon,
     getSalonById,
+    getSalonByPhone,
+    getSalonByEmail,
     getSalonWithDetails,
     updateSalon,
     deleteSalon,
     listSalons,
-    hasActiveQueues
+    hasActiveQueues,
+    syncSalonServices,
+    upsertBusinessHour
 };
