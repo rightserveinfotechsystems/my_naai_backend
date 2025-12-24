@@ -19,30 +19,6 @@ module.exports = (sequelize) => {
             onDelete: 'CASCADE',
             field: 'salon_id'
         },
-        username: {
-            type: DataTypes.STRING(50),
-            allowNull: false,
-            unique: {
-                name: 'unique_barber_username',
-                msg: 'Username already exists'
-            },
-            validate: {
-                notEmpty: true,
-                len: {
-                    args: [3, 50],
-                    msg: 'Username must be between 3 and 50 characters'
-                },
-                isAlphanumeric: {
-                    msg: 'Username can only contain letters and numbers'
-                }
-            },
-            field: 'username'
-        },
-        passwordHash: {
-            type: DataTypes.STRING(255),
-            allowNull: false,
-            field: 'password_hash'
-        },
         fullName: {
             type: DataTypes.STRING(100),
             allowNull: false,
@@ -64,6 +40,10 @@ module.exports = (sequelize) => {
         email: {
             type: DataTypes.STRING(100),
             allowNull: true,
+             unique: {
+                name: 'unique_email',
+                msg: 'Email already exists'
+            },
             validate: {
                 isEmail: true
             },
@@ -126,13 +106,12 @@ module.exports = (sequelize) => {
         modelName: 'Barber',
         tableName: 'barbers',
         timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
         paranoid: true,
-        
+        deletedAt: 'deleted_at',
+
         indexes: [
-            {
-                unique: true,
-                fields: ['username']
-            },
             {
                 fields: ['salon_id']
             },
@@ -143,26 +122,26 @@ module.exports = (sequelize) => {
                 fields: ['is_available']
             }
         ],
-        hooks: {
-            beforeCreate: async (barber) => {
-                if (barber.passwordHash) {
-                    const salt = await bcrypt.genSalt(10);
-                    barber.passwordHash = await bcrypt.hash(barber.passwordHash, salt);
-                }
-                if (barber.username) {
-                    barber.username = barber.username.toLowerCase().trim();
-                }
-            },
-            beforeUpdate: async (barber) => {
-                if (barber.changed('passwordHash')) {
-                    const salt = await bcrypt.genSalt(10);
-                    barber.passwordHash = await bcrypt.hash(barber.passwordHash, salt);
-                }
-                if (barber.changed('username')) {
-                    barber.username = barber.username.toLowerCase().trim();
-                }
-            }
-        }
+        // hooks: {
+        //     beforeCreate: async (barber) => {
+        //         if (barber.passwordHash) {
+        //             const salt = await bcrypt.genSalt(10);
+        //             barber.passwordHash = await bcrypt.hash(barber.passwordHash, salt);
+        //         }
+        //         if (barber.username) {
+        //             barber.username = barber.username.toLowerCase().trim();
+        //         }
+        //     },
+        //     beforeUpdate: async (barber) => {
+        //         if (barber.changed('passwordHash')) {
+        //             const salt = await bcrypt.genSalt(10);
+        //             barber.passwordHash = await bcrypt.hash(barber.passwordHash, salt);
+        //         }
+        //         if (barber.changed('username')) {
+        //             barber.username = barber.username.toLowerCase().trim();
+        //         }
+        //     }
+        // }
     });
 
     // Define associations

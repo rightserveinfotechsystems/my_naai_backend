@@ -6,7 +6,7 @@ const db = require('../../database/models');
 
 const sendSalonOtp = async (request, response) => {
   try {
-    const { phoneNumber } = request.body|| {};
+    const { phoneNumber } = request.body || {};
 
     //  Validate
     const validationResult = sendSalonOtpValidationSchema.validate({ phoneNumber });
@@ -34,7 +34,7 @@ const sendSalonOtp = async (request, response) => {
     const otpLog = await db.OtpLog.create({
       phoneNumber,
       otpCode: otp,
-      purpose: 'login',   
+      purpose: 'login',
       expiresAt
     });
 
@@ -49,7 +49,7 @@ const sendSalonOtp = async (request, response) => {
     return response.status(200).json({
       status: 'SUCCESS',
       message: 'OTP sent successfully',
-      otp 
+      otp
     });
   } catch (error) {
     return response.status(500).json({

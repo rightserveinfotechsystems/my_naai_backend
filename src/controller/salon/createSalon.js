@@ -114,11 +114,16 @@ const createSalon = async (request, response) => {
         return response.status(201).json({
             status: 'SUCCESS',
             message: 'Salon created successfully',
-            data: {
-                salonId: salon.salonId,
-                salonName: salon.salonName,
-                phoneNumber: salon.phoneNumber
+            // data: {
+            //     salonId: salon.salonId,
+            //     salonName: salon.salonName,
+            //     phoneNumber: salon.phoneNumber
 
+            // }
+            data: {
+                ...salon.toJSON(),
+                services,
+                businessHours
             }
         });
     } catch (error) {
