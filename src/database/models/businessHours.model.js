@@ -18,15 +18,21 @@ module.exports = (sequelize) => {
             onDelete: 'CASCADE',
             field: 'salon_id'
         },
-        dayOfWeek: {
-            type: DataTypes.INTEGER,
+        // dayOfWeek: {
+        //     type: DataTypes.INTEGER,
+        //     allowNull: false,
+        //     validate: {
+        //         min: 0,
+        //         max: 6
+        //     },
+        //     comment: '0=Sunday, 1=Monday, ..., 6=Saturday',
+        //     field: 'day_of_week'
+        // },
+             dayType: {
+            type: DataTypes.ENUM('weekdays', 'sunday'),
             allowNull: false,
-            validate: {
-                min: 0,
-                max: 6
-            },
-            comment: '0=Sunday, 1=Monday, ..., 6=Saturday',
-            field: 'day_of_week'
+            field: 'day_type',
+            comment: 'weekdays = Monday-Saturday, sunday = closed'
         },
         isOpen: {
             type: DataTypes.BOOLEAN,
@@ -72,7 +78,7 @@ module.exports = (sequelize) => {
         indexes: [
             {
                 unique: true,
-                fields: ['salon_id', 'day_of_week']
+                fields: ['salon_id', 'day_type']
             }
         ]
     });

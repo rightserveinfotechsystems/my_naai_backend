@@ -6,7 +6,7 @@ const toggleStatus = async (request, response) => {
     try {
 
         // Extract data from request body
-        const { salonId,isActive } = request.body || {};
+        const { salonId, isActive } = request.body || {};
 
         // Validate input
         const validationResult = toggleStatusValidationSchema.validate({ salonId, isActive }, {

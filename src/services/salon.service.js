@@ -82,7 +82,7 @@ const getSalonWithDetails = async (salonId) => {
         required: false,
         attributes: [
           'scheduleId',    
-          'dayOfWeek',
+          'dayType',
           'isOpen',
           'openingTime',
           'closingTime',
@@ -117,7 +117,7 @@ const updateSalon = async (salonId, updateData) => {
 // services/salon.service.js
 const upsertBusinessHour = async (salonId, bh) => {
   const [row, created] = await db.BusinessHours.findOrCreate({
-    where: { salonId, dayOfWeek: bh.dayOfWeek },
+    where: { salonId, dayType: bh.dayType},
     defaults: {
       isOpen: bh.isOpen,
       openingTime: bh.openingTime,

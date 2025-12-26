@@ -11,7 +11,7 @@ const verifySalonOtpValidationSchema = Joi.object({
 });
 
 const salonIdValidationSchema = Joi.object({
-   salonId: Joi.string().uuid().required(),
+    salonId: Joi.string().uuid().required(),
 });
 
 /**
@@ -46,7 +46,7 @@ const createSalonValidationSchema = Joi.object({
     genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').required().messages({
         'any.only': 'Gender must be one of MALE, FEMALE, or UNISEX',
         'string.empty': 'Gender is required'
-    }), 
+    }),
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
@@ -64,12 +64,13 @@ const createSalonValidationSchema = Joi.object({
     // businessHours
     businessHours: Joi.array().items(
         Joi.object({
-            dayOfWeek: Joi.number().integer().min(0).max(6).required(),
-            isOpen: Joi.boolean().required(),
-            openingTime: Joi.string().allow(null),
-            closingTime: Joi.string().allow(null),
-            breakStartTime: Joi.string().allow(null),
-            breakEndTime: Joi.string().allow(null)
+            // dayOfWeek: Joi.number().integer().min(0).max(6).required(),
+            dayType: Joi.string().valid('weekdays', 'sunday').required(),
+            isOpen: Joi.boolean().default(true),
+            openingTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).optional(),
+            closingTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).optional(),
+            breakStartTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).optional(),
+            breakEndTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).optional(),
         })
     ).optional()
 });
@@ -91,7 +92,7 @@ const updateSalonValidationSchema = Joi.object({
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
-   services: Joi.array().items(
+    services: Joi.array().items(
         Joi.object({
             serviceName: Joi.string().min(2).max(100).required(),
             description: Joi.string().allow(null, ''),
@@ -111,48 +112,48 @@ const updateSalonValidationSchema = Joi.object({
             breakEndTime: Joi.string().allow(null)
         })
     ).optional()
-    
+
 });
 
 
 // update-salon for app
 const updateSalonFieldsSchema = Joi.object({
-  salonName: Joi.string().min(2).max(150),
-  ownerName: Joi.string().min(2).max(100).allow(null, ''),
-  phoneNumber: Joi.string().pattern(/^[0-9]{10}$/),
-  email: Joi.string().email().allow(null, ''),
-  addressLine1: Joi.string().min(5).max(255),
-  addressLine2: Joi.string().max(255).allow(null, ''),
-  city: Joi.string().min(2).max(100),
-  state: Joi.string().min(2).max(100),
-  pincode: Joi.string().pattern(/^[0-9]{6}$/),
-  latitude: Joi.number().min(-90).max(90).allow(null),
-  longitude: Joi.number().min(-180).max(180).allow(null),
-  imageUrl: Joi.string().uri().allow(null, ''),
-  genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX'),
+    salonName: Joi.string().min(2).max(150),
+    ownerName: Joi.string().min(2).max(100).allow(null, ''),
+    phoneNumber: Joi.string().pattern(/^[0-9]{10}$/),
+    email: Joi.string().email().allow(null, ''),
+    addressLine1: Joi.string().min(5).max(255),
+    addressLine2: Joi.string().max(255).allow(null, ''),
+    city: Joi.string().min(2).max(100),
+    state: Joi.string().min(2).max(100),
+    pincode: Joi.string().pattern(/^[0-9]{6}$/),
+    latitude: Joi.number().min(-90).max(90).allow(null),
+    longitude: Joi.number().min(-180).max(180).allow(null),
+    imageUrl: Joi.string().uri().allow(null, ''),
+    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX'),
 });
 
 const businessHourSchema = Joi.object({
-  dayOfWeek: Joi.number().integer().min(0).max(6).required(),
-  isOpen: Joi.boolean().required(),
-  openingTime: Joi.string().allow(null, ''),
-  closingTime: Joi.string().allow(null, ''),
-  breakStartTime: Joi.string().allow(null, ''),
-  breakEndTime: Joi.string().allow(null, ''),
+    dayOfWeek: Joi.number().integer().min(0).max(6).required(),
+    isOpen: Joi.boolean().required(),
+    openingTime: Joi.string().allow(null, ''),
+    closingTime: Joi.string().allow(null, ''),
+    breakStartTime: Joi.string().allow(null, ''),
+    breakEndTime: Joi.string().allow(null, ''),
 });
 
 const serviceSchema = Joi.object({
-  serviceId: Joi.string().uuid().allow(null),
-  serviceName: Joi.string().min(2).max(150).required(),
-  durationMinutes: Joi.number().integer().min(1).required(),
-  price: Joi.number().min(0).required(),
+    serviceId: Joi.string().uuid().allow(null),
+    serviceName: Joi.string().min(2).max(150).required(),
+    durationMinutes: Joi.number().integer().min(1).required(),
+    price: Joi.number().min(0).required(),
 });
 
 
 const updateSalonWithDetailsAppSchema = Joi.object({
-  salonData: updateSalonFieldsSchema.optional(),
-  businessHours: Joi.array().items(businessHourSchema).optional(),
-  services: Joi.array().items(serviceSchema).optional(),
+    salonData: updateSalonFieldsSchema.optional(),
+    businessHours: Joi.array().items(businessHourSchema).optional(),
+    services: Joi.array().items(serviceSchema).optional(),
 });
 
 
