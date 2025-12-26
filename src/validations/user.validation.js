@@ -32,11 +32,14 @@ const sendOtpValidationSchema = Joi.object({
   phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required()
 });
 
+//verify otp validation
 const verifyOtpValidationSchema = Joi.object({
   phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required(),
   otp: Joi.string().pattern(/^[0-9]{6}$/).required(),
   deviceToken: Joi.string().max(255).optional()
 });
+
+// user id validation
 const userIdValidationSchema = Joi.object({
   userId: Joi.string().uuid().required()
     .messages({

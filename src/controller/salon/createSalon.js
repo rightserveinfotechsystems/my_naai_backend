@@ -85,7 +85,7 @@ const createSalon = async (request, response) => {
         if (businessHours.length > 0) {
             const businessHoursToCreate = businessHours.map(bh => ({
                 salonId: salon.salonId,
-                dayOfWeek: bh.dayOfWeek,
+                dayType: bh.dayType,
                 isOpen: bh.isOpen,
                 openingTime: bh.openingTime || null,
                 closingTime: bh.closingTime || null,
