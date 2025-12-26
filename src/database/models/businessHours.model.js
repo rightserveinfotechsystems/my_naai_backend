@@ -18,22 +18,14 @@ module.exports = (sequelize) => {
             onDelete: 'CASCADE',
             field: 'salon_id'
         },
-        // dayOfWeek: {
-        //     type: DataTypes.INTEGER,
-        //     allowNull: false,
-        //     validate: {
-        //         min: 0,
-        //         max: 6
-        //     },
-        //     comment: '0=Sunday, 1=Monday, ..., 6=Saturday',
-        //     field: 'day_of_week'
-        // },
-             dayType: {
-            type: DataTypes.ENUM('weekdays', 'sunday'),
-            allowNull: false,
-            field: 'day_type',
-            comment: 'weekdays = Monday-Saturday, sunday = closed'
+    
+        //  Multiple holiday days allowed
+        holidayDays: {
+            type: DataTypes.ARRAY(DataTypes.INTEGER), 
+            allowNull: true,
+            comment: "0=Sunday, 1=Monday, ..., 6=Saturday"
         },
+
         isOpen: {
             type: DataTypes.BOOLEAN,
             defaultValue: true,
@@ -41,7 +33,7 @@ module.exports = (sequelize) => {
         },
         openingTime: {
             type: DataTypes.TIME,
-            allowNull: true,
+            allowNull: false,
             field: 'opening_time'
         },
         closingTime: {
@@ -74,7 +66,7 @@ module.exports = (sequelize) => {
         modelName: 'BusinessHours',
         tableName: 'business_hours',
         timestamps: true,
-        
+
         indexes: [
             {
                 unique: true,
