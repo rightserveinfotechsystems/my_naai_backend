@@ -19,8 +19,8 @@ const salonRouter = express.Router();
 //Salon login
 salonRouter.post('/send-otp', sendSalonOtp);
 salonRouter.post('/login', verifySalonOtpLogin);
-salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp)
-salonRouter.post('/update-salon', authenticateSalon, updateSalonApp)
+salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
+salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
 
 // All routes require admin authentication
 salonRouter.use(authenticateAdmin);
@@ -29,7 +29,7 @@ salonRouter.use(authenticateAdmin);
 salonRouter.post('/create', createSalon);
 salonRouter.get('/salon-list', listSalons);
 salonRouter.get('/get-salon-by-id/:salonId', getSalonById);
-salonRouter.post('/update-salon', updateSalon);
+salonRouter.post('/update-salon-admin',updateSalon);
 salonRouter.delete('/delete-salon/:salonId', deleteSalon);
 // Salon operations
 salonRouter.post('/status', toggleStatus);

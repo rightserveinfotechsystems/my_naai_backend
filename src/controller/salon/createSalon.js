@@ -85,12 +85,11 @@ const createSalon = async (request, response) => {
         if (businessHours.length > 0) {
             const businessHoursToCreate = businessHours.map(bh => ({
                 salonId: salon.salonId,
-                dayType: bh.dayType,
-                isOpen: bh.isOpen,
                 openingTime: bh.openingTime || null,
                 closingTime: bh.closingTime || null,
                 breakStartTime: bh.breakStartTime || null,
-                breakEndTime: bh.breakEndTime || null
+                breakEndTime: bh.breakEndTime || null,
+                holidayDays: bh.holidayDays || []
             }));
             await BusinessHours.bulkCreate(businessHoursToCreate, { transaction: t });
         }
@@ -111,20 +110,11 @@ const createSalon = async (request, response) => {
         //     });
         // }
 
-        return response.status(201).json({
+        const createdSalon = await salonService.getSalonWithDetails(salon.salonId);
+        return response.status(200).json({
             status: 'SUCCESS',
             message: 'Salon created successfully',
-            // data: {
-            //     salonId: salon.salonId,
-            //     salonName: salon.salonName,
-            //     phoneNumber: salon.phoneNumber
-
-            // }
-            data: {
-                ...salon.toJSON(),
-                services,
-                businessHours
-            }
+            data: createdSalon
         });
     } catch (error) {
         await t.rollback();

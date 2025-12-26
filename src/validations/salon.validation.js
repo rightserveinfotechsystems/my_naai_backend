@@ -64,20 +64,19 @@ const createSalonValidationSchema = Joi.object({
     // businessHours
     businessHours: Joi.array().items(
         Joi.object({
-            // dayOfWeek: Joi.number().integer().min(0).max(6).required(),
-            dayType: Joi.string().valid('weekdays', 'sunday').required(),
-            isOpen: Joi.boolean().default(true),
-            openingTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).optional(),
-            closingTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).optional(),
-            breakStartTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).optional(),
-            breakEndTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).optional(),
-        })
-    ).optional()
+        openingTime: Joi.string().required(),
+        closingTime: Joi.string().required(),
+        breakStartTime: Joi.string().allow(null),
+        breakEndTime: Joi.string().allow(null),
+        holidayDays: Joi.array().items(Joi.number().min(0).max(6)).default([])
+    })
+    ).optional(),
 });
 
 /**
  * Update salon validation schema
  */
+
 const updateSalonValidationSchema = Joi.object({
     salonId: Joi.string().uuid().required(),
     salonName: Joi.string().min(2).max(150),
@@ -92,27 +91,28 @@ const updateSalonValidationSchema = Joi.object({
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
-    services: Joi.array().items(
+    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').optional(),
+
+
+     services: Joi.array().items(
         Joi.object({
-            serviceName: Joi.string().min(2).max(100).required(),
-            description: Joi.string().allow(null, ''),
-            durationMinutes: Joi.number().min(1).required(),
-            price: Joi.number().min(0).required()
+            serviceName: Joi.string().required(),
+            durationMinutes: Joi.number().required(),
+            price: Joi.number().positive().required(),
+            description: Joi.string().optional()
         })
     ).optional(),
 
-    // businessHours
-    businessHours: Joi.array().items(
-        Joi.object({
-            dayOfWeek: Joi.number().integer().min(0).max(6).required(),
-            isOpen: Joi.boolean().required(),
-            openingTime: Joi.string().allow(null),
-            closingTime: Joi.string().allow(null),
-            breakStartTime: Joi.string().allow(null),
-            breakEndTime: Joi.string().allow(null)
-        })
-    ).optional()
 
+    // businessHours
+    businessHours:Joi.array().items(Joi.object({
+        openingTime: Joi.string().required(),
+        closingTime: Joi.string().required(),
+        breakStartTime: Joi.string().allow(null),
+        breakEndTime: Joi.string().allow(null),
+        holidayDays: Joi.array().items(Joi.number().min(0).max(6)).default([])
+    })
+).optional(),
 });
 
 
