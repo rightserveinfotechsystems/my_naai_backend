@@ -91,14 +91,15 @@ const updateSalonValidationSchema = Joi.object({
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
-    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').optional(),
+    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').required(),
 
 
      services: Joi.array().items(
         Joi.object({
+            serviceId: Joi.string().uuid().required(),
             serviceName: Joi.string().required(),
             durationMinutes: Joi.number().required(),
-            price: Joi.number().positive().required(),
+            price: Joi.number().min(0).required(),
             description: Joi.string().optional()
         })
     ).optional(),
@@ -106,6 +107,7 @@ const updateSalonValidationSchema = Joi.object({
 
     // businessHours
     businessHours:Joi.array().items(Joi.object({
+        scheduleId: Joi.string().uuid().required(),
         openingTime: Joi.string().required(),
         closingTime: Joi.string().required(),
         breakStartTime: Joi.string().allow(null),
@@ -130,7 +132,7 @@ const updateSalonFieldsSchema = Joi.object({
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
-    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX'),
+    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').required(),
 });
 
 const businessHourSchema = Joi.object({

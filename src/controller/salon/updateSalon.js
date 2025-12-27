@@ -61,35 +61,73 @@ const updateSalonAdmin = async (request, response) => {
         await salon.update(dataToUpdate, { transaction: t });
 
         // update SERVICES 
-        if (Array.isArray(services) && services.length > 0) {
-            await Service.destroy({ where: { salonId }, transaction: t });
-            const servicesToCreate = services.map(service => ({
-                salonId: salon.salonId,
-                serviceName: service.serviceName,
-                description: service.description || null,
-                durationMinutes: service.durationMinutes,
-                price: Number(service.price),
-                isActive: true,
-                displayOrder: 0
-            }));
-            await Service.bulkCreate(servicesToCreate, { transaction: t });
+        if (Array.isArray(services)) {
+            for (const s of services) {
+                if (s.serviceId) {
+                    // Existing service → UPDATE
+                    await Service.update(
+                        {
+                            serviceName: s.serviceName,
+                            durationMinutes: s.durationMinutes,
+                            price: Number(s.price),
+                            description: s.description || null
+                        },
+                        {
+                            where: { serviceId: s.serviceId, salonId },
+                            transaction: t
+                        }
+                    );
+                } else {
+                    // New service → CREATE
+                    await Service.create(
+                        {
+                            salonId,
+                            serviceName: s.serviceName,
+                            durationMinutes: s.durationMinutes,
+                            price: Number(s.price),
+                            description: s.description || null,
+                            isActive: true,
+                            displayOrder: 0
+                        },
+                        { transaction: t }
+                    );
+                }
+            }
         }
 
+console.log('services in body:', services);
+
         //update buisnesshours
-
         if (Array.isArray(businessHours) && businessHours.length > 0) {
-            await BusinessHours.destroy({ where: { salonId }, transaction: t });
-
-            const businessHoursToCreate = businessHours.map(bh => ({
-                salonId,
-                openingTime: bh.openingTime,
-                closingTime: bh.closingTime,
-                breakStartTime: bh.breakStartTime || null,
-                breakEndTime: bh.breakEndTime || null,
-                holidayDays: bh.holidayDays || []
-            }));
-
-            await BusinessHours.bulkCreate(businessHoursToCreate, { transaction: t });
+            for (const bh of businessHours) {
+                if (bh.scheduleId) {
+                    await BusinessHours.update(
+                        {
+                            openingTime: bh.openingTime,
+                            closingTime: bh.closingTime,
+                            breakStartTime: bh.breakStartTime || null,
+                            breakEndTime: bh.breakEndTime || null,
+                            holidayDays: bh.holidayDays || []
+                        },
+                        {
+                            where: { scheduleId: bh.scheduleId, salonId },
+                            transaction: t
+                        }
+                    );
+                } else {
+                    await BusinessHours.create(
+                        {
+                            salonId,
+                            openingTime: bh.openingTime,
+                            closingTime: bh.closingTime,
+                            breakStartTime: bh.breakStartTime || null,
+                            breakEndTime: bh.breakEndTime || null,
+                            holidayDays: bh.holidayDays || []
+                        },
+                        { transaction: t }
+                    );
+                }
+            }
         }
 
         await t.commit();

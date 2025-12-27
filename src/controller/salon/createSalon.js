@@ -74,7 +74,7 @@ const createSalon = async (request, response) => {
                 serviceName: service.serviceName,
                 description: service.description || null,
                 durationMinutes: service.durationMinutes,
-                price: service.price,
+                price: Number(service.price),
                 isActive: true,
                 displayOrder: 0
             }));

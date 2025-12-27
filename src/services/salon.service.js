@@ -91,8 +91,18 @@ const getSalonWithDetails = async (salonId) => {
         },
       ],
     });
+    if (!salon) return null;
 
-    return salon;
+    const salonJson = salon.toJSON();  
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    if (Array.isArray(salonJson.businessHours)) {
+      salonJson.businessHours = salonJson.businessHours.map(bh => ({
+        ...bh,
+        holidayDays: (bh.holidayDays || []).map(i => dayNames[i])  
+      }));
+    }
+    return salonJson;
   } catch (error) {
     throw error;
   }
