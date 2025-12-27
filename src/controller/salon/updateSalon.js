@@ -7,7 +7,7 @@ const updateSalonAdmin = async (request, response) => {
 
     try {
 
-        const { salonId, services = [], businessHours = [], ...salonData } = request.body || {};
+        const { salonId, existingServices = [], newServices = [], businessHours = [], ...salonData } = request.body || {};
 
         // salonId check
         if (!salonId) {
@@ -60,81 +60,108 @@ const updateSalonAdmin = async (request, response) => {
 
         await salon.update(dataToUpdate, { transaction: t });
 
-        // update SERVICES 
-        if (Array.isArray(services)) {
-            for (const s of services) {
-                if (s.serviceId) {
-                    // Existing service → UPDATE
-                    await Service.update(
-                        {
-                            serviceName: s.serviceName,
-                            durationMinutes: s.durationMinutes,
-                            price: Number(s.price),
-                            description: s.description || null
-                        },
-                        {
-                            where: { serviceId: s.serviceId, salonId },
-                            transaction: t
-                        }
-                    );
-                } else {
-                    // New service → CREATE
-                    await Service.create(
-                        {
-                            salonId,
-                            serviceName: s.serviceName,
-                            durationMinutes: s.durationMinutes,
-                            price: Number(s.price),
-                            description: s.description || null,
-                            isActive: true,
-                            displayOrder: 0
-                        },
-                        { transaction: t }
-                    );
+        //  UPDATE EXISTING SERVICES ONLY
+        if (Array.isArray(existingServices) && existingServices.length > 0) {
+            for (const s of existingServices) {
+                if (!s.serviceId) {
+                    await t.rollback();
+                    return response.status(400).json({
+                        status: 'FAILED',
+                        message: 'serviceId is required for existingServices'
+                    });
+                }
+
+                const [affected] = await Service.update(
+                    {
+                        serviceName: s.serviceName,
+                        durationMinutes: s.durationMinutes,
+                        price: Number(s.price),
+                        description: s.description || null
+                    },
+                    {
+                        where: { serviceId: s.serviceId, salonId },
+                        transaction: t
+                    }
+                );
+
+                if (!affected) {
+                    await t.rollback();
+                    return response.status(400).json({
+                        status: 'FAILED',
+                        message: `Invalid serviceId in existingServices: ${s.serviceId}`
+                    });
                 }
             }
         }
 
-console.log('services in body:', services);
+        // CREATE NEW SERVICES ONLY 
+        if (Array.isArray(newServices) && newServices.length > 0) {
+            for (const s of newServices) {
+                if (s.serviceId) {
+                    await t.rollback();
+                    return response.status(400).json({
+                        status: 'FAILED',
+                        message: 'serviceId must NOT be sent in newServices'
+                    });
+                }
+
+                await Service.create(
+                    {
+                        salonId,
+                        serviceName: s.serviceName,
+                        durationMinutes: s.durationMinutes,
+                        price: Number(s.price),
+                        description: s.description || null,
+                        isActive: true,
+                        displayOrder: 0
+                    },
+                    { transaction: t }
+                );
+            }
+        }
 
         //update buisnesshours
         if (Array.isArray(businessHours) && businessHours.length > 0) {
             for (const bh of businessHours) {
-                if (bh.scheduleId) {
-                    await BusinessHours.update(
-                        {
-                            openingTime: bh.openingTime,
-                            closingTime: bh.closingTime,
-                            breakStartTime: bh.breakStartTime || null,
-                            breakEndTime: bh.breakEndTime || null,
-                            holidayDays: bh.holidayDays || []
+                if (!bh.scheduleId) {
+                    await t.rollback();
+                    return response.status(400).json({
+                        status: 'FAILED',
+                        message: 'scheduleId is required for businessHours update'
+                    });
+                }
+
+                const [affected] = await BusinessHours.update(
+                    {
+                        openingTime: bh.openingTime,
+                        closingTime: bh.closingTime,
+                        breakStartTime: bh.breakStartTime || null,
+                        breakEndTime: bh.breakEndTime || null,
+                        holidayDays: Array.isArray(bh.holidayDays) ? bh.holidayDays : []
+                    },
+                    {
+                        where: {
+                            scheduleId: bh.scheduleId,  
+                            salonId                       
                         },
-                        {
-                            where: { scheduleId: bh.scheduleId, salonId },
-                            transaction: t
-                        }
-                    );
-                } else {
-                    await BusinessHours.create(
-                        {
-                            salonId,
-                            openingTime: bh.openingTime,
-                            closingTime: bh.closingTime,
-                            breakStartTime: bh.breakStartTime || null,
-                            breakEndTime: bh.breakEndTime || null,
-                            holidayDays: bh.holidayDays || []
-                        },
-                        { transaction: t }
-                    );
+                        transaction: t
+                    }
+                );
+
+                // wrong id
+                if (!affected) {
+                    await t.rollback();
+                    return response.status(400).json({
+                        status: 'FAILED',
+                        message: `Invalid scheduleId for business hour: ${bh.scheduleId}`
+                    });
                 }
             }
         }
 
+
+
         await t.commit();
-
-
-        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const formattedHolidayDays = businessHours?.holidayDays?.map(d => dayNames[d]) || [];
 
         const updatedSalon = await salonService.getSalonWithDetails(salonId);
 

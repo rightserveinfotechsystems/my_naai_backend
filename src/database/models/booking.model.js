@@ -55,7 +55,7 @@ module.exports = (sequelize) => {
             field: 'service_id'
         },
         bookingStatus: {
-            type: DataTypes.ENUM('completed', 'cancelled', 'no_show'),
+            type: DataTypes.ENUM('completed', 'cancelled', 'pending'),
             allowNull: false,
             field: 'booking_status'
         },
@@ -73,26 +73,26 @@ module.exports = (sequelize) => {
             },
             field: 'amount'
         },
-        paymentStatus: {
-            type: DataTypes.ENUM('pending', 'paid', 'refunded'),
-            defaultValue: 'pending',
-            field: 'payment_status'
-        },
-        paymentMethod: {
-            type: DataTypes.STRING(50),
-            allowNull: true,
-            field: 'payment_method'
-        },
-        startedAt: {
-            type: DataTypes.DATE,
-            allowNull: true,
-            field: 'started_at'
-        },
-        completedAt: {
-            type: DataTypes.DATE,
-            allowNull: true,
-            field: 'completed_at'
-        },
+        // paymentStatus: {
+        //     type: DataTypes.ENUM('pending', 'paid', 'refunded'),
+        //     defaultValue: 'pending',
+        //     field: 'payment_status'
+        // },
+        // paymentMethod: {
+        //     type: DataTypes.STRING(50),
+        //     allowNull: true,
+        //     field: 'payment_method'
+        // },
+        // startedAt: {
+        //     type: DataTypes.DATE,
+        //     allowNull: true,
+        //     field: 'started_at'
+        // },
+        // completedAt: {
+        //     type: DataTypes.DATE,
+        //     allowNull: true,
+        //     field: 'completed_at'
+        // },
         createdAt: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -122,9 +122,9 @@ module.exports = (sequelize) => {
             {
                 fields: ['booking_status']
             },
-            {
-                fields: ['payment_status']
-            },
+            // {
+            //     fields: ['payment_status']
+            // },
             {
                 fields: ['created_at']
             }
