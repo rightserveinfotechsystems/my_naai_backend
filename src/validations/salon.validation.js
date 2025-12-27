@@ -94,7 +94,7 @@ const updateSalonValidationSchema = Joi.object({
     genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').required(),
 
 
-     services: Joi.array().items(
+     existingServices: Joi.array().items(
         Joi.object({
             serviceId: Joi.string().uuid().required(),
             serviceName: Joi.string().required(),
@@ -103,6 +103,16 @@ const updateSalonValidationSchema = Joi.object({
             description: Joi.string().optional()
         })
     ).optional(),
+
+    newServices: Joi.array().items(
+           Joi.object({
+            serviceName: Joi.string().required(),
+            durationMinutes: Joi.number().required(),
+            price: Joi.number().min(0).required(),
+            description: Joi.string().optional()
+        })
+    ).optional(),
+   
 
 
     // businessHours
