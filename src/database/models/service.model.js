@@ -38,7 +38,7 @@ module.exports = (sequelize) => {
             allowNull: false,
             validate: {
                 min: {
-                    args: 1,
+                    args: [1],
                     msg: 'Duration must be at least 1 minute'
                 }
             },
@@ -49,7 +49,7 @@ module.exports = (sequelize) => {
             allowNull: false,
             validate: {
                 min: {
-                    args: 0,
+                    args: [0],
                     msg: 'Price must be positive'
                 }
             },
