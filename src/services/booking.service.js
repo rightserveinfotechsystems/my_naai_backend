@@ -41,7 +41,7 @@ class BookingService {
         userId,
         serviceId,
         queueNumber,
-        tokenNumber: queueNumber
+        // tokenNumber: queueNumber
       }, { transaction: t });
 
       // Booking banao

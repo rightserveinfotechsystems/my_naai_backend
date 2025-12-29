@@ -43,7 +43,7 @@ const createAdmin = async (request, response) => {
         // Insert data into database
         const result = await adminService.createAdmin(dataToInsert);
         if (result) {
-            return response.status(201).json({
+            return response.status(200).json({
                 status: 'SUCCESS',
                 message: 'Admin created successfully',
                 data: {
