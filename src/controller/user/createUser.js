@@ -7,7 +7,7 @@ const createUser = async (request, response) => {
     try {
         const { fullName, phoneNumber, email, profileImageUrl, deviceToken, otp } = request.body;
 
-        // Validation same...
+        // Validation same
         const validationResult = createUserValidationSchema.validate(
             { phoneNumber: phoneNumber?.toString(), otp, fullName, email, profileImageUrl, deviceToken },
             { abortEarly: true }
@@ -22,7 +22,7 @@ const createUser = async (request, response) => {
 
         const validData = validationResult.value;
 
-        // User existence checks same...
+        // User existence check
         const isUserExistByPhone = await userService.getUserByPhone(validData.phoneNumber);
         if (isUserExistByPhone) {
             return response.status(400).json({
@@ -31,12 +31,12 @@ const createUser = async (request, response) => {
             });
         }
 
-        // ✅ SAME PATTERN AS verifyOtpLogin - WORKING!
+       
         const otpRow = await db.OtpLog.findOne({
             where: {
                 phoneNumber: validData.phoneNumber,
                 otpCode: validData.otp,
-                purpose: 'registration',  // Model enum
+                purpose: 'registration', 
                 isVerified: false
             },
             order: [['createdAt', 'DESC']]
@@ -49,7 +49,7 @@ const createUser = async (request, response) => {
             });
         }
 
-        // Mark OTP as used (same as login)
+        // Mark OTP as used 
         await otpRow.update({
             isVerified: true,
             verifiedAt: new Date()
@@ -69,7 +69,7 @@ const createUser = async (request, response) => {
         const result = await userService.createUser(dataToInsert);
 
         if (result) {
-            return response.status(201).json({
+            return response.status(200).json({
                 status: 'SUCCESS',
                 message: 'User created successfully',
                 data: result
