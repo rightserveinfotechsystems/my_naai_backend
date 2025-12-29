@@ -108,7 +108,7 @@ const getSalonWithDetails = async (salonId) => {
               attributes: ['fullName', 'phoneNumber'],
             }
           ],
-          order: [['createdAt', 'ASCE']], 
+          order: [['createdAt', 'ASC']], 
           limit: 10, 
         }
       ],

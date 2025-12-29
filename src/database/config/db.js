@@ -1,66 +1,32 @@
-const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const { Sequelize, DataTypes } = require("sequelize");
+const dotenv = require('dotenv');
+dotenv.config();
 
-// Database configuration
-const dbConfig = {
-    development: {
-        username: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || 'password',
-        database: process.env.DB_NAME || 'mynaai_dev',
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || 5432,
-        dialect: 'postgres',
-        logging: console.log,
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
-        },
-        define: {
-            timestamps: true,
-          
-            freezeTableName: true
-        }
+// Destructure variables from .env for easier usage
+const { DB_URL, DB_SSL } = process.env;
+
+// Initialize Sequelize using the DB_URL
+const sequelize = new Sequelize(DB_URL, {
+    dialect: "postgres",
+    dialectOptions: {
+        ssl: DB_SSL === "true" ? { require: true, rejectUnauthorized: false } : false, // Convert the string "true" to a boolean
     },
-    production: {
-        username: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT || 5432,
-        dialect: 'postgres',
-        logging: false,
-        pool: {
-            max: 20,
-            min: 5,
-            acquire: 60000,
-            idle: 10000
-        },
-        define: {
-            timestamps: true,
-            freezeTableName: true
-        },
-        dialectOptions: {
-            ssl: {
-                require: true,
-                rejectUnauthorized: false
-            }
-        }
-    }
-};
-
-const env = process.env.NODE_ENV || 'development';
-const config = dbConfig[env];
-
-// Create Sequelize instance
-const sequelize = new Sequelize(
-    config.database,
-    config.username,
-    config.password,
-    config
-);
-
+    pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000,
+    },
+});
+// sequelize
+//     .authenticate()
+//     .then(() => {
+//         console.log("connected to neon database...🟢");
+//     })
+//     .catch((err) => {
+//         console.log("Database connection error: ❌" + err);
+//         throw err;
+//     });
 /**
  * Test database connection
  */

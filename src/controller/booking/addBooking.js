@@ -26,6 +26,19 @@ const createBooking = async (request, response) => {
     // } = request.body;
 
 
+   //past booking
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const bookingDateObj = new Date(bookingDate);
+
+    if (bookingDateObj < today) {
+      return response.status(400).json({
+        status: 'FAILED',
+        message: 'You cannot book for a past date.'
+      });
+    }
+
 
     //  Service layer calls
     const existingBooking = await BookingService.checkDuplicate(salonId, userId, bookingDate);
@@ -56,13 +69,12 @@ const createBooking = async (request, response) => {
     );
 
     //  Success response
-    return response.status(201).json({
+    return response.status(200).json({
       status: "SUCCESS",
       message: "Booking confirmed!",
       data: {
         bookingId: booking.bookingId,
         queueNumber: nextQueueNumber,
-        tokenNumber: nextQueueNumber,
         bookingDate,
         serviceName: service.serviceName
       }
