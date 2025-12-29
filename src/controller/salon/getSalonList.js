@@ -10,7 +10,7 @@ const listSalons = async (request, response) => {
 
         return response.status(200).json({
             status: 'SUCCESS',
-            message: 'Salons retrieved successfully',
+            message: 'Salons fetched successfully',
             data: result.salons,
             pagination: {
                 total: result.total,

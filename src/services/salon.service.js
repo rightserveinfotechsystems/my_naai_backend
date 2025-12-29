@@ -244,13 +244,13 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20 }) => {
       order: [['createdAt', 'DESC']]
     });
 
-      // ✅ Queue number add
-        const salonsWithQueue = rows.map(salon => ({
-            ...salon.toJSON(),
-            currentQueueNumber: salon.queues?.[0]?.queueNumber || 0
-        }));
+      //  Queue number add
+        // const salonsWithQueue = rows.map(salon => ({
+        //     ...salon.toJSON(),
+        //     currentQueueNumber: salon.queues?.[0]?.queueNumber || 0
+        // }));
     return {
-      salons: salonsWithQueue,
+      salons: rows,
       total: count,
       page,
       limit,
