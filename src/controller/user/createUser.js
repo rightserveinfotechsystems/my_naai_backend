@@ -2,6 +2,7 @@
 const { createUserValidationSchema } = require('../../validations/user.validation');
 const userService = require('../../services/user.service');
 const db = require('../../database/models');
+const jwt = require('jsonwebtoken');
 
 const createUser = async (request, response) => {
     try {
@@ -31,12 +32,12 @@ const createUser = async (request, response) => {
             });
         }
 
-       
+
         const otpRow = await db.OtpLog.findOne({
             where: {
                 phoneNumber: validData.phoneNumber,
                 otpCode: validData.otp,
-                purpose: 'registration', 
+                purpose: 'registration',
                 isVerified: false
             },
             order: [['createdAt', 'DESC']]
@@ -68,11 +69,21 @@ const createUser = async (request, response) => {
 
         const result = await userService.createUser(dataToInsert);
 
+
+
         if (result) {
+            // Generate JWT token   
+            const token = jwt.sign(
+                { userId: result.userId },
+                process.env.JWT_SECRET || 'your-secret-key',
+            );
             return response.status(200).json({
                 status: 'SUCCESS',
                 message: 'User created successfully',
-                data: result
+                data: {
+                    ...result.dataValues,
+                    token: token
+                }
             });
         }
 
