@@ -89,6 +89,28 @@ const getSalonWithDetails = async (salonId) => {
             'holidayDays'
           ],
         },
+
+
+           {
+          model: db.Booking,
+          as: 'bookings', 
+          required: false,
+          attributes: ['bookingId', 'userId', 'serviceId', 'barberId',  'createdAt'],
+          include: [
+            {
+              model: db.Queue,
+              as: 'queue',  // association name
+              attributes: ['queueNumber'],
+            },
+            {
+              model: db.User,
+              as: 'user',   // association name
+              attributes: ['fullName', 'phoneNumber'],
+            }
+          ],
+          order: [['createdAt', 'ASCE']], 
+          limit: 10, 
+        }
       ],
     });
     if (!salon) return null;

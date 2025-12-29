@@ -8,7 +8,7 @@ module.exports = (sequelize) => {
             primaryKey: true,
             field: 'queue_id'
         },
-        salonId: {
+        salonId: {    
             type: DataTypes.UUID,
             allowNull: false,
             references: {

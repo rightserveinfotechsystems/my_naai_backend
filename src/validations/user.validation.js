@@ -24,7 +24,16 @@ const createUserValidationSchema = Joi.object({
     .required()
     .messages({
       'any.required': 'Device token is required'
-    })
+    }),
+      otp: Joi.string()
+        .trim()
+        .pattern(/^\d{6}$/)  
+        .required()
+        .messages({
+            'string.empty': 'OTP is required',
+            'string.pattern.base': 'OTP must be exactly 4 digits',
+            'any.required': 'OTP is required',
+        }),
 });
 
 // validations/user.validation.js
