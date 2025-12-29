@@ -10,11 +10,13 @@ const getUserById = require('../controller/user/getUserById');
 const getUserList = require('../controller/user/getUserList');
 const {authenticateAdmin } = require('../utils/middleware/auth.middleware');
 const changeUserStatus = require('../controller/user/disableUser');
+const sendOtpRegister = require('../controller/user/send-otp-register');
 
 
 // Define your user routes here
 const userRouter = express.Router();
 
+userRouter.post('/send-otp-register', sendOtpRegister); 
 userRouter.post('/create',createUser);
 userRouter.post('/send-otp', sendOtp);   
 userRouter.post('/verify-otp', verifyOtpLogin);

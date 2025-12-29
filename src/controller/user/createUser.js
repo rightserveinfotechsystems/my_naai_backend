@@ -1,15 +1,15 @@
-// controllers/user/createUser.controller.js
+// controllers/user/createUser.controller.js (Model method use karo)
 const { createUserValidationSchema } = require('../../validations/user.validation');
 const userService = require('../../services/user.service');
+const db = require('../../database/models');
 
 const createUser = async (request, response) => {
     try {
-        // Extract data from request body
-        const { fullName, phoneNumber, email, profileImageUrl, deviceToken } = request.body;
+        const { fullName, phoneNumber, email, profileImageUrl, deviceToken, otp } = request.body;
 
-        // Validate input
+        // Validation same...
         const validationResult = createUserValidationSchema.validate(
-            { phoneNumber: phoneNumber?.toString(), fullName, email, profileImageUrl, deviceToken },
+            { phoneNumber: phoneNumber?.toString(), otp, fullName, email, profileImageUrl, deviceToken },
             { abortEarly: true }
         );
 
@@ -22,27 +22,40 @@ const createUser = async (request, response) => {
 
         const validData = validationResult.value;
 
-        // Check if user already exists with phone
+        // User existence checks same...
         const isUserExistByPhone = await userService.getUserByPhone(validData.phoneNumber);
         if (isUserExistByPhone) {
             return response.status(400).json({
                 status: 'FAILED',
-                message: 'User already exists with this phone number, please try with another number'
+                message: 'User already exists with this phone number'
             });
         }
 
-        // Check if user already exists with email 
-        if (validData.email) {
-            const isUserExistByEmail = await userService.getUserByEmail(validData.email);
-            if (isUserExistByEmail) {
-                return response.status(400).json({
-                    status: 'FAILED',
-                    message: 'User already exists with this email, please try with another email'
-                });
-            }
+        // ✅ SAME PATTERN AS verifyOtpLogin - WORKING!
+        const otpRow = await db.OtpLog.findOne({
+            where: {
+                phoneNumber: validData.phoneNumber,
+                otpCode: validData.otp,
+                purpose: 'registration',  // Model enum
+                isVerified: false
+            },
+            order: [['createdAt', 'DESC']]
+        });
+
+        if (!otpRow || otpRow.expiresAt < new Date()) {
+            return response.status(400).json({
+                status: 'FAILED',
+                message: 'Invalid or expired OTP'
+            });
         }
 
-        // Prepare data to insert
+        // Mark OTP as used (same as login)
+        await otpRow.update({
+            isVerified: true,
+            verifiedAt: new Date()
+        });
+
+        // Create user
         const dataToInsert = {
             phoneNumber: validData.phoneNumber.trim(),
             fullName: validData.fullName || null,
@@ -50,32 +63,19 @@ const createUser = async (request, response) => {
             profileImageUrl: validData.profileImageUrl || null,
             deviceToken: validData.deviceToken || null,
             isActive: true,
-            isVerified: false
+            isVerified: true
         };
 
-        // Insert data into database
         const result = await userService.createUser(dataToInsert);
 
         if (result) {
             return response.status(201).json({
                 status: 'SUCCESS',
                 message: 'User created successfully',
-                data: {
-                    userId: result.userId,
-                    phoneNumber: result.phoneNumber,
-                    fullName: result.fullName,
-                    email: result.email,
-                    profileImageUrl: result.profileImageUrl,
-                    isActive: result.isActive,
-                    isVerified: result.isVerified
-                }
-            });
-        } else {
-            return response.status(400).json({
-                status: 'FAILED',
-                message: 'Failed to create user, please try again!'
+                data: result
             });
         }
+
     } catch (error) {
         return response.status(500).json({
             status: 'FAILED',

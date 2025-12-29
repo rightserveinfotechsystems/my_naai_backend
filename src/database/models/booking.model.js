@@ -73,6 +73,18 @@ module.exports = (sequelize) => {
             },
             field: 'amount'
         },
+
+        bookingDate: {
+            type: DataTypes.DATEONLY,
+            allowNull: false,
+            field: 'booking_date'
+        },
+        bookingTime: {
+            type: DataTypes.TIME,    
+            allowNull: true,
+            field: 'booking_time'
+        },
+
         // paymentStatus: {
         //     type: DataTypes.ENUM('pending', 'paid', 'refunded'),
         //     defaultValue: 'pending',
@@ -108,7 +120,7 @@ module.exports = (sequelize) => {
         modelName: 'Booking',
         tableName: 'bookings',
         timestamps: true,
-        
+
         indexes: [
             {
                 fields: ['salon_id']

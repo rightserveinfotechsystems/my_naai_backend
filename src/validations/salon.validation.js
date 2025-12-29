@@ -50,6 +50,7 @@ const createSalonValidationSchema = Joi.object({
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
+    isActive:Joi.boolean(),
 
     //services
     services: Joi.array().items(
@@ -92,6 +93,7 @@ const updateSalonValidationSchema = Joi.object({
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
     genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').required(),
+    isActive:Joi.boolean(),
 
 
      existingServices: Joi.array().items(

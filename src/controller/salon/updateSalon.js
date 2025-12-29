@@ -55,7 +55,8 @@ const updateSalonAdmin = async (request, response) => {
             pincode: salonData.pincode,
             latitude: salonData.latitude,
             longitude: salonData.longitude,
-            imageUrl: salonData.imageUrl
+            imageUrl: salonData.imageUrl,
+            isActive:salonData.isActive
         };
 
         await salon.update(dataToUpdate, { transaction: t });
