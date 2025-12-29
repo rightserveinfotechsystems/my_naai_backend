@@ -31,20 +31,20 @@ class BookingService {
     return lastQueue ? lastQueue.queueNumber + 1 : 1;
   }
 
-  // 4. Create Queue + Booking (transaction me)
+  // 4. Create Queue + Booking 
   static async createBooking(salonId, userId, serviceId, bookingDate, queueNumber) {
     const t = await db.sequelize.transaction();
     try {
-      // Queue banao
+      // Queue 
       const queue = await Queue.create({
         salonId,
         userId,
         serviceId,
         queueNumber,
-        // tokenNumber: queueNumber
+        tokenNumber: queueNumber
       }, { transaction: t });
 
-      // Booking banao
+      // Booking 
       const booking = await Booking.create({
         queueId: queue.queueId,
         salonId,
