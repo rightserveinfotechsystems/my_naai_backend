@@ -225,13 +225,32 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20 }) => {
     const { count, rows } = await db.Salon.findAndCountAll({
       where,
       attributes: { exclude: ['deletedAt'] },
+                  include: [
+                // ✅ SIRF QUEUE NUMBER
+                {
+                    model: db.Queue,
+                    as: 'queues',
+                    where: { status: 'waiting' },
+                    required: false,
+                    attributes: ['queueNumber'], 
+                    order: [['queueNumber', 'ASC']],
+                    limit: 1,  
+                    separate: true
+                }
+            ],
+
       limit,
       offset,
       order: [['createdAt', 'DESC']]
     });
 
+      // ✅ Queue number add
+        const salonsWithQueue = rows.map(salon => ({
+            ...salon.toJSON(),
+            currentQueueNumber: salon.queues?.[0]?.queueNumber || 0
+        }));
     return {
-      salons: rows,
+      salons: salonsWithQueue,
       total: count,
       page,
       limit,
