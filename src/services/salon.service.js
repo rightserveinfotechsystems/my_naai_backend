@@ -207,59 +207,77 @@ const deleteSalon = async (salonId) => {
  * List salons with pagination
  */
 const listSalons = async ({ page = 1, searchString = '', limit = 20 }) => {
-  try {
-    const offset = (page - 1) * limit;
-    const where = {};
+    try {
+        const offset = (page - 1) * limit;
+        const where = {};
 
-    // ✅ SEARCH LOGIC HERE
-    if (searchString?.trim()) {
-      const like = `%${searchString.trim()}%`;
-      where[Op.or] = [
-        { salonName: { [Op.iLike]: like } },
-        { phoneNumber: { [Op.iLike]: like } },
-        { city: { [Op.iLike]: like } },
-        { addressLine1: { [Op.iLike]: like } }
-      ];
-    }
+        // ✅ SEARCH LOGIC HERE (SAME)
+        if (searchString?.trim()) {
+            const like = `%${searchString.trim()}%`;
+            where[Op.or] = [
+                { salonName: { [Op.iLike]: like } },
+                { phoneNumber: { [Op.iLike]: like } },
+                { city: { [Op.iLike]: like } },
+                { addressLine1: { [Op.iLike]: like } }
+            ];
+        }
 
-    const { count, rows } = await db.Salon.findAndCountAll({
-      where,
-      attributes: { exclude: ['deletedAt'] },
-                  include: [
-                // ✅ SIRF QUEUE NUMBER
+        const { count, rows } = await db.Salon.findAndCountAll({
+            where,
+            attributes: { exclude: ['deletedAt'] },
+            include: [   
+                // ✅ 1. CHANGE: Service include
                 {
                     model: db.Queue,
                     as: 'queues',
                     where: { status: 'waiting' },
                     required: false,
+                    include: [  // ✅ NEW!
+                        {
+                            model: db.Service,
+                            as: 'service',
+                            required: false,
+                            attributes: ['durationMinutes']
+                        }
+                    ],
                     attributes: ['queueNumber'], 
-                    order: [['queueNumber', 'ASC']],
-                    limit: 1,  
-                    separate: true
+                    order: [['queueNumber', 'ASC']]
                 }
             ],
+            limit,
+            offset,
+            order: [['createdAt', 'DESC']]
+        });
 
-      limit,
-      offset,
-      order: [['createdAt', 'DESC']]
-    });
+        // ✅ 2. CHANGE: Calculate time
+        const salonsWithWaitTime = rows.map(salon => {
+            const queues = salon.queues || [];
+            const totalMinutes = queues.reduce((sum, queue) => sum + (queue.service?.durationMinutes || 15), 0);
+            
+            return {
+                ...salon.toJSON(),
+                currentQueueNumber: queues[0]?.queueNumber || 0,
+                queueLength: queues.length,
+                totalWaitTime: {
+                    minutes: totalMinutes,
+                    display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+                }
+            };
+        });
 
-      //  Queue number add
-        // const salonsWithQueue = rows.map(salon => ({
-        //     ...salon.toJSON(),
-        //     currentQueueNumber: salon.queues?.[0]?.queueNumber || 0
-        // }));
-    return {
-      salons: rows,
-      total: count,
-      page,
-      limit,
-      totalPages: Math.ceil(count / limit)
-    };
-  } catch (error) {
-    throw error;
-  }
+        // ✅ 3. CHANGE: Return formatted data
+        return {
+            salons: salonsWithWaitTime,  // ✅ ये change!
+            total: count,
+            page,
+            limit,
+            totalPages: Math.ceil(count / limit)
+        };
+    } catch (error) {
+        throw error;
+    }
 };
+
 
 
 /**
