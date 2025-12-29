@@ -63,8 +63,7 @@ const verifyOtpLogin = async (request, response) => {
         // Generate JWT token   
         const token = jwt.sign(
             { userId: user.userId },
-            process.env.JWT_SECRET || 'your-secret-key',
-            { expiresIn: '7d' }
+            process.env.JWT_SECRET || 'your-secret-key'
         );
 
         return response.status(200).json({

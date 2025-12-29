@@ -67,12 +67,6 @@ module.exports = (sequelize) => {
         tableName: 'business_hours',
         timestamps: true,
 
-        indexes: [
-            {
-                unique: true,
-                fields: ['salon_id', 'day_type']
-            }
-        ]
     });
 
     // Define associations
