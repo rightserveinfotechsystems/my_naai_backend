@@ -137,6 +137,20 @@ const getUserList = async ({ page = 1, searchString = '' }) => {
   }
 };
 
+// Hard delete
+const deleteUser = async (userId) => {
+    try {
+        const user = await db.User.findByPk(userId);
+        if (!user) {
+            return null;
+        }
+        await user.destroy();
+        return true;
+    } catch (error) {
+        throw error;
+    }
+};
+
 
 
 module.exports = {
@@ -145,5 +159,6 @@ module.exports = {
     getUserByEmail,
     createUser,
     updateUser,
-    getUserList
+    getUserList,
+    deleteUser
 };

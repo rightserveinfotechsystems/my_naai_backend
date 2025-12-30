@@ -8,7 +8,7 @@ module.exports = (sequelize) => {
             primaryKey: true,
             field: 'queue_id'
         },
-        salonId: {    
+        salonId: {
             type: DataTypes.UUID,
             allowNull: false,
             references: {
@@ -47,6 +47,16 @@ module.exports = (sequelize) => {
             },
             onDelete: 'SET NULL',
             field: 'service_id'
+        },
+        bookingDate: {
+            type: DataTypes.DATEONLY,
+            allowNull: false,
+            field: 'booking_date'
+        },
+        bookingTime: {
+            type: DataTypes.TIME,
+            allowNull: true,
+            field: 'booking_time'
         },
         queueNumber: {
             type: DataTypes.INTEGER,
@@ -127,7 +137,7 @@ module.exports = (sequelize) => {
         modelName: 'Queue',
         tableName: 'queue',
         timestamps: true,
-        
+
         indexes: [
             {
                 fields: ['salon_id', 'status']

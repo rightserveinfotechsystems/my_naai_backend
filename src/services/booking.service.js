@@ -23,16 +23,16 @@ class BookingService {
   }
 
   // 3. Get next queue number
-  static async getNextQueueNumber(salonId) {
-    const lastQueue = await Queue.findOne({
-      where: { salonId },
-      order: [['queueNumber', 'DESC']]
-    });
-    return lastQueue ? lastQueue.queueNumber + 1 : 1;
-  }
+static async getNextQueueNumber(salonId, bookingDate) {
+  const dateString = new Date(bookingDate).toISOString().split('T')[0];
+  const count = await Queue.count({
+    where: { salonId, bookingDate: dateString }
+  });
+  return count + 1;
+}
 
   // 4. Create Queue + Booking 
-  static async createBooking(salonId, userId, serviceId, bookingDate, queueNumber) {
+  static async createBooking(salonId, userId, serviceId, bookingDate, queueNumber, bookingTime) {
     const t = await db.sequelize.transaction();
     try {
       // Queue 
@@ -41,7 +41,8 @@ class BookingService {
         userId,
         serviceId,
         queueNumber,
-        tokenNumber: queueNumber
+        tokenNumber: queueNumber,
+        bookingDate
       }, { transaction: t });
 
       // Booking 
@@ -51,7 +52,8 @@ class BookingService {
         userId,
         serviceId,
         bookingDate,
-        bookingStatus: 'pending'
+        bookingStatus: 'pending',
+        bookingTime
       }, { transaction: t });
 
       await t.commit();
