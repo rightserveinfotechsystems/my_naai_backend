@@ -16,7 +16,7 @@ const createBooking = async (request, response) => {
       });
     }
 
-        const { salonId, userId, serviceId, bookingDate , barberId} = value; 
+        const { salonId, userId, serviceId, bookingDate ,bookingTime , barberId} = value; 
 
     // const { 
     //   salonId, 
@@ -41,7 +41,7 @@ const createBooking = async (request, response) => {
 
 
     //  Service layer calls
-    const existingBooking = await BookingService.checkDuplicate(salonId, userId, bookingDate);
+    const existingBooking = await BookingService.checkDuplicate(salonId, userId, bookingDate, bookingTime);
     if (existingBooking) {
       return response.status(400).json({
         status: "FAILED",
@@ -57,7 +57,7 @@ const createBooking = async (request, response) => {
       });
     }
 
-    const nextQueueNumber = await BookingService.getNextQueueNumber(salonId);
+    const nextQueueNumber = await BookingService.getNextQueueNumber(salonId, bookingDate);
 
     //  Final booking create
     const { queue, booking } = await BookingService.createBooking(
@@ -65,7 +65,8 @@ const createBooking = async (request, response) => {
       userId, 
       serviceId, 
       bookingDate, 
-      nextQueueNumber
+      nextQueueNumber,
+      bookingTime 
     );
 
     //  Success response
@@ -76,6 +77,7 @@ const createBooking = async (request, response) => {
         bookingId: booking.bookingId,
         queueNumber: nextQueueNumber,
         bookingDate,
+        bookingTime,
         serviceName: service.serviceName
       }
     });

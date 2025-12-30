@@ -11,6 +11,7 @@ const getUserList = require('../controller/user/getUserList');
 const {authenticateAdmin } = require('../utils/middleware/auth.middleware');
 const changeUserStatus = require('../controller/user/disableUser');
 const sendOtpRegister = require('../controller/user/send-otp-register');
+const deleteUser = require('../controller/user/deleteUser');
 
 
 // Define your user routes here
@@ -26,5 +27,8 @@ userRouter.post('/update', authenticateUser, updateUser);
 
 userRouter.post('/get-user-list', authenticateAdmin, getUserList);
 userRouter.post('/change-user-status',authenticateAdmin, changeUserStatus);
+userRouter.post('/delete-user',authenticateAdmin, deleteUser);
+
+
 
 module.exports = userRouter;

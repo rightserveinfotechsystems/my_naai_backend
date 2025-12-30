@@ -12,6 +12,7 @@ const createBookingSchema = Joi.object({
     'date.min': 'bookingDate cannot be in the past!',
     'date.base': 'bookingDate must be a valid date in YYYY-MM-DD format'
   }),
+  bookingTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).allow(null, '').optional(),
   amount: Joi.number().min(0).allow(null)
 });
 

@@ -267,7 +267,7 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20 }) => {
 
         // ✅ 3. CHANGE: Return formatted data
         return {
-            salons: salonsWithWaitTime,  // ✅ ये change!
+            salons: salonsWithWaitTime,  
             total: count,
             page,
             limit,
