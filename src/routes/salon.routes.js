@@ -14,6 +14,7 @@ const updateSalonApp = require('../controller/salon/updateSalonApp');
 const authenticateUser = require('../utils/middleware/authUser.middleware');
 const listSalonsApp = require('../controller/salon/salonList');
 const { listSalons } = require('../services/salon.service');
+const getSalonByIdUser = require('../controller/salon/getSalonByIdUser');
 
 
 const salonRouter = express.Router();
@@ -26,6 +27,12 @@ salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
 
 //user login
 salonRouter.post('/salon-list',authenticateUser, listSalonsApp);
+salonRouter.post('/get-salon-by-id',authenticateUser, getSalonByIdUser);
+
+
+// Salon operations
+salonRouter.post('/status', toggleStatus);
+salonRouter.post('/open-close', toggleOpenClose);
 
 
 // All routes require admin authentication
@@ -37,9 +44,7 @@ salonRouter.get('/salon-list', listSalons);
 salonRouter.get('/get-salon-by-id/:salonId', getSalonById);
 salonRouter.post('/update-salon-admin',updateSalon);
 salonRouter.delete('/delete-salon/:salonId', deleteSalon);
-// Salon operations
-salonRouter.post('/status', toggleStatus);
-salonRouter.post('/open-close', toggleOpenClose);
+
 
 
 

@@ -2,11 +2,12 @@ const salonService = require('../../services/salon.service');
 
 const listSalonsApp = async (request, response) => {
     try {
-        // Extract query parameters
-        const filters = request.query;
+        const page = parseInt(request.body.page) || 1;
+        const limit = parseInt(request.body.limit) || 20;
+        const searchString = request.body.searchString || '';
+        const cityFilter = request.body.cityFilter || 'ALL';
 
-        // Get salons list
-        const result = await salonService.listSalons(filters);
+        const result = await salonService.listSalons({ page, limit, searchString, cityFilter });
 
         return response.status(200).json({
             status: 'SUCCESS',
@@ -27,5 +28,6 @@ const listSalonsApp = async (request, response) => {
         });
     }
 };
+
 
 module.exports = listSalonsApp;

@@ -91,11 +91,11 @@ const getSalonWithDetails = async (salonId) => {
         },
 
 
-           {
+        {
           model: db.Booking,
-          as: 'bookings', 
+          as: 'bookings',
           required: false,
-          attributes: ['bookingId', 'userId', 'serviceId', 'barberId',  'createdAt'],
+          attributes: ['bookingId', 'userId', 'serviceId', 'barberId', 'createdAt'],
           include: [
             {
               model: db.Queue,
@@ -108,20 +108,19 @@ const getSalonWithDetails = async (salonId) => {
               attributes: ['fullName', 'phoneNumber'],
             }
           ],
-          order: [['createdAt', 'ASC']], 
-          limit: 10, 
+          order: [['createdAt', 'ASC']],
         }
       ],
     });
     if (!salon) return null;
 
-    const salonJson = salon.toJSON();  
+    const salonJson = salon.toJSON();
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     if (Array.isArray(salonJson.businessHours)) {
       salonJson.businessHours = salonJson.businessHours.map(bh => ({
         ...bh,
-        holidayDays: (bh.holidayDays || []).map(i => dayNames[i])  
+        holidayDays: (bh.holidayDays || []).map(i => dayNames[i])
       }));
     }
     return salonJson;
@@ -129,6 +128,77 @@ const getSalonWithDetails = async (salonId) => {
     throw error;
   }
 };
+
+/**
+ * Get salon basic info + queue + barbers (SIMPLE VERSION)
+ */
+
+const getSalonBasicWithQueue = async (salonId) => {
+  try {
+    const salon = await db.Salon.findByPk(salonId, {
+      include: [
+        // ✅ NEW: Barbers add
+        {
+          model: db.Barber,         
+          as: 'barbers',
+          where: { isActive: true },
+          required: false,
+          attributes: ['barberId', 'fullName', 'specialization', 'isAvailable'],
+        },
+        {
+          model: db.Service,
+          as: 'services',
+          where: { isActive: true },
+          required: false,
+          attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price'],
+        },
+        {
+          model: db.BusinessHours,
+          as: 'businessHours',
+          required: false,
+          attributes: [
+            'scheduleId',
+            'openingTime',
+            'closingTime',
+            'breakStartTime',
+            'breakEndTime',
+            'holidayDays'
+          ],
+        }
+      ],
+    });
+    
+    if (!salon) return null;
+
+    // ✅ NEW: Queue number calculation
+    const currentQueueCount = await db.Queue.count({
+      where: {
+        salonId: salonId,
+        status: ['waiting', 'in_service']
+      }
+    });
+
+    const salonJson = salon.toJSON();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    if (Array.isArray(salonJson.businessHours)) {
+      salonJson.businessHours = salonJson.businessHours.map(bh => ({
+        ...bh,
+        holidayDays: (bh.holidayDays || []).map(i => dayNames[i])
+      }));
+    }
+
+    // ✅ ADD queue number to response
+    salonJson.currentQueueNumber = currentQueueCount + 1;
+
+    return salonJson;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
 
 
 /**
@@ -206,77 +276,84 @@ const deleteSalon = async (salonId) => {
 /**
  * List salons with pagination
  */
-const listSalons = async ({ page = 1, searchString = '', limit = 20 }) => {
-    try {
-        const offset = (page - 1) * limit;
-        const where = {};
+const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL' }) => {
+  try {
+    const offset = (page - 1) * limit;
+    const where = {};
 
-        // ✅ SEARCH LOGIC HERE (SAME)
-        if (searchString?.trim()) {
-            const like = `%${searchString.trim()}%`;
-            where[Op.or] = [
-                { salonName: { [Op.iLike]: like } },
-                { phoneNumber: { [Op.iLike]: like } },
-                { city: { [Op.iLike]: like } },
-                { addressLine1: { [Op.iLike]: like } }
-            ];
-        }
-
-        const { count, rows } = await db.Salon.findAndCountAll({
-            where,
-            attributes: { exclude: ['deletedAt'] },
-            include: [   
-                // ✅ 1. CHANGE: Service include
-                {
-                    model: db.Queue,
-                    as: 'queues',
-                    where: { status: 'waiting' },
-                    required: false,
-                    include: [  // ✅ NEW!
-                        {
-                            model: db.Service,
-                            as: 'service',
-                            required: false,
-                            attributes: ['durationMinutes']
-                        }
-                    ],
-                    attributes: ['queueNumber'], 
-                    order: [['queueNumber', 'ASC']]
-                }
-            ],
-            limit,
-            offset,
-            order: [['createdAt', 'DESC']]
-        });
-
-        // ✅ 2. CHANGE: Calculate time
-        const salonsWithWaitTime = rows.map(salon => {
-            const queues = salon.queues || [];
-            const totalMinutes = queues.reduce((sum, queue) => sum + (queue.service?.durationMinutes || 15), 0);
-            
-            return {
-                ...salon.toJSON(),
-                currentQueueNumber: queues[0]?.queueNumber || 0,
-                queueLength: queues.length,
-                totalWaitTime: {
-                    minutes: totalMinutes,
-                    display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
-                }
-            };
-        });
-
-        // ✅ 3. CHANGE: Return formatted data
-        return {
-            salons: salonsWithWaitTime,  
-            total: count,
-            page,
-            limit,
-            totalPages: Math.ceil(count / limit)
-        };
-    } catch (error) {
-        throw error;
+    if (searchString?.trim()) {
+      const like = `%${searchString.trim()}%`;
+      where[Op.or] = [
+        { salonName: { [Op.iLike]: like } },
+        { phoneNumber: { [Op.iLike]: like } },
+        { city: { [Op.iLike]: like } },
+        { addressLine1: { [Op.iLike]: like } }
+      ];
     }
+
+
+    // ✅ City filter
+    if (cityFilter !== 'ALL') {
+      where.city = { [Op.iLike]: `%${cityFilter}%` };
+    }
+
+    // ✅ 1. SALON COUNT SEPARATE KARO
+    const totalSalons = await db.Salon.count({ where });
+
+    // ✅ 2. SALONS FETCH (queues ke saath)
+    const salons = await db.Salon.findAll({
+      where,
+      attributes: { exclude: ['deletedAt'] },
+      include: [{
+        model: db.Queue,
+        as: 'queues',
+        where: { status: 'waiting' },
+        required: false,
+        include: [{
+          model: db.Service,
+          as: 'service',
+          required: false,
+          attributes: ['durationMinutes']
+        }],
+        attributes: ['queueNumber'],
+        order: [['queueNumber', 'ASC']]
+      }],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
+
+    // ✅ 3. Calculate wait time (same)
+    const salonsWithWaitTime = salons.map(salon => {
+      const queues = salon.queues || [];
+      const totalMinutes = queues.reduce((sum, queue) => sum + (queue.service?.durationMinutes || 15), 0);
+
+      const salonData = salon.toJSON();
+      delete salonData.queues;
+
+      return {
+        ...salonData,
+        queueLength: queues.length,
+        totalWaitTime: {
+          minutes: totalMinutes,
+          display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+        }
+      };
+    });
+
+    // ✅ 4. CORRECT PAGINATION
+    return {
+      salons: salonsWithWaitTime,
+      totalSalons: totalSalons,  // ✅ SALON COUNT
+      page,
+      limit,
+      totalPages: Math.ceil(totalSalons / limit)
+    };
+  } catch (error) {
+    throw error;
+  }
 };
+
 
 
 
@@ -308,5 +385,6 @@ module.exports = {
   listSalons,
   hasActiveQueues,
   syncSalonServices,
-  upsertBusinessHour
+  upsertBusinessHour,
+  getSalonBasicWithQueue
 };
