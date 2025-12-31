@@ -78,7 +78,8 @@ const createBooking = async (request, response) => {
         queueNumber: nextQueueNumber,
         bookingDate,
         bookingTime,
-        serviceName: service.serviceName
+        serviceName: service?.serviceName,
+        amount: service?.price
       }
     });
 

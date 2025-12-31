@@ -103,12 +103,12 @@ const deleteSalonRequest = async (requestId) => {
 };
 
 // ✅ Bulk delete
-// const deleteSalonRequestsBulk = async (requestIds) => {
-//     const deletedCount = await db.SalonRequest.destroy({
-//         where: { requestId: { [Op.in]: requestIds } }
-//     });
-//     return deletedCount;
-// };
+const deleteSalonRequestsBulk = async (requestIds) => {
+    const deletedCount = await db.SalonRequest.destroy({
+        where: { requestId: { [Op.in]: requestIds } }
+    });
+    return deletedCount;
+};
 
 
 
@@ -119,5 +119,5 @@ module.exports = {
   getSalonRequestById,
   getSalonRequestsByIds,
   deleteSalonRequest,
-  // deleteSalonRequestsBulk
+  deleteSalonRequestsBulk
 };

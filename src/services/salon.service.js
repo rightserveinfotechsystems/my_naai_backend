@@ -87,7 +87,7 @@ const getSalonWithDetails = async (salonId) => {
           as: 'services',
           where: { isActive: true },
           required: false,
-          attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price'],
+          attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price', 'description'],
         },
         {
           model: db.BusinessHours,

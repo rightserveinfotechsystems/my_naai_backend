@@ -9,7 +9,7 @@ const createUserValidationSchema = Joi.object({
   ,
   phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
     'string.empty': 'Phone number is required',
-    'string.pattern.base': 'Phone number must be between 10 and 15 digits and contain only numbers'
+    'string.pattern.base': 'Phone number must be between 10 digits and contain only numbers'
   }),
   email: Joi.string().email().allow(null, '').messages({
     'string.email': 'Please provide a valid email'
