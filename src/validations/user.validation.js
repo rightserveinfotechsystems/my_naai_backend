@@ -57,6 +57,16 @@ const userIdValidationSchema = Joi.object({
     }),
 });
 
+// validations/user.validation.js
+const bulkUserIdValidationSchema = Joi.object({
+    userIds: Joi.array()
+        .items(Joi.string().uuid().required())
+        .min(1)
+        .max(100)
+        .required()
+});
+
+
 const updateUserValidationSchema = Joi.object({
   userId: Joi.string().uuid().required()
     .messages({
@@ -90,5 +100,6 @@ module.exports = {
   sendOtpValidationSchema,
   verifyOtpValidationSchema,
   userIdValidationSchema,
-  updateUserValidationSchema
+  updateUserValidationSchema,
+  bulkUserIdValidationSchema
 };
