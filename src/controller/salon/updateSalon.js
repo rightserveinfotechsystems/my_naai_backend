@@ -77,7 +77,7 @@ const updateSalonAdmin = async (request, response) => {
                         serviceName: s.serviceName,
                         durationMinutes: s.durationMinutes,
                         price: Number(s.price),
-                        description: s.description || null
+                        description: s.description 
                     },
                     {
                         where: { serviceId: s.serviceId, salonId },
