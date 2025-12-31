@@ -14,6 +14,19 @@ const createSalon = async (salonData, transaction = null) => {
   }
 };
 
+
+/**
+ * Register salon
+ */
+const registerSalon = async (salonData) => {
+    try {
+        const user = await     db.User.create(userData);
+        return user;
+    } catch (error) {
+        throw error;
+    }
+};
+
 /**
  * Get salon by ID
  */

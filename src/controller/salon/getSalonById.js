@@ -22,7 +22,7 @@ const getSalonById = async (request, response) => {
 
         return response.status(200).json({
             status: 'SUCCESS',
-            message: 'Salon retrieved successfully',
+            message: 'Salon fetched successfully',
             data: salon
         });
     } catch (error) {

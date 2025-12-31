@@ -13,8 +13,8 @@ const getSalonByIdApp = require('../controller/salon/getSalon');
 const updateSalonApp = require('../controller/salon/updateSalonApp');
 const authenticateUser = require('../utils/middleware/authUser.middleware');
 const listSalonsApp = require('../controller/salon/salonList');
-const { listSalons } = require('../services/salon.service');
 const getSalonByIdUser = require('../controller/salon/getSalonByIdUser');
+const listSalons = require('../controller/salon/getSalonList');
 
 
 const salonRouter = express.Router();
@@ -40,9 +40,9 @@ salonRouter.use(authenticateAdmin);
 
 // Salon Admin routes
 salonRouter.post('/create', createSalon);
-salonRouter.get('/salon-list', listSalons);
+salonRouter.get('/get-salon-list', listSalons);
 salonRouter.get('/get-salon-by-id/:salonId', getSalonById);
-salonRouter.post('/update-salon-admin',updateSalon);
+salonRouter.post('/admin-update-salon', updateSalon);
 salonRouter.delete('/delete-salon/:salonId', deleteSalon);
 
 

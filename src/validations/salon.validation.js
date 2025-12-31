@@ -1,5 +1,38 @@
 const Joi = require('joi');
 
+const registerSalonValidationSchema = Joi.object({
+  fullName: Joi.string().min(2).max(100).required().messages({
+    'string.empty': 'Full name is required',
+    'string.min': 'Full name must be at least 2 characters',
+    'string.max': 'Full name cannot exceed 100 characters'
+  })
+  ,
+  phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
+    'string.empty': 'Phone number is required',
+    'string.pattern.base': 'Phone number must be between 10  digits and contain only numbers'
+  }),
+  salonName: Joi.string().min(2).max(100).required().messages({
+    'string.empty': 'Full name is required',
+    'string.min': 'Full name must be at least 2 characters',
+    'string.max': 'Full name cannot exceed 100 characters'
+  }),
+   address: Joi.string().min(5).max(255).required(),
+  deviceToken: Joi.string()
+    .required()
+    .messages({
+      'any.required': 'Device token is required'
+    }),
+      otp: Joi.string()
+        .trim()
+        .pattern(/^\d{6}$/)  
+        .required()
+        .messages({
+            'string.empty': 'OTP is required',
+            'string.pattern.base': 'OTP must be exactly 4 digits',
+            'any.required': 'OTP is required',
+        }),
+});
+
 const sendSalonOtpValidationSchema = Joi.object({
     phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required()
 });
@@ -92,7 +125,7 @@ const updateSalonValidationSchema = Joi.object({
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
-    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').required(),
+    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').optional(),
     isActive:Joi.boolean(),
 
 
@@ -197,5 +230,6 @@ module.exports = {
     sendSalonOtpValidationSchema,
     verifySalonOtpValidationSchema,
     salonIdValidationSchema,
-    updateSalonWithDetailsAppSchema
+    updateSalonWithDetailsAppSchema,
+    registerSalonValidationSchema
 };

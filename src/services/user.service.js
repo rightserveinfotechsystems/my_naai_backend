@@ -153,6 +153,36 @@ const deleteUser = async (userId) => {
 
 
 
+// user.service.js - Updated methods
+const deleteUsersBulk = async (userIds) => {
+    try {
+        // ✅ Check actual column name - userId ya id?
+        const existingUsers = await db.User.findAll({
+            where: { userId: userIds }  // ✅ userId use karo
+        });
+        
+        if (existingUsers.length === 0) {
+            return 0;
+        }
+        
+        const deletedCount = await db.User.destroy({
+            where: { userId: userIds }  // ✅ userId use karo
+        });
+        
+        return deletedCount;
+    } catch (error) {
+        throw error;
+    }
+};
+
+const getUsersByIds = async (userIds) => {
+    return await db.User.findAll({
+        where: { userId: userIds }, 
+        attributes: ['userId']
+    });
+};
+
+
 module.exports = {
     getUserByPhone,
     getUserById,
@@ -160,5 +190,7 @@ module.exports = {
     createUser,
     updateUser,
     getUserList,
-    deleteUser
+    deleteUser,
+    getUsersByIds,
+    deleteUsersBulk
 };
