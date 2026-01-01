@@ -5,7 +5,8 @@ const { authenticateAdmin } = require('../utils/middleware/auth.middleware');
 // const adminGetBookingList = require('../controller/booking/getadminBookingList');
 const { authenticateSalon } = require('../utils/middleware/authSalon.middleware');
 const salonGetBookingList = require('../controller/booking/getSalonBookingList');
-const adminGetBookingList = require('../controller/booking/getadminBookingList');
+const adminGetBookingList = require('../controller/booking/getBookingList');
+
 
 
 
