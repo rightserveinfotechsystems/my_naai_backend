@@ -1,75 +1,97 @@
-// services/booking.service.js
+// services/booking.service.js - FUNCTIONAL PATTERN
 const db = require('../database/models');
-const { Booking, Queue, Service } = db;
-const { Op } = require('sequelize');
+const { Booking, Queue, Service, Salon, User, Barber } = db;
+const { Op, Sequelize } = require('sequelize');
 
-class BookingService {
-  // 1. Check duplicate booking (user + salon + date)
-  static async checkDuplicate(salonId, userId, bookingDate) {
-    return await db.Booking.findOne({
+/**
+ * Check duplicate booking (user + salon + date)
+ */
+const checkDuplicate = async (salonId, userId, bookingDate) => {
+  try {
+    return await Booking.findOne({
       where: { 
         salonId, 
         userId, 
         bookingDate 
       }
     });
+  } catch (error) {
+    throw error;
   }
+};
 
-  //   
-  static async verifyService(salonId, serviceId) {
+/**
+ * Verify service belongs to salon
+ */
+const verifyService = async (salonId, serviceId) => {
+  try {
     return await Service.findOne({
       where: { salonId, serviceId }
     });
+  } catch (error) {
+    throw error;
   }
+};
 
-  // 3. Get next queue number
-static async getNextQueueNumber(salonId, bookingDate) {
-  const dateString = new Date(bookingDate).toISOString().split('T')[0];
-  const count = await Queue.count({
-    where: { salonId, bookingDate: dateString }
-  });
-  return count + 1;
-}
-
-  // 4. Create Queue + Booking 
-  static async createBooking(salonId, userId, serviceId, bookingDate, queueNumber, bookingTime) {
-    const t = await db.sequelize.transaction();
-    try {
-      // Queue 
-      const queue = await Queue.create({
-        salonId,
-        userId,
-        serviceId,
-        queueNumber,
-        tokenNumber: queueNumber,
-        bookingDate
-      }, { transaction: t });
-
-      // Booking 
-      const booking = await Booking.create({
-        queueId: queue.queueId,
-        salonId,
-        userId,
-        serviceId,
-        bookingDate,
-        bookingStatus: 'pending',
-        bookingTime
-      }, { transaction: t });
-
-      await t.commit();
-      return { queue, booking };
-    } catch (error) {
-      await t.rollback();
-      throw error;
-    }
+/**
+ * Get next queue number for salon on specific date
+ */
+const getNextQueueNumber = async (salonId, bookingDate) => {
+  try {
+    const dateString = new Date(bookingDate).toISOString().split('T')[0];
+    const count = await Queue.count({
+      where: { salonId, bookingDate: dateString }
+    });
+    return count + 1;
+  } catch (error) {
+    throw error;
   }
+};
 
-  // ✅ ADMIN METHOD - All users ke bookings
-// services/booking.service.js - BookingService class mein YEHI method daalo
+/**
+ * Create Queue + Booking (transactional)
+ */
+const createBooking = async (salonId, userId, serviceId, bookingDate, queueNumber, bookingTime) => {
+  const t = await db.sequelize.transaction();
+  try {
+    // Create Queue first
+    const queue = await Queue.create({
+      salonId,
+      userId,
+      serviceId,
+      queueNumber,
+      tokenNumber: queueNumber,
+      bookingDate
+    }, { transaction: t });
 
-static async adminListBookings({
+    // Create Booking
+    const booking = await Booking.create({
+      queueId: queue.queueId, // ✅ Fixed: queue.id instead of queue.queueId
+      salonId,
+      userId,
+      serviceId,
+      bookingDate,
+      bookingStatus: 'pending',
+      bookingTime
+    }, { transaction: t });
+
+    await t.commit();
+    return { queue, booking };
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
+};
+
+/**
+ * ADMIN: List all bookings with pagination, search, status & date filters
+ */
+/**
+ * ADMIN: List all bookings with pagination & simple search (listSalons pattern)
+ */
+const adminListBookings = async ({
   page = 1, searchString = '', statusFilter = '', createdDate = '', limit
-} = {}) {
+} = {}) => {
   try {
     const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
     const safeLimit = parseInt(limit, 10) || DEFAULT_LIMIT;
@@ -89,114 +111,68 @@ static async adminListBookings({
       where.createdAt = { [Op.between]: [startOfDay, endOfDay] };
     }
 
-    // Search filter - EXACT aliases use kiye
+    // ✅ SIMPLE SEARCH like listSalons (NO Sequelize.col complexity)
+   // ✅ FIXED: Correct column names (snake_case)
     if (searchString?.trim()) {
+      const like = `%${searchString.trim()}%`;
       where[Op.or] = [
-        { '$salon.salonName$': { [Op.iLike]: `%${searchString.trim()}%` } },
-        { '$service.serviceName$': { [Op.iLike]: `%${searchString.trim()}%` } },
-        { '$user.fullName$': { [Op.iLike]: `%${searchString.trim()}%` } }
+        { '$salon.salon_name$': { [Op.iLike]: like } },      // ✅ salon_name
+        { '$service.service_name$': { [Op.iLike]: like } },   // ✅ service_name
+        { '$user.full_name$': { [Op.iLike]: like } },         // ✅ full_name
+        { '$user.phone_number$': { [Op.iLike]: like } }       // ✅ phone_number
       ];
     }
-
-    // Count
+    // ✅ FIXED: Count with SAME includes
     const totalBookings = await Booking.count({
       where,
       include: [
-        { 
-          model: db.Queue, 
-          as: 'queue', 
-          attributes: [],
-          required: false 
-        },
-        { 
-          model: db.Salon, 
-          as: 'salon', 
-          attributes: [],
-          required: true 
-        },
-        { 
-          model: db.User, 
-          as: 'user', 
-          attributes: [],
-          required: true 
-        },
-        { 
-          model: db.Service, 
-          as: 'service', 
-          attributes: [],
-          required: true 
-        }
+        { model: Queue, as: 'queue', attributes: [], required: false },
+        { model: Salon, as: 'salon', attributes: [], required: false },
+        { model: User, as: 'user', attributes: [], required: false },
+        { model: Service, as: 'service', attributes: [], required: false }
       ]
     });
 
-    // Main query - EXACT model aliases
+    // Main query
     const bookings = await Booking.findAll({
       where,
       attributes: [
-        'bookingId',
-        'bookingDate', 
-        'bookingTime', 
-        'bookingStatus',
-        'amount',
-        'createdAt'
+        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'createdAt',
+        [Sequelize.col('salon.salon_name'), 'salonName'],
+        [Sequelize.col('service.service_name'), 'serviceName'],
+        [Sequelize.col('user.full_name'), 'userName'],
+        [Sequelize.col('user.phone_number'), 'userPhone'],
+        [Sequelize.col('service.price'), 'servicePrice'],
+        [Sequelize.col('queue.queue_number'), 'queueNumber']
       ],
       include: [
-        { 
-          model: db.Queue, 
-          as: 'queue',           // ✅ EXACT model alias
-          attributes: ['queueNumber'],
-          required: false 
-        },
-        { 
-          model: db.Salon, 
-          as: 'salon',           // ✅ EXACT model alias
-          attributes: ['salonName']
-        },
-        { 
-          model: db.User, 
-          as: 'user',            // ✅ EXACT model alias
-          attributes: ['fullName', 'phoneNumber']
-        },
-        { 
-          model: db.Service, 
-          as: 'service',         // ✅ EXACT model alias
-          attributes: ['serviceName', 'price']
-        }
+        { model: Queue, as: 'queue', attributes: [] },
+        { model: Salon, as: 'salon', attributes: [] },
+        { model: User, as: 'user', attributes: [] },
+        { model: Service, as: 'service', attributes: [] }
       ],
       order: [['createdAt', 'DESC']],
       limit: safeLimit,
       offset
     });
 
-    // Transform data
-    const bookingsData = bookings.map(booking => ({
-      bookingId: booking.bookingId,
-      userName: booking.user?.fullName || '',
-      userPhone: booking.user?.phoneNumber || '',
-      salonName: booking.salon?.salonName || '',
-      serviceName: booking.service?.serviceName || '',
-      price: booking.service?.price || booking.amount || 0,
-      bookingDate: booking.bookingDate,
-      bookingTime: booking.bookingTime,
-      status: booking.bookingStatus,
-      queueNumber: booking.queue?.queueNumber || null,
-      createdAt: booking.createdAt
-    }));
-
     return {
-      bookings: bookingsData,
+      bookings,
       totalBookings,
       page,
       limit: safeLimit,
       totalPages: Math.ceil(totalBookings / safeLimit)
     };
-
   } catch (error) {
     throw error;
   }
-}
+};
 
-static async salonListBookings(salonId, { page = 1, date = '', statusFilter = '', limit } = {}) {
+
+/**
+ * SALON STAFF: List bookings for specific salon (queue order)
+ */
+const salonListBookings = async (salonId, { page = 1, date = '', statusFilter = '', limit } = {}) => {
   try {
     const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
     const safeLimit = parseInt(limit, 10) || DEFAULT_LIMIT;
@@ -204,7 +180,7 @@ static async salonListBookings(salonId, { page = 1, date = '', statusFilter = ''
 
     const where = {};
 
-    // Specific date filter (today's bookings)
+    // Specific date filter
     if (date) {
       const startOfDay = new Date(date + 'T00:00:00.000Z');
       const endOfDay = new Date(date + 'T23:59:59.999Z');
@@ -220,9 +196,9 @@ static async salonListBookings(salonId, { page = 1, date = '', statusFilter = ''
     const totalBookings = await Booking.count({
       where: { ...where, salonId },
       include: [
-        { model: db.Queue, as: 'queue', attributes: [] },
-        { model: db.User, as: 'user', attributes: [] },
-        { model: db.Service, as: 'service', attributes: [] }
+        { model: Queue, as: 'queue', attributes: [] },
+        { model: User, as: 'user', attributes: [] },
+        { model: Service, as: 'service', attributes: [] }
       ]
     });
 
@@ -231,23 +207,11 @@ static async salonListBookings(salonId, { page = 1, date = '', statusFilter = ''
       where: { ...where, salonId },
       attributes: ['bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'createdAt'],
       include: [
-        { 
-          model: db.Queue, 
-          as: 'queue', 
-          attributes: ['queueNumber']
-        },
-        { 
-          model: db.User, 
-          as: 'user', 
-          attributes: ['fullName', 'phoneNumber']
-        },
-        { 
-          model: db.Service, 
-          as: 'service', 
-          attributes: ['serviceName']
-        }
+        { model: Queue, as: 'queue', attributes: ['queueNumber'] },
+        { model: User, as: 'user', attributes: ['fullName', 'phoneNumber'] },
+        { model: Service, as: 'service', attributes: ['serviceName'] }
       ],
-      order: [['queue', 'queueNumber', 'ASC']], // Queue order
+      order: [['queue', 'queueNumber', 'ASC']],
       limit: safeLimit,
       offset
     });
@@ -271,13 +235,21 @@ static async salonListBookings(salonId, { page = 1, date = '', statusFilter = ''
       limit: safeLimit,
       totalPages: Math.ceil(totalBookings / safeLimit)
     };
-
   } catch (error) {
     throw error;
   }
-}
+};
 
-static async salonOwnerListBookings(salonId, { page = 1, date = '', statusFilter = '', searchString = '', limit } = {}) {
+/**
+ * SALON OWNER: Detailed bookings list with search & barber info
+ */
+const salonOwnerListBookings = async (salonId, { 
+  page = 1, 
+  date = '', 
+  statusFilter = '', 
+  searchString = '', 
+  limit 
+} = {}) => {
   try {
     if (!salonId) throw new Error('salonId required');
 
@@ -287,7 +259,7 @@ static async salonOwnerListBookings(salonId, { page = 1, date = '', statusFilter
 
     const where = { salonId };
 
-    // Date filter (today by default)
+    // Date filter
     if (date) {
       const startOfDay = new Date(date + 'T00:00:00.000Z');
       const endOfDay = new Date(date + 'T23:59:59.999Z');
@@ -299,12 +271,14 @@ static async salonOwnerListBookings(salonId, { page = 1, date = '', statusFilter
       where.bookingStatus = statusFilter.trim();
     }
 
-    // Search (customer/service)
+    // Search filter
     if (searchString?.trim()) {
+      const like = `%${searchString.trim()}%`;
       where[Op.or] = [
-        { '$user.fullName$': { [Op.iLike]: `%${searchString.trim()}%` } },
-        { '$user.phoneNumber$': { [Op.iLike]: `%${searchString.trim()}%` } },
-        { '$service.serviceName$': { [Op.iLike]: `%${searchString.trim()}%` } }
+        { salonName: { [Op.iLike]: like } },
+        { phoneNumber: { [Op.iLike]: like } },
+        { city: { [Op.iLike]: like } },
+        { addressLine1: { [Op.iLike]: like } }
       ];
     }
 
@@ -312,13 +286,13 @@ static async salonOwnerListBookings(salonId, { page = 1, date = '', statusFilter
     const totalBookings = await Booking.count({
       where,
       include: [
-        { model: db.Queue, as: 'queue', attributes: [] },
-        { model: db.User, as: 'user', attributes: [] },
-        { model: db.Service, as: 'service', attributes: [] }
+        { model: Queue, as: 'queue', attributes: [] },
+        { model: User, as: 'user', attributes: [] },
+        { model: Service, as: 'service', attributes: [] }
       ]
     });
 
-    // Fetch with ALL details
+    // Fetch detailed bookings
     const bookings = await Booking.findAll({
       where,
       attributes: [
@@ -326,30 +300,14 @@ static async salonOwnerListBookings(salonId, { page = 1, date = '', statusFilter
         'amount', 'serviceDuration', 'createdAt', 'updatedAt'
       ],
       include: [
-        { 
-          model: db.Queue, 
-          as: 'queue', 
-          attributes: ['queueNumber', 'tokenNumber']
-        },
-        { 
-          model: db.User, 
-          as: 'user', 
-          attributes: ['fullName', 'phoneNumber', 'email']
-        },
-        { 
-          model: db.Service, 
-          as: 'service', 
-          attributes: ['serviceName', 'price', 'duration']
-        },
-        { 
-          model: db.Barber, 
-          as: 'barber', 
-          attributes: ['fullName', 'phoneNumber']
-        }
+        { model: Queue, as: 'queue', attributes: ['queueNumber', 'tokenNumber'] },
+        { model: User, as: 'user', attributes: ['fullName', 'phoneNumber', 'email'] },
+        { model: Service, as: 'service', attributes: ['serviceName', 'price', 'duration'] },
+        { model: Barber, as: 'barber', attributes: ['fullName', 'phoneNumber'] }
       ],
       order: [
         ['bookingDate', 'ASC'],
-        [{ model: db.Queue, as: 'queue' }, 'queueNumber', 'ASC']
+        [{ model: Queue, as: 'queue' }, 'queueNumber', 'ASC']
       ],
       limit: safeLimit,
       offset
@@ -380,13 +338,18 @@ static async salonOwnerListBookings(salonId, { page = 1, date = '', statusFilter
       limit: safeLimit,
       totalPages: Math.ceil(totalBookings / safeLimit)
     };
-
   } catch (error) {
     throw error;
   }
-}
+};
 
-
-}
-
-module.exports = BookingService;
+// ✅ Export ALL functions
+module.exports = {
+  checkDuplicate,
+  verifyService,
+  getNextQueueNumber,
+  createBooking,
+  adminListBookings,
+  salonListBookings,
+  salonOwnerListBookings
+};
