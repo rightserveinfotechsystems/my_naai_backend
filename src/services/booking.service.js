@@ -469,6 +469,67 @@ const completeService = async (salonId, bookingId) => {
 };
 
 
+// services/booking.service.js - Add this
+const userListBookings = async (userId, { 
+  page = 1, 
+  statusFilter = '', 
+  date = '', 
+  limit 
+} = {}) => {
+  try {
+    const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
+    const safeLimit = parseInt(limit, 10) || DEFAULT_LIMIT;
+    const offset = (page - 1) * safeLimit;
+
+    const where = { userId };
+
+    // Date filter
+    if (date) {
+      const startOfDay = new Date(date + 'T00:00:00.000Z');
+      const endOfDay = new Date(date + 'T23:59:59.999Z');
+      where.bookingDate = { [Op.between]: [startOfDay, endOfDay] };
+    }
+
+    // Status filter
+    if (statusFilter?.trim()) {
+      where.bookingStatus = statusFilter.trim();
+    }
+
+    // Count
+    const totalBookings = await Booking.count({
+      where,
+      include: [
+        { model: Queue, as: 'queue', attributes: [] },
+        { model: Service, as: 'service', attributes: [] },
+        { model: Salon, as: 'salon', attributes: [] }
+      ]
+    });
+
+    // Fetch bookings
+    const bookings = await Booking.findAll({
+      where,
+      attributes: ['bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount'],
+      include: [
+        { model: Queue, as: 'queue', attributes: ['queueNumber', 'status'] },
+        { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
+        { model: Salon, as: 'salon', attributes: ['salonName', 'city','phoneNumber'] }
+      ],
+      order: [['bookingDate', 'DESC'], ['createdAt', 'DESC']],
+      limit: safeLimit,
+      offset
+    });
+
+    return {
+      bookings,
+      totalBookings,
+      page,
+      limit: safeLimit,
+      totalPages: Math.ceil(totalBookings / safeLimit)
+    };
+  } catch (error) {
+    throw error;
+  }
+};
 
 
 
@@ -483,5 +544,6 @@ module.exports = {
   salonListBookings,
   salonOwnerListBookings,
   getFiltersDropdownData,
-  completeService
+  completeService,
+  userListBookings
 };

@@ -15,5 +15,14 @@ const createBookingSchema = Joi.object({
   bookingTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).allow(null, '').optional(),
   amount: Joi.number().min(0).allow(null)
 });
-
-module.exports = { createBookingSchema };
+const userBookingListSchema = Joi.object({
+  // ✅ userId REQUIRED (body mein)
+  userId: Joi.string()
+    .uuid()
+    .required()
+    .messages({
+      'string.guid': 'userId must be valid UUID',
+      'any.required': 'userId is required'
+    })
+  });
+module.exports = { createBookingSchema,userBookingListSchema };

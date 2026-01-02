@@ -5,7 +5,7 @@ const completeService = async (request, response) => {
     const salonId = request.salon?.salonId || request.body.salonId;
     const { bookingId } = request.body;
 
-    console.log('🔍 Complete service:', { salonId, bookingId });  // Debug
+    console.log('🔍 Complete service:', { salonId, bookingId });  
 
     if (!salonId || !bookingId) {
       return response.status(400).json({
