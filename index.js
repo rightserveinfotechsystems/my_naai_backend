@@ -8,6 +8,8 @@ const { closeConnection, connectDb } = require("./src/database/config/db");
 const db = require("./src/database/models");
 const routes = require("./src/routes/routes");
 const errorHandler = require("./src/utils/middleware/error.middleware");
+const fs = require('fs');
+
 dotenv.config();
 
 const PORT = process.env.PORT || 8000;
@@ -18,13 +20,42 @@ const app = express();
 
 // Middleware
 app.use(cors({ origin: "*" }));
-app.use(helmet());
+app.use(
+    helmet({
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+)
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.use("/getFiles", express.static(path.join(__dirname, "")));
+
+
+// public directory path
+const publicDir = path.join(__dirname, 'public');
+
+// uploads directory path (inside public)
+const uploadsDir = path.join(publicDir, 'uploads');
+
+// create public folder if not exists
+if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir);
+    console.log('📁 public directory created');
+}
+
+// create uploads folder if not exists
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+    console.log('📁 uploads directory created inside public');
+}
+
+
+app.use("/getFiles", express.static(path.join(__dirname, ""), {
+    setHeaders: (res) => {
+        res.set("Access-Control-Allow-Origin", "*")
+    }
+}));
 
 // Routes
 app.use("/api", routes);

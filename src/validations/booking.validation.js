@@ -6,7 +6,7 @@ const createBookingSchema = Joi.object({
   serviceId: Joi.string().uuid().required(),
   barberId: Joi.string().uuid().allow(null, ''),
    bookingDate: Joi.string()
-    .pattern(/^\d{4}-\d{2}-\d{2}$/)  // "2025-12-30" format
+    .pattern(/^\d{4}-\d{2}-\d{2}$/)  // "2025-12-30" 
     .required()
      .messages({
     'date.min': 'bookingDate cannot be in the past!',

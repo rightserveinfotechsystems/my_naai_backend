@@ -86,6 +86,7 @@ const createSalonValidationSchema = Joi.object({
     isActive: Joi.boolean(),
     totalReviews: Joi.number().integer().min(0).optional(),
     ratingAverage: Joi.number().integer().min(0).max(5).optional(),
+     
 
     //services
     services: Joi.array().items(
