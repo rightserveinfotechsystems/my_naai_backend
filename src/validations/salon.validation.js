@@ -222,6 +222,14 @@ const toggleOpenCloseValidationSchema = Joi.object({
 
 
 
+/**
+ * salon service validation schema
+ */
+const salonServiceIdValidationSchema = Joi.object({
+    serviceId: Joi.string().uuid().required()
+});
+
+
 module.exports = {
     createSalonValidationSchema,
     updateSalonValidationSchema,
@@ -231,5 +239,6 @@ module.exports = {
     verifySalonOtpValidationSchema,
     salonIdValidationSchema,
     updateSalonWithDetailsAppSchema,
-    registerSalonValidationSchema
+    registerSalonValidationSchema,
+    salonServiceIdValidationSchema
 };

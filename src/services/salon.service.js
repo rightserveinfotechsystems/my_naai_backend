@@ -16,18 +16,6 @@ const createSalon = async (salonData, transaction = null) => {
 
 
 /**
- * Register salon
- */
-const registerSalon = async (salonData) => {
-    try {
-        const user = await     db.User.create(userData);
-        return user;
-    } catch (error) {
-        throw error;
-    }
-};
-
-/**
  * Get salon by ID
  */
 const getSalonById = async (salonId) => {
@@ -152,7 +140,7 @@ const getSalonBasicWithQueue = async (salonId) => {
       include: [
         // ✅ NEW: Barbers add
         {
-          model: db.Barber,         
+          model: db.Barber,
           as: 'barbers',
           where: { isActive: true },
           required: false,
@@ -180,7 +168,7 @@ const getSalonBasicWithQueue = async (salonId) => {
         }
       ],
     });
-    
+
     if (!salon) return null;
 
     // ✅ NEW: Queue number calculation
@@ -368,6 +356,30 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
 };
 
 
+/**
+ * filter api city wise
+ */
+
+const getCitiesService = async () => {
+  try {
+    const cities = await db.Salon.findAll({
+      attributes: ['city'],         
+      where: {
+        city: { [Op.ne]: null }       
+      },
+      order: [['city', 'ASC']]
+    });
+
+    // Remove duplicates manually if needed
+    const cityNames = [...new Set(cities.map(c => c.get('city')))];
+
+    return cityNames;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 
 
 /**
@@ -387,6 +399,39 @@ const hasActiveQueues = async (salonId) => {
   }
 };
 
+/**
+ * Get single service by serviceId
+ */
+const getServiceById = async (serviceId) => {
+  try {
+    const service = await db.Service.findOne({
+      where: { serviceId },
+      include: [{
+        model: db.Salon,
+        as: 'salon',
+        attributes: ['salonId', 'salonName']
+      }]
+    });
+    return service;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Delete salon service by serviceId
+ */
+const deleteSalonService = async (serviceId) => {
+  try {
+    const deletedCount = await db.Service.destroy({
+      where: { serviceId }
+    });
+    return deletedCount > 0;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   createSalon,
   getSalonById,
@@ -396,8 +441,11 @@ module.exports = {
   updateSalon,
   deleteSalon,
   listSalons,
+  getCitiesService,
   hasActiveQueues,
   syncSalonServices,
   upsertBusinessHour,
-  getSalonBasicWithQueue
+  getSalonBasicWithQueue,
+  deleteSalonService,
+  getServiceById
 };

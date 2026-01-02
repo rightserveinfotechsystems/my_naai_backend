@@ -5,6 +5,8 @@ const userRouter = require('./user.routes');
 const barberRouter = require('./barber.route');
 const bookingRouter = require('./booking.routes');
 const salonRequestRouter = require('./salonrequest.routes');
+
+
 const routes = express.Router();
 
 // Import module routes
@@ -17,5 +19,6 @@ routes.use('/users', userRouter)
 routes.use('/barbers', barberRouter)
 routes.use('/booking', bookingRouter);
 routes.use('/salonrequest',salonRequestRouter )
+
 
 module.exports = routes;
