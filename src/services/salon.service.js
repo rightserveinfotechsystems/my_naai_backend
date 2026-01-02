@@ -138,7 +138,7 @@ const getSalonBasicWithQueue = async (salonId) => {
   try {
     const salon = await db.Salon.findByPk(salonId, {
       include: [
-        // ✅ NEW: Barbers add
+        // ✅ Barbers 
         {
           model: db.Barber,
           as: 'barbers',
@@ -151,7 +151,7 @@ const getSalonBasicWithQueue = async (salonId) => {
           as: 'services',
           where: { isActive: true },
           required: false,
-          attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price'],
+          attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price', 'description'],
         },
         {
           model: db.BusinessHours,
@@ -171,16 +171,34 @@ const getSalonBasicWithQueue = async (salonId) => {
 
     if (!salon) return null;
 
-    // ✅ NEW: Queue number calculation
-    const currentQueueCount = await db.Queue.count({
+    // ✅ Queue number calculation (same)
+    // const currentQueueCount = await db.Queue.count({
+    //   where: {
+    //     salonId: salonId,
+    //     status: ['waiting', 'in_service']
+    //   }
+    // });
+
+    // ✅ NEW: Total waiting time calculation (listSalons pattern)
+    const queues = await db.Queue.findAll({
       where: {
         salonId: salonId,
-        status: ['waiting', 'in_service']
-      }
+        status: 'waiting'
+      },
+      include: [{
+        model: db.Service,
+        as: 'service',
+        required: false,
+        attributes: ['durationMinutes']
+      }],
+      attributes: ['queueNumber'],
+      order: [['queueNumber', 'ASC']]
     });
 
+    const totalMinutes = queues.reduce((sum, queue) => sum + (queue.service?.durationMinutes || 15), 0);
+
     const salonJson = salon.toJSON();
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     if (Array.isArray(salonJson.businessHours)) {
       salonJson.businessHours = salonJson.businessHours.map(bh => ({
@@ -189,14 +207,20 @@ const getSalonBasicWithQueue = async (salonId) => {
       }));
     }
 
-    // ✅ ADD queue number to response
-    salonJson.currentQueueNumber = currentQueueCount + 1;
+    // ✅ ADD queue info to response
+    // salonJson.currentQueueNumber = currentQueueCount + 1;
+    salonJson.queueLength = queues.length;
+    salonJson.totalWaitTime = {
+      minutes: totalMinutes,
+      display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+    };
 
     return salonJson;
   } catch (error) {
     throw error;
   }
 };
+
 
 
 
@@ -301,7 +325,7 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
     // ✅ 1. SALON COUNT SEPARATE KARO
     const totalSalons = await db.Salon.count({ where });
 
-    // ✅ 2. SALONS FETCH (queues ke saath)
+    // ✅ 2. SALONS FETCH
     const salons = await db.Salon.findAll({
       where,
       attributes: { exclude: ['deletedAt'] },
