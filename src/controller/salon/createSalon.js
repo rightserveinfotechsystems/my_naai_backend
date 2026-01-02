@@ -12,7 +12,9 @@ const createSalon = async (request, response) => {
 
         // Validate input
         const validationResult = createSalonValidationSchema.validate({ ...salonData, services, businessHours }, {
-            abortEarly: true
+            abortEarly: true,
+            stripUnknown: true
+
         });
 
         if (validationResult.error) {
@@ -57,6 +59,8 @@ const createSalon = async (request, response) => {
             genderType: salonData.genderType || 'UNISEX',
             state: salonData.state,
             pincode: salonData.pincode,
+            ratingAverage: Number(salonData.ratingAverage) || 0.00,
+            totalReviews: Number(salonData.totalReviews) || 0,
             latitude: salonData.latitude,
             longitude: salonData.longitude,
             imageUrl: salonData.imageUrl,

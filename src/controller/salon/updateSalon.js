@@ -54,9 +54,11 @@ const updateSalonAdmin = async (request, response) => {
             state: salonData.state,
             pincode: salonData.pincode,
             latitude: salonData.latitude,
+            ratingAverage: Number(salonData.ratingAverage) || 0.00,
+            totalReviews: Number(salonData.totalReviews) || 0,
             longitude: salonData.longitude,
             imageUrl: salonData.imageUrl,
-            isActive:salonData.isActive
+            isActive: salonData.isActive
         };
 
         await salon.update(dataToUpdate, { transaction: t });
@@ -77,7 +79,7 @@ const updateSalonAdmin = async (request, response) => {
                         serviceName: s.serviceName,
                         durationMinutes: s.durationMinutes,
                         price: Number(s.price),
-                        description: s.description 
+                        description: s.description
                     },
                     {
                         where: { serviceId: s.serviceId, salonId },
@@ -142,8 +144,8 @@ const updateSalonAdmin = async (request, response) => {
                     },
                     {
                         where: {
-                            scheduleId: bh.scheduleId,  
-                            salonId                       
+                            scheduleId: bh.scheduleId,
+                            salonId
                         },
                         transaction: t
                     }

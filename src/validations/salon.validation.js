@@ -1,30 +1,30 @@
 const Joi = require('joi');
 
 const registerSalonValidationSchema = Joi.object({
-  fullName: Joi.string().min(2).max(100).required().messages({
-    'string.empty': 'Full name is required',
-    'string.min': 'Full name must be at least 2 characters',
-    'string.max': 'Full name cannot exceed 100 characters'
-  })
-  ,
-  phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
-    'string.empty': 'Phone number is required',
-    'string.pattern.base': 'Phone number must be between 10  digits and contain only numbers'
-  }),
-  salonName: Joi.string().min(2).max(100).required().messages({
-    'string.empty': 'Full name is required',
-    'string.min': 'Full name must be at least 2 characters',
-    'string.max': 'Full name cannot exceed 100 characters'
-  }),
-   address: Joi.string().min(5).max(255).required(),
-  deviceToken: Joi.string()
-    .required()
-    .messages({
-      'any.required': 'Device token is required'
+    fullName: Joi.string().min(2).max(100).required().messages({
+        'string.empty': 'Full name is required',
+        'string.min': 'Full name must be at least 2 characters',
+        'string.max': 'Full name cannot exceed 100 characters'
+    })
+    ,
+    phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
+        'string.empty': 'Phone number is required',
+        'string.pattern.base': 'Phone number must be between 10  digits and contain only numbers'
     }),
-      otp: Joi.string()
+    salonName: Joi.string().min(2).max(100).required().messages({
+        'string.empty': 'Full name is required',
+        'string.min': 'Full name must be at least 2 characters',
+        'string.max': 'Full name cannot exceed 100 characters'
+    }),
+    address: Joi.string().min(5).max(255).required(),
+    deviceToken: Joi.string()
+        .required()
+        .messages({
+            'any.required': 'Device token is required'
+        }),
+    otp: Joi.string()
         .trim()
-        .pattern(/^\d{6}$/)  
+        .pattern(/^\d{6}$/)
         .required()
         .messages({
             'string.empty': 'OTP is required',
@@ -83,7 +83,9 @@ const createSalonValidationSchema = Joi.object({
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
-    isActive:Joi.boolean(),
+    isActive: Joi.boolean(),
+    totalReviews: Joi.number().integer().min(0).optional(),
+    ratingAverage: Joi.number().integer().min(0).max(5).optional(),
 
     //services
     services: Joi.array().items(
@@ -98,12 +100,12 @@ const createSalonValidationSchema = Joi.object({
     // businessHours
     businessHours: Joi.array().items(
         Joi.object({
-        openingTime: Joi.string().required(),
-        closingTime: Joi.string().required(),
-        breakStartTime: Joi.string().allow(null),
-        breakEndTime: Joi.string().allow(null),
-        holidayDays: Joi.array().items(Joi.number().min(0).max(6)).default([])
-    })
+            openingTime: Joi.string().required(),
+            closingTime: Joi.string().required(),
+            breakStartTime: Joi.string().allow(null),
+            breakEndTime: Joi.string().allow(null),
+            holidayDays: Joi.array().items(Joi.number().min(0).max(6)).default([])
+        })
     ).optional(),
 });
 
@@ -126,10 +128,13 @@ const updateSalonValidationSchema = Joi.object({
     longitude: Joi.number().min(-180).max(180).allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
     genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').optional(),
-    isActive:Joi.boolean(),
+    isActive: Joi.boolean(),
+    totalReviews: Joi.number().integer().min(0).optional(),
+    ratingAverage: Joi.number().integer().min(0).max(5).optional(),
 
 
-     existingServices: Joi.array().items(
+
+    existingServices: Joi.array().items(
         Joi.object({
             serviceId: Joi.string().uuid().required(),
             serviceName: Joi.string().required(),
@@ -140,18 +145,18 @@ const updateSalonValidationSchema = Joi.object({
     ).optional(),
 
     newServices: Joi.array().items(
-           Joi.object({
+        Joi.object({
             serviceName: Joi.string().required(),
             durationMinutes: Joi.number().required(),
             price: Joi.number().min(0).required(),
             description: Joi.string().optional()
         })
     ).optional(),
-   
+
 
 
     // businessHours
-    businessHours:Joi.array().items(Joi.object({
+    businessHours: Joi.array().items(Joi.object({
         scheduleId: Joi.string().uuid().required(),
         openingTime: Joi.string().required(),
         closingTime: Joi.string().required(),
@@ -159,7 +164,7 @@ const updateSalonValidationSchema = Joi.object({
         breakEndTime: Joi.string().allow(null),
         holidayDays: Joi.array().items(Joi.number().min(0).max(6)).default([])
     })
-).optional(),
+    ).optional(),
 });
 
 
