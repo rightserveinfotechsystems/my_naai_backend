@@ -7,6 +7,7 @@ const helmet = require('helmet');
 const { closeConnection, connectDb } = require("./src/database/config/db");
 const db = require("./src/database/models");
 const routes = require("./src/routes/routes");
+const errorHandler = require("./src/utils/middleware/error.middleware");
 dotenv.config();
 
 const PORT = process.env.PORT || 8000;
@@ -62,6 +63,7 @@ app.use((req, res) => {
     res.status(404).json({ message: "Route not found" });
 });
 
+app.use(errorHandler);
 // Handle shutdown gracefully by disconnecting from the database
 process.on('SIGINT', async () => {
     await closeConnection()
