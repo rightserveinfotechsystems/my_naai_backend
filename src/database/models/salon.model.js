@@ -154,6 +154,11 @@ module.exports = (sequelize) => {
             allowNull: true,
             field: 'image_url'
         },
+        imagesArray: {
+            type: DataTypes.JSONB,
+            allowNull: true,
+            default: false
+        },
         createdAt: {
             type: DataTypes.DATE,
             allowNull: false,

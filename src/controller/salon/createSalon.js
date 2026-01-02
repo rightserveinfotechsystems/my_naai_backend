@@ -63,7 +63,8 @@ const createSalon = async (request, response) => {
             totalReviews: Number(salonData.totalReviews) || 0,
             latitude: salonData.latitude,
             longitude: salonData.longitude,
-            imageUrl: salonData.imageUrl,
+            imageUrl: salonData.imagesArray[0],
+            imagesArray: salonData?.imagesArray,
             isActive: true,
             isOpen: false
         };
