@@ -2,8 +2,8 @@ const { getCitiesService } = require("../../services/salon.service");
 
 const getListFilter = async(request, resposne) => {
     try{
-        const cityList = await getCitiesService();
-
+         const { statusFilter = 'all' } = request.query;  
+        const cityList = await getCitiesService(statusFilter);
         return resposne.status(200).json({
             status:"SUCCESS",
             message: "List fetched succesfully",

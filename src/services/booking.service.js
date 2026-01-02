@@ -89,7 +89,7 @@ const createBooking = async (salonId, userId, serviceId, bookingDate, queueNumbe
  * ADMIN: List all bookings with pagination & simple search (listSalons pattern)
  */
 const adminListBookings = async ({
-  page = 1, searchString = '', statusFilter = '', createdDate = '', limit
+  page = 1, searchString = '', statusFilter = '', createdDate = '',salonFilter ='', limit
 } = {}) => {
   try {
     const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
@@ -101,7 +101,7 @@ const adminListBookings = async ({
 
     // Salon filter ✅ NEW
     if (salonFilter?.trim()) {
-      where.salonId = salonFilter.trim();  // assuming salonId is foreign key in Booking
+      where.salonId = salonFilter.trim(); 
     }
 
     // Status filter
@@ -432,7 +432,7 @@ const completeService = async (salonId, bookingId) => {
         },
         transaction: t
       });
-
+     
       let nextQueueNumberActive = null;
       if (nextQueue) {
         await Queue.update(
