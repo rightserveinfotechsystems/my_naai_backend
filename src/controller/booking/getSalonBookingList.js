@@ -2,21 +2,21 @@ const BookingService = require('../../services/booking.service');
 
 const salonGetBookingList = async (request, response) => {
     try {
-        // 👈 Salon owner ka salonId token se
-        const salonId = request.user?.salonId;
         
+        const {salonId} = request.body || {};
+
         if (!salonId) {
             return response.status(400).json({
                 status: "FAILED",
                 message: "salonId not found in token. Login again."
             });
         }
-        const { 
-            page = 1, 
-            date = '', 
-            statusFilter = '', 
+        const {
+            page = 1,
+            date = '',
+            statusFilter = '',
             searchString = '',
-            limit 
+            limit
         } = request.body || {};
 
         const result = await BookingService.salonOwnerListBookings(salonId, {
@@ -54,7 +54,7 @@ const salonGetBookingList = async (request, response) => {
         });
 
     } catch (error) {
-        console.error('❌ Salon owner bookings error:', error);
+        console.error('Salon owner bookings error:', error);
         return response.status(500).json({
             status: "FAILED",
             message: error.message

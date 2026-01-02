@@ -7,6 +7,7 @@ const adminGetBookingList = async (request, response) => {
             page = 1, 
             searchString = '', 
             statusFilter = '', 
+             salonFilter = '', 
             createdDate = '', 
             limit 
         } = request.body || {};
