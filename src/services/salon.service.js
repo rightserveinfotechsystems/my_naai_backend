@@ -360,17 +360,26 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
  * filter api city wise
  */
 
-const getCitiesService = async () => {
+const getCitiesService = async (statusFilter = 'all') => {  // ✅ Default 'all'
   try {
+    const where = {
+      city: { [Op.ne]: null }
+    };
+
+    // ✅ NEW: Optional Active/Inactive filter
+    if (statusFilter === 'active') {
+      where.isActive = true;
+    } else if (statusFilter === 'inactive') {
+      where.isActive = false;
+    }
+    // 'all' or no param → All cities (existing behavior)
+
     const cities = await db.Salon.findAll({
       attributes: ['city'],         
-      where: {
-        city: { [Op.ne]: null }       
-      },
+      where,
       order: [['city', 'ASC']]
     });
 
-    // Remove duplicates manually if needed
     const cityNames = [...new Set(cities.map(c => c.get('city')))];
 
     return cityNames;
@@ -378,6 +387,7 @@ const getCitiesService = async () => {
     throw error;
   }
 };
+
 
 
 
