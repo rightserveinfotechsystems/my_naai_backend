@@ -301,7 +301,7 @@ const deleteSalon = async (salonId) => {
 /**
  * List salons with pagination
  */
-const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL' }) => {
+const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL', statusFilter = 'all' }) => {
   try {
     const offset = (page - 1) * limit;
     const where = {};
@@ -320,6 +320,13 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
     // ✅ City filter
     if (cityFilter !== 'ALL') {
       where.city = { [Op.iLike]: `%${cityFilter}%` };
+    }
+
+    // 👇 STATUS FILTER ADD:
+    if (statusFilter === 'active') {
+      where.isActive = true;
+    } else if (statusFilter === 'inactive') {
+      where.isActive = false;
     }
 
     // ✅ 1. SALON COUNT SEPARATE KARO
@@ -399,7 +406,7 @@ const getCitiesService = async (statusFilter = 'all') => {  // ✅ Default 'all'
     // 'all' or no param → All cities (existing behavior)
 
     const cities = await db.Salon.findAll({
-      attributes: ['city'],         
+      attributes: ['city'],
       where,
       order: [['city', 'ASC']]
     });
