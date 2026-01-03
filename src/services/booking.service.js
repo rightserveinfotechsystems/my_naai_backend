@@ -82,8 +82,8 @@ const createBooking = async (salonId, userId, serviceId, bookingDate, queueNumbe
   }
 };
 
-// ✅ CORRECT - Remove 'static'
-const verifyBarber = async (salonId, barberId) => {  // 👈 Remove static
+// CORRECT - Remove 
+const verifyBarber = async (salonId, barberId) => { 
   try {
     return await db.Barber.findOne({
       where: { barberId, salonId },
