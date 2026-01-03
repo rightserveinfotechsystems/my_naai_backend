@@ -82,10 +82,20 @@ const createSalonValidationSchema = Joi.object({
     }),
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
-    imageUrl: Joi.string().uri().allow(null, ''),
+    imageUrl: Joi.string().allow(null, ''),
     isActive: Joi.boolean(),
     totalReviews: Joi.number().integer().min(0).optional(),
     ratingAverage: Joi.number().integer().min(0).max(5).optional(),
+    imagesArray: Joi.array()  .items(
+        Joi.string()
+            .pattern(/\.jpe?g$|\.png$|\.webp$/i)  // jpg, jpeg, png, webp only
+            .max(500)
+            .required()
+    ).min(1) .max(20).required().messages({
+            'array.min': 'At least 1 image required',
+            'array.max': 'Maximum 20 images allowed',
+            'array.includes': 'All images must be valid URLs'
+        }),
      
 
     //services
@@ -127,7 +137,10 @@ const updateSalonValidationSchema = Joi.object({
     pincode: Joi.string().pattern(/^[0-9]{6}$/),
     latitude: Joi.number().min(-90).max(90).allow(null),
     longitude: Joi.number().min(-180).max(180).allow(null),
-    imageUrl: Joi.string().uri().allow(null, ''),
+    imageUrl: Joi.string().allow(null, ''),
+    imagesArray: Joi.array()
+    .items(Joi.string().pattern(/\.jpe?g$|\.png$|\.webp$/i))
+    .optional(),
     genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').optional(),
     isActive: Joi.boolean(),
     totalReviews: Joi.number().integer().min(0).optional(),

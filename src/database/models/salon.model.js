@@ -157,7 +157,7 @@ module.exports = (sequelize) => {
         imagesArray: {
             type: DataTypes.JSONB,
             allowNull: true,
-            default: false
+            default: []
         },
         createdAt: {
             type: DataTypes.DATE,
