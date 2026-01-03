@@ -3,10 +3,15 @@ const { getCitiesService } = require("../../services/salon.service");
 const getListFilter = async(request, resposne) => {
     try{
          const { statusFilter = 'all' } = request.query;  
-        const cityList = await getCitiesService(statusFilter);
+        const cityList = await getCitiesService(statusFilter.toLowerCase());
+
+           const isEmpty = cityList.length === 0;
+
         return resposne.status(200).json({
             status:"SUCCESS",
-            message: "List fetched succesfully",
+             message: isEmpty 
+              ? `No cities found for ${statusFilter || 'all'} status`
+              : "List fetched successfully",
             data :cityList
         });   
     }

@@ -28,7 +28,7 @@ salonRouter.post('/login', verifySalonOtpLogin);
 salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
 salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
 
-//user login
+//user login   
 salonRouter.post('/salon-list',authenticateUser, listSalonsApp);
 salonRouter.post('/get-salon-by-id',authenticateUser, getSalonByIdUser);
 salonRouter.get('/get-city-list',authenticateUser,getCityFilterUser )

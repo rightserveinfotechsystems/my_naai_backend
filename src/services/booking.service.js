@@ -513,7 +513,8 @@ const userListBookings = async (userId, {
       include: [
         { model: Queue, as: 'queue', attributes: [] },
         { model: Service, as: 'service', attributes: [] },
-        { model: Salon, as: 'salon', attributes: [] }
+        { model: Salon, as: 'salon', attributes: [] },
+          { model: Barber, as: 'barber', attributes: ['fullName']}
       ]
     });
 

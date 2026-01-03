@@ -8,13 +8,16 @@ const listSalonsApp = async (request, response) => {
         const cityFilter = request.body.cityFilter || 'ALL';
 
         const result = await salonService.listSalons({ page, limit, searchString, cityFilter });
+         const message = result.totalSalons > 0 
+            ? 'Salons fetched successfully'
+            : 'No matching salons found';
 
         return response.status(200).json({
             status: 'SUCCESS',
-            message: 'Salons fetched successfully',
+            message,
             data: result.salons,
             pagination: {
-                total: result.total,
+                total: result.totalSalons,
                 page: result.page,
                 limit: result.limit,
                 totalPages: result.totalPages

@@ -144,7 +144,7 @@ const getSalonBasicWithQueue = async (salonId) => {
           as: 'barbers',
           where: { isActive: true },
           required: false,
-          attributes: ['barberId', 'fullName', 'specialization', 'isAvailable'],
+          attributes: ['barberId', 'fullName','profileImageUrl', 'specialization', 'isAvailable', 'ratingAverage','currentStatus','estimatedFinishTime'],
         },
         {
           model: db.Service,
@@ -171,13 +171,7 @@ const getSalonBasicWithQueue = async (salonId) => {
 
     if (!salon) return null;
 
-    // ✅ Queue number calculation (same)
-    // const currentQueueCount = await db.Queue.count({
-    //   where: {
-    //     salonId: salonId,
-    //     status: ['waiting', 'in_service']
-    //   }
-    // });
+
 
     // ✅ NEW: Total waiting time calculation (listSalons pattern)
     const queues = await db.Queue.findAll({
@@ -391,7 +385,7 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
  * filter api city wise
  */
 
-const getCitiesService = async (statusFilter = 'all') => {  // ✅ Default 'all'
+const getCitiesService = async (statusFilter = 'all') => {  
   try {
     const where = {
       city: { [Op.ne]: null }
@@ -419,6 +413,28 @@ const getCitiesService = async (statusFilter = 'all') => {  // ✅ Default 'all'
   }
 };
 
+// ✅ USER SERVICE  filter api city wise
+const getCitySalonsService = async (statusFilter = 'all') => {
+    try {
+        // ✅ User view: Only active salons + No status filter needed
+        const where = { 
+            city: { [Op.ne]: null },
+            isActive: true  // Only active salons for users
+        };
+
+        // statusFilter ignore (user ko inactive nahi dikhana)
+        const cities = await db.Salon.findAll({
+            attributes: ['city'],
+            where,
+            order: [['city', 'ASC']]
+        });
+
+        const cityNames = [...new Set(cities.map(c => c.get('city')))];
+        return cityNames;
+    } catch (error) {
+        throw error;
+    }
+};
 
 
 
@@ -488,5 +504,6 @@ module.exports = {
   upsertBusinessHour,
   getSalonBasicWithQueue,
   deleteSalonService,
-  getServiceById
+  getServiceById,
+  getCitySalonsService
 };

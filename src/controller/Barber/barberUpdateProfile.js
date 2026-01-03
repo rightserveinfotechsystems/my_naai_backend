@@ -4,7 +4,7 @@ const barberService = require("../../services/barber.service");
 const updateBarber = async (request, response) => {
   try {
     // 1) Extract data from request body
-    const { barberId, phoneNumber, fullName, email, profileImageUrl } = request.body;
+    const { barberId, phoneNumber, fullName, email, profileImageUrl, ratingAverage } = request.body;
 
     // 2) Validate input
     const validationResult = await updateBarberValidationSchema.validate(
@@ -13,6 +13,7 @@ const updateBarber = async (request, response) => {
         phoneNumber,
         fullName,
         email,
+        ratingAverage,
         profileImageUrl
       },
       { abortEarly: true }
@@ -75,6 +76,10 @@ const updateBarber = async (request, response) => {
     if (validData.email) {
       dataToUpdate.email = validData.email.toLowerCase().trim();
     }
+    if (validData.ratingAverage !== undefined) {
+      dataToUpdate.ratingAverage = parseFloat(validData.ratingAverage).toFixed(2);
+      console.log('Rating converted:', dataToUpdate.ratingAverage); 
+    }
 
     if (validData.profileImageUrl !== undefined) {
       dataToUpdate.profileImageUrl = validData.profileImageUrl;
@@ -94,7 +99,8 @@ const updateBarber = async (request, response) => {
           phoneNumber: updatesBarber.phoneNumber,
           fullName: updatesBarber.fullName,
           email: updatesBarber.email,
-          profileImageUrl: updatesBarber.profileImageUrl,
+          profileImageUrl: updatesBarber?.profileImageUrl,
+          ratingAverage: updatesBarber.ratingAverage,
           isActive: updatesBarber.isActive,
           isVerified: updatesBarber.isVerified
         }
@@ -106,7 +112,7 @@ const updateBarber = async (request, response) => {
       message: 'Failed to update barber, please try again!'
     });
   } catch (error) {
-       console.error('Update Error:', error);
+    console.error('Update Error:', error);
     return response.status(500).json({
       status: 'FAILED',
       message: error.message

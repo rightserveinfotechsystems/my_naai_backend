@@ -67,9 +67,13 @@ const updateBarberValidationSchema = Joi.object({
     .messages({
       'string.email': 'Must be a valid email address'
     }),
+  ratingAverage: Joi.number()
+    .min(0)
+    .max(5)
+    .precision(2)
+    .optional(),
 
-  profileImageUrl: Joi.string()
-    .uri().optional()
+  profileImageUrl: Joi.string().optional()
 });
 
 /**
@@ -88,6 +92,30 @@ const toggleAvailabilityValidationSchema = Joi.object({
     isAvailable: Joi.boolean().required()
 });
 
+// const updateBarberStatusSchema = Joi.object({
+//     barberId: Joi.string().uuid().required(), 
+//   currentStatus: Joi.string()
+//     .valid('available', 'busy', 'break')
+//     .required()
+//     .messages({
+//       'any.only': 'Status must be available, busy, or break'
+//     }),
+//   estimatedFinishTime: Joi.string()
+//     .pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/)
+//     .optional()
+//     .allow(null)
+//     .messages({
+//       'string.pattern.base': 'Invalid time format (HH:MM:SS)'
+//     }),
+//     currentStatus: Joi.string().valid('available', 'busy', 'break').required(),
+//   busyMinutes: Joi.number().integer().min(0).max(240).required()  // 0-4 hours
+// });
+const updateBarberStatusSchema = Joi.object({
+  salonId: Joi.string().uuid().required(),
+  barberId: Joi.string().uuid().required(),
+  currentStatus: Joi.string().valid('available', 'busy', 'break').required(),
+  busyMinutes: Joi.number().integer().min(0).max(240).required()  
+});
 
 
 module.exports = {
@@ -97,5 +125,6 @@ module.exports = {
     barberIdValidationSchema,
     updateBarberValidationSchema,
     toggleStatusValidationSchema,
-    toggleAvailabilityValidationSchema
+    toggleAvailabilityValidationSchema,
+    updateBarberStatusSchema
 };

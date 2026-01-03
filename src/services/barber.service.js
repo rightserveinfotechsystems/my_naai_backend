@@ -82,7 +82,7 @@ const getBarberById = async (barberId) => {
 };
 
 /**
- * Update salon
+ * Update barber
  */
 const updateBarber = async (barberId, updateData) => {
     try {
@@ -102,52 +102,53 @@ const updateBarber = async (barberId, updateData) => {
  */
 
 const getBarbersList = async ({ page = 1, searchString = '' }) => {
-    try {
-        const limit = DEFAULT_LIMIT;
-        const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
-        const offset = (safePage - 1) * limit;
+  try {
+    const limit = DEFAULT_LIMIT;
+    const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+    const offset = (safePage - 1) * limit;
 
-        const where = {};
+    const where = {};
 
-        if (searchString = (searchString?.trim())) {
-            const like = `%${searchString}%`;
-            where[Op.or] = [
-                { fullName: { [Op.iLike]: like } },
-                { phoneNumber: { [Op.iLike]: like } },
-                { email: { [Op.iLike]: like } },
-            ];
-        }
-
-        const { count: totalBarbers, rows: barbers } = await db.Barber.findAndCountAll({
-            where,
-            attributes: [
-                'barberId',
-                'fullName',
-                'phoneNumber',
-                'email',
-                'profileImageUrl'
-            ],
-            limit,
-            offset,
-        });
-
-        const totalPages = Math.ceil(totalBarbers / limit) || 1;
-
-        const result = {
-            barbers,
-            pagination: {
-                page: safePage,
-                limit,
-                totalBarbers,
-                totalPages,
-            },
-        };
-        return result;
-    } catch (error) {
-        console.error(error);
-        throw error;
+    // ✅ FIXED: = → ? (Critical bug fix)
+    if (searchString?.trim()) {
+      const like = `%${searchString.trim()}%`;
+      where[Op.or] = [
+        { fullName: { [Op.iLike]: like } },
+        { phoneNumber: { [Op.iLike]: like } },
+        { email: { [Op.iLike]: like } },
+      ];
     }
+
+    const { count: totalBarbers, rows: barbers } = await db.Barber.findAndCountAll({
+      where,
+      attributes: [
+        'barberId',
+        'fullName',  
+        'phoneNumber',
+        'email',
+        'profileImageUrl'
+      ],
+      limit,
+      offset,
+    });
+
+    const totalPages = Math.ceil(totalBarbers / limit) || 1;
+
+    return {
+      barbers: barbers.map(b => b.toJSON()),  // ✅ Clean JSON
+      pagination: {
+        page: safePage,
+        limit,
+        totalBarbers,
+        totalPages,
+      },
+    };
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
 };
+
 
 /**
  * Check if barber has active bookings
@@ -259,6 +260,31 @@ const updateBarberAvailability = async (barberId, isAvailable) => {
     }
 };
 
+/**
+ * Toggle barber status
+ */
+
+const updateBarberStatus = async (barberId, salonId, updateData) => {
+  const { currentStatus, busyMinutes } = updateData;
+  const now = new Date();
+  
+  
+  let estimatedFinishTime = null;
+  if (currentStatus === 'busy' && busyMinutes) {
+    const finishTime = new Date(now.getTime() + busyMinutes * 60 * 1000);
+    estimatedFinishTime = finishTime.toTimeString().slice(0, 8); // "17:30:00"
+  }
+  
+  return await db.Barber.update({
+    currentStatus,
+    statusUpdatedAt: now,
+    estimatedFinishTime  
+  }, {
+    where: { barberId, salon_id: salonId, is_active: true }
+  });
+};
+
+
 
 module.exports = {
     getBarberByPhoneNumber,
@@ -271,5 +297,6 @@ module.exports = {
     hasActiveBookings,
     hasActiveQueues,
     deleteBarber,
-    updateBarberAvailability
+    updateBarberAvailability,
+    updateBarberStatus
 };
