@@ -82,6 +82,18 @@ const createBooking = async (salonId, userId, serviceId, bookingDate, queueNumbe
   }
 };
 
+// ✅ CORRECT - Remove 'static'
+const verifyBarber = async (salonId, barberId) => {  // 👈 Remove static
+  try {
+    return await db.Barber.findOne({
+      where: { barberId, salonId },
+      attributes: ['fullName']
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
 /**
  * ADMIN: List all bookings with pagination, search, status & date filters
  */
@@ -545,5 +557,6 @@ module.exports = {
   salonOwnerListBookings,
   getFiltersDropdownData,
   completeService,
-  userListBookings
+  userListBookings,
+  verifyBarber
 };
