@@ -69,6 +69,17 @@ const createBooking = async (request, response) => {
       bookingTime 
     );
 
+// Controller में ये add (service verify के बाद)
+const barber = await BookingService.verifyBarber(salonId, barberId);  // 👈 Now works
+if (!barber) {
+  return response.status(400).json({
+    status: "FAILED",
+    message: "Invalid barber for this salon"
+  });
+}
+
+
+
     //  Success response
     return response.status(200).json({
       status: "SUCCESS",
@@ -78,6 +89,7 @@ const createBooking = async (request, response) => {
         queueNumber: nextQueueNumber,
         bookingDate,
         bookingTime,
+         barberName: barber?.fullName || barber?.barberName,
         serviceName: service?.serviceName,
         amount: service?.price
       }
