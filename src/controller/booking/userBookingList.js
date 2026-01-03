@@ -44,6 +44,7 @@ const userGetBookingList = async (request, response) => {
       amount: parseFloat(booking.amount || 0).toFixed(2),
       bookingDate: booking.bookingDate,
       bookingTime: booking.bookingTime,
+       barberName: booking.barber?.fullName,
       status: booking.bookingStatus
    
     }));

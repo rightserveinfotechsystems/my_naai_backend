@@ -40,7 +40,7 @@ module.exports = (sequelize) => {
         email: {
             type: DataTypes.STRING(100),
             allowNull: true,
-             unique: {
+            unique: {
                 name: 'unique_email',
                 msg: 'Email already exists'
             },
@@ -95,6 +95,21 @@ module.exports = (sequelize) => {
             type: DataTypes.DATE,
             allowNull: true,
             field: 'last_login'
+        },
+        currentStatus: {
+            type: DataTypes.ENUM('available', 'busy', 'break'),
+            defaultValue: 'available',
+            field: 'current_status'
+        },
+        statusUpdatedAt: {
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW,
+            field: 'status_updated_at'
+        },
+        estimatedFinishTime: {
+            type: DataTypes.TIME,
+            allowNull: true,
+            field: 'estimated_finish_time'
         },
         deletedAt: {
             type: DataTypes.DATE,
