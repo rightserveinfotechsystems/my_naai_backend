@@ -24,7 +24,7 @@ const completeService = async (request, response) => {
     });
 
   } catch (error) {
-    console.error('❌ Complete service error:', error);
+    console.error('Complete service error:', error);
     return response.status(500).json({
       status: "FAILED",
       message: error.message

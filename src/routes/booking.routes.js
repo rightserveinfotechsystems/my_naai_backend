@@ -27,7 +27,7 @@ bookingRouter.get('/get-all-list', authenticateAdmin, adminGetAllBookings);
 
 
 bookingRouter.post('/get-booking-list', authenticateSalon, salonGetBookingList);
-bookingRouter.post('/service-complete', authenticateSalon, completeService);
+bookingRouter.post('/booking-complete', authenticateSalon, completeService);
 
 
 module.exports = bookingRouter;
