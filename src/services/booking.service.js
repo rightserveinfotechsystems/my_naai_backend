@@ -95,8 +95,58 @@ const verifyBarber = async (salonId, barberId) => {
 };
 
 /**
- * ADMIN: List all bookings with pagination, search, status & date filters
+ * ADMIN: List all bookings without pagination, search, status & date filters
  */
+
+
+const adminListAllBookings = async () => {
+  try {
+    const where = {};
+    
+    // No filters, no search, no pagination
+
+    const totalBookings = await Booking.count({
+      where,
+      include: [
+        { model: Queue, as: 'queue', attributes: [], required: false },
+        { model: Salon, as: 'salon', attributes: [], required: false },
+        { model: User, as: 'user', attributes: [], required: false },
+        { model: Service, as: 'service', attributes: [], required: false }
+      ]
+    });
+
+    const bookings = await db.Booking.findAll({
+      where,
+      attributes: [
+        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'createdAt',
+        [Sequelize.col('salon.salon_name'), 'salonName'],
+        [Sequelize.col('service.service_name'), 'serviceName'],
+        [Sequelize.col('user.full_name'), 'userName'],
+        [Sequelize.col('user.phone_number'), 'userPhone'],
+        [Sequelize.col('service.price'), 'servicePrice'],
+        [Sequelize.col('queue.queue_number'), 'queueNumber']
+      ],
+      include: [
+        { model: Queue, as: 'queue', attributes: [] },
+        { model: Salon, as: 'salon', attributes: [] },
+        { model: User, as: 'user', attributes: [] },
+        { model: Service, as: 'service', attributes: [] }
+      ],
+      order: [['createdAt', 'DESC']]
+      // No limit, no offset
+    });
+
+    return {
+      bookings,
+      totalBookings
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
 /**
  * ADMIN: List all bookings with pagination & simple search (listSalons pattern)
  */
@@ -559,5 +609,6 @@ module.exports = {
   getFiltersDropdownData,
   completeService,
   userListBookings,
-  verifyBarber
+  verifyBarber,
+  adminListAllBookings
 };
