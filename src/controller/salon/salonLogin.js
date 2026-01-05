@@ -1,7 +1,7 @@
 const salonService = require('../../services/salon.service');
 const { verifySalonOtpValidationSchema } = require('../../validations/salon.validation');
 const { generateToken } = require('../../utils/middleware/token.util');
-
+const db = require('../../database/models');
 
 const verifySalonOtpLogin = async (request, response) => {
     try {
