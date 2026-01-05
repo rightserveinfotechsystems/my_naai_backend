@@ -50,7 +50,7 @@ const getNextQueueNumber = async (salonId, bookingDate) => {
 /**
  * Create Queue + Booking (transactional)
  */
-const createBooking = async (salonId, userId, serviceId, bookingDate, queueNumber, bookingTime) => {
+const createBooking = async (salonId, userId, serviceId, bookingDate, queueNumber, bookingTime, barberId) => {
   const t = await db.sequelize.transaction();
   try {
     // Create Queue first
@@ -60,7 +60,8 @@ const createBooking = async (salonId, userId, serviceId, bookingDate, queueNumbe
       serviceId,
       queueNumber,
       tokenNumber: queueNumber,
-      bookingDate
+      bookingDate,
+      barberId
     }, { transaction: t });
 
     // Create Booking
@@ -68,10 +69,11 @@ const createBooking = async (salonId, userId, serviceId, bookingDate, queueNumbe
       queueId: queue.queueId, // ✅ Fixed: queue.id instead of queue.queueId
       salonId,
       userId,
+      barberId,
       serviceId,
       bookingDate,
       bookingStatus: 'pending',
-      bookingTime
+      bookingTime,
     }, { transaction: t });
 
     await t.commit();
@@ -83,7 +85,7 @@ const createBooking = async (salonId, userId, serviceId, bookingDate, queueNumbe
 };
 
 // CORRECT - Remove 
-const verifyBarber = async (salonId, barberId) => { 
+const verifyBarber = async (salonId, barberId) => {
   try {
     return await db.Barber.findOne({
       where: { barberId, salonId },
@@ -102,7 +104,7 @@ const verifyBarber = async (salonId, barberId) => {
 const adminListAllBookings = async () => {
   try {
     const where = {};
-    
+
     // No filters, no search, no pagination
 
     const totalBookings = await Booking.count({
@@ -133,7 +135,7 @@ const adminListAllBookings = async () => {
         { model: Service, as: 'service', attributes: [] }
       ],
       order: [['createdAt', 'DESC']]
-      // No limit, no offset
+
     });
 
     return {
@@ -151,7 +153,7 @@ const adminListAllBookings = async () => {
  * ADMIN: List all bookings with pagination & simple search (listSalons pattern)
  */
 const adminListBookings = async ({
-  page = 1, searchString = '', statusFilter = '', createdDate = '',salonFilter ='', limit
+  page = 1, searchString = '', statusFilter = '', bookingDate = '', salonFilter = '', limit
 } = {}) => {
   try {
     const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
@@ -162,8 +164,11 @@ const adminListBookings = async ({
 
 
     // Salon filter ✅ NEW
+    // ✅ FIXED: salon_name LIKE '%urban%'
     if (salonFilter?.trim()) {
-      where.salonId = salonFilter.trim(); 
+      where['$salon.salon_name$'] = {
+        [Op.iLike]: `%${salonFilter.trim()}%`
+      };
     }
 
     // Status filter
@@ -172,11 +177,18 @@ const adminListBookings = async ({
     }
 
     // Created date filter
-    if (createdDate) {
-      const startOfDay = new Date(createdDate + 'T00:00:00.000Z');
-      const endOfDay = new Date(createdDate + 'T23:59:59.999Z');
-      where.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+    // if (createdDate) {
+    //   const startOfDay = new Date(createdDate + 'T00:00:00.000Z');
+    //   const endOfDay = new Date(createdDate + 'T23:59:59.999Z');
+    //   where.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+    // }
+
+    // Booking date filter 
+    if (bookingDate) {
+      where.bookingDate = bookingDate;  // ✅ Exact string match for DATE
+     
     }
+
 
     // ✅ SIMPLE SEARCH like listSalons (NO Sequelize.col complexity)
     // ✅ FIXED: Correct column names (snake_case)
@@ -398,7 +410,7 @@ const getFiltersDropdownData = async () => {
     const salons = await Salon.findAll({
       attributes: ['salonId', 'salon_name'],
       order: [['salon_name', 'ASC']],
-      where: { isActive: true }  
+      where: { isActive: true }
     });
 
     // Statuses
@@ -427,19 +439,19 @@ const getFiltersDropdownData = async () => {
 const completeService = async (salonId, bookingId) => {
   try {
     console.log('🔍 completeService:', { salonId, bookingId });
-    
+
     // 1. Find booking + queue details FIRST
     const booking = await Booking.findOne({
-      where: { 
-        bookingId, 
+      where: {
+        bookingId,
         salonId,
         bookingStatus: 'pending'
       },
       include: [
-        { 
-          model: Queue, 
-          as: 'queue', 
-          attributes: ['queueId', 'queueNumber', 'status'] 
+        {
+          model: Queue,
+          as: 'queue',
+          attributes: ['queueId', 'queueNumber', 'status']
         }
       ]
     });
@@ -459,52 +471,52 @@ const completeService = async (salonId, bookingId) => {
     try {
       // 2. Update booking → completed
       await Booking.update(
-        { 
+        {
           bookingStatus: 'completed',
           updatedAt: new Date()
         },
-        { 
+        {
           where: { bookingId, salonId },
-          transaction: t 
+          transaction: t
         }
       );
 
       // 3. Current queue → completed
       await Queue.update(
-        { 
+        {
           status: 'completed',
           completedAt: new Date()
         },
-        { 
-          where: { 
+        {
+          where: {
             queueId: booking.queue.queueId,  // ✅ From findOne result
-            salonId 
+            salonId
           },
-          transaction: t 
+          transaction: t
         }
       );
 
       // 4. Next queue → in_service
       const nextQueueNumber = booking.queue.queueNumber + 1;
       const nextQueue = await Queue.findOne({
-        where: { 
-          salonId, 
+        where: {
+          salonId,
           queueNumber: nextQueueNumber,
           status: 'waiting'
         },
         transaction: t
       });
-     
+
       let nextQueueNumberActive = null;
       if (nextQueue) {
         await Queue.update(
-          { 
+          {
             status: 'in_service',
             calledAt: new Date()
           },
-          { 
+          {
             where: { queueId: nextQueue.queueId },
-            transaction: t 
+            transaction: t
           }
         );
         nextQueueNumberActive = nextQueueNumber;
@@ -532,11 +544,11 @@ const completeService = async (salonId, bookingId) => {
 
 
 // services/booking.service.js - Add this
-const userListBookings = async (userId, { 
-  page = 1, 
-  statusFilter = '', 
-  date = '', 
-  limit 
+const userListBookings = async (userId, {
+  page = 1,
+  statusFilter = '',
+  date = '',
+  limit
 } = {}) => {
   try {
     const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
@@ -564,7 +576,7 @@ const userListBookings = async (userId, {
         { model: Queue, as: 'queue', attributes: [] },
         { model: Service, as: 'service', attributes: [] },
         { model: Salon, as: 'salon', attributes: [] },
-          { model: Barber, as: 'barber', attributes: ['fullName']}
+        { model: Barber, as: 'barber', attributes: ['fullName'] }
       ]
     });
 
@@ -575,13 +587,15 @@ const userListBookings = async (userId, {
       include: [
         { model: Queue, as: 'queue', attributes: ['queueNumber', 'status'] },
         { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
-        { model: Salon, as: 'salon', attributes: ['salonName', 'city','phoneNumber'] }
+        { model: Salon, as: 'salon', attributes: ['salonName', 'city', 'phoneNumber'] },
+
+        { model: Barber, as: 'barber', attributes: ['fullName'] }
       ],
       order: [['bookingDate', 'DESC'], ['createdAt', 'DESC']],
       limit: safeLimit,
       offset
     });
-
+    console.log('Raw booking data:', JSON.stringify(bookings[0]?.toJSON(), null, 2));
     return {
       bookings,
       totalBookings,

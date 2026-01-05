@@ -66,10 +66,11 @@ const createBooking = async (request, response) => {
       serviceId, 
       bookingDate, 
       nextQueueNumber,
-      bookingTime 
+      bookingTime,
+      barberId
     );
 
-// Controller में ये add (service verify के बाद)
+
 const barber = await BookingService.verifyBarber(salonId, barberId);  // 👈 Now works
 if (!barber) {
   return response.status(400).json({
