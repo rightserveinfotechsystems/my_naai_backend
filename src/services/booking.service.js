@@ -1,6 +1,7 @@
 const db = require('../database/models');
 const { Booking, Queue, Service, Salon, User, Barber } = db;
 const { Op, Sequelize } = require('sequelize');
+const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
 
 /**
  * Check duplicate booking (user + salon + date)
@@ -153,12 +154,12 @@ const adminListAllBookings = async () => {
  * ADMIN: List all bookings with pagination & simple search (listSalons pattern)
  */
 const adminListBookings = async ({
-  page = 1, searchString = '', statusFilter = '', bookingDate = '', salonFilter = '', limit
+  page = 1, searchString = '', statusFilter = '', bookingDate = '', salonFilter = ''
 } = {}) => {
   try {
-    const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
-    const safeLimit = parseInt(limit, 10) || DEFAULT_LIMIT;
-    const offset = (page - 1) * safeLimit;
+    const limit = DEFAULT_LIMIT;
+    const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+    const offset = (safePage - 1) * limit;
 
     const where = {};
 
@@ -176,22 +177,14 @@ const adminListBookings = async ({
       where.bookingStatus = statusFilter.trim();
     }
 
-    // Created date filter
-    // if (createdDate) {
-    //   const startOfDay = new Date(createdDate + 'T00:00:00.000Z');
-    //   const endOfDay = new Date(createdDate + 'T23:59:59.999Z');
-    //   where.createdAt = { [Op.between]: [startOfDay, endOfDay] };
-    // }
-
     // Booking date filter 
     if (bookingDate) {
       where.bookingDate = bookingDate;  // ✅ Exact string match for DATE
-     
+
     }
 
 
-    // ✅ SIMPLE SEARCH like listSalons (NO Sequelize.col complexity)
-    // ✅ FIXED: Correct column names (snake_case)
+    // ✅ SIMPLE SEARCH like listSalons
     if (searchString?.trim()) {
       const like = `%${searchString.trim()}%`;
       where[Op.or] = [
@@ -231,7 +224,7 @@ const adminListBookings = async ({
         { model: Service, as: 'service', attributes: [] }
       ],
       order: [['createdAt', 'DESC']],
-      limit: safeLimit,
+      limit,
       offset
     });
 
@@ -239,8 +232,8 @@ const adminListBookings = async ({
       bookings,
       totalBookings,
       page,
-      limit: safeLimit,
-      totalPages: Math.ceil(totalBookings / safeLimit)
+      limit,
+      totalPages: Math.ceil(totalBookings / limit)
     };
   } catch (error) {
     throw error;

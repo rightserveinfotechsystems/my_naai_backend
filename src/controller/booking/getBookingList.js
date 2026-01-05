@@ -45,7 +45,7 @@ const adminGetBookingList = async (request, response) => {
             pagination: {
                 total: 0,
                 page,
-                limit: parseInt(limit) || 10,
+                limit:20,
                 totalPages: 0
             }
         });
