@@ -9,6 +9,7 @@ const adminGetBookingList = require('../controller/booking/getBookingList');
 const getFiltersDropdown = require('../controller/booking/getFiltersDropdown');
 const { completeService } = require('../controller/booking/completeService');
 const userGetBookingList = require('../controller/booking/userBookingList');
+const adminGetAllBookings = require('../controller/booking/adminGetAllBookings');
 
 
 
@@ -21,6 +22,9 @@ bookingRouter.post('/get-list', authenticateUser, userGetBookingList);
 
 bookingRouter.post('/list', authenticateAdmin, adminGetBookingList);
 bookingRouter.get('/filter-list', authenticateAdmin, getFiltersDropdown);
+bookingRouter.get('/get-all-list', authenticateAdmin, adminGetAllBookings);
+
+
 
 bookingRouter.post('/get-booking-list', authenticateSalon, salonGetBookingList);
 bookingRouter.post('/service-complete', authenticateSalon, completeService);
