@@ -30,7 +30,7 @@ module.exports = (sequelize) => {
             field: 'full_name'
         },
         phoneNumber: {
-            type: DataTypes.STRING(15),
+            type: DataTypes.STRING(10),
             allowNull: false,
             validate: {
                 isNumeric: true
@@ -96,21 +96,21 @@ module.exports = (sequelize) => {
             allowNull: true,
             field: 'last_login'
         },
-        currentStatus: {
-            type: DataTypes.ENUM('available', 'busy', 'break'),
-            defaultValue: 'available',
-            field: 'current_status'
-        },
-        statusUpdatedAt: {
-            type: DataTypes.DATE,
-            defaultValue: DataTypes.NOW,
-            field: 'status_updated_at'
-        },
-        estimatedFinishTime: {
-            type: DataTypes.TIME,
-            allowNull: true,
-            field: 'estimated_finish_time'
-        },
+        // currentStatus: {
+        //     type: DataTypes.ENUM('available', 'busy', 'break'),
+        //     defaultValue: 'available',
+        //     field: 'current_status'
+        // },
+        // statusUpdatedAt: {
+        //     type: DataTypes.DATE,
+        //     defaultValue: DataTypes.NOW,
+        //     field: 'status_updated_at'
+        // },
+        // estimatedFinishTime: {
+        //     type: DataTypes.TIME,
+        //     allowNull: true,
+        //     field: 'estimated_finish_time'
+        // },
         deletedAt: {
             type: DataTypes.DATE,
             allowNull: true,

@@ -4,7 +4,8 @@ const barberService = require ("../../services/barber.service");
 
 const getBarberProfile  = async (request, response) => {
   try {
-    const { barberId } = request.body || {};
+    const barberId = request.barber.barberId; 
+    
 
     if (!barberId) {
     return response.status(400).json({ message: 'barberId required' });

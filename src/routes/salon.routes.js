@@ -35,7 +35,7 @@ salonRouter.get('/get-city-list',authenticateUser,getCityFilterUser )
 
 
 // Salon operations
-salonRouter.post('/status', toggleStatus);
+
 salonRouter.post('/open-close', toggleOpenClose);
 
 
@@ -49,7 +49,8 @@ salonRouter.get('/get-filter-list', getListFilter);
 salonRouter.get('/get-salon-by-id/:salonId', getSalonById);
 salonRouter.post('/admin-update-salon', updateSalon);
 salonRouter.delete('/delete-salon/:salonId', deleteSalon);
-salonRouter.post('/delete-service',deleteSalonService )
+salonRouter.post('/delete-service',deleteSalonService );
+salonRouter.post('/status', toggleStatus);
 
 
 

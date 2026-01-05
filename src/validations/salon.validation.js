@@ -1,38 +1,5 @@
 const Joi = require('joi');
 
-const registerSalonValidationSchema = Joi.object({
-    fullName: Joi.string().min(2).max(100).required().messages({
-        'string.empty': 'Full name is required',
-        'string.min': 'Full name must be at least 2 characters',
-        'string.max': 'Full name cannot exceed 100 characters'
-    })
-    ,
-    phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
-        'string.empty': 'Phone number is required',
-        'string.pattern.base': 'Phone number must be between 10  digits and contain only numbers'
-    }),
-    salonName: Joi.string().min(2).max(100).required().messages({
-        'string.empty': 'Full name is required',
-        'string.min': 'Full name must be at least 2 characters',
-        'string.max': 'Full name cannot exceed 100 characters'
-    }),
-    address: Joi.string().min(5).max(255).required(),
-    deviceToken: Joi.string()
-        .required()
-        .messages({
-            'any.required': 'Device token is required'
-        }),
-    otp: Joi.string()
-        .trim()
-        .pattern(/^\d{6}$/)
-        .required()
-        .messages({
-            'string.empty': 'OTP is required',
-            'string.pattern.base': 'OTP must be exactly 4 digits',
-            'any.required': 'OTP is required',
-        }),
-});
-
 const sendSalonOtpValidationSchema = Joi.object({
     phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required()
 });
@@ -80,12 +47,12 @@ const createSalonValidationSchema = Joi.object({
         'any.only': 'Gender must be one of MALE, FEMALE, or UNISEX',
         'string.empty': 'Gender is required'
     }),
-    latitude: Joi.number().min(-90).max(90).allow(null),
-    longitude: Joi.number().min(-180).max(180).allow(null),
+    latitude: Joi.number().allow(null),
+    longitude: Joi.number().allow(null),
     imageUrl: Joi.string().allow(null, ''),
     isActive: Joi.boolean(),
     totalReviews: Joi.number().integer().min(0).optional(),
-    ratingAverage: Joi.number().integer().min(0).max(5).optional(),
+    ratingAverage: Joi.number().precision(1).min(0).max(5).optional(),
     imagesArray: Joi.array()  .items(
         Joi.string()
             .pattern(/\.jpe?g$|\.png$|\.webp$/i)  // jpg, jpeg, png, webp only
@@ -135,8 +102,8 @@ const updateSalonValidationSchema = Joi.object({
     city: Joi.string().min(2).max(100),
     state: Joi.string().min(2).max(100),
     pincode: Joi.string().pattern(/^[0-9]{6}$/),
-    latitude: Joi.number().min(-90).max(90).allow(null),
-    longitude: Joi.number().min(-180).max(180).allow(null),
+    latitude: Joi.number().allow(null),
+    longitude: Joi.number().allow(null),
     imageUrl: Joi.string().allow(null, ''),
     imagesArray: Joi.array()
     .items(Joi.string().pattern(/\.jpe?g$|\.png$|\.webp$/i))
@@ -144,7 +111,7 @@ const updateSalonValidationSchema = Joi.object({
     genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').optional(),
     isActive: Joi.boolean(),
     totalReviews: Joi.number().integer().min(0).optional(),
-    ratingAverage: Joi.number().integer().min(0).max(5).optional(),
+    ratingAverage: Joi.number().precision(1).min(0).max(5).optional(),
 
 
 
@@ -193,8 +160,8 @@ const updateSalonFieldsSchema = Joi.object({
     city: Joi.string().min(2).max(100),
     state: Joi.string().min(2).max(100),
     pincode: Joi.string().pattern(/^[0-9]{6}$/),
-    latitude: Joi.number().min(-90).max(90).allow(null),
-    longitude: Joi.number().min(-180).max(180).allow(null),
+    latitude: Joi.number().allow(null),
+    longitude: Joi.number().allow(null),
     imageUrl: Joi.string().uri().allow(null, ''),
     genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').required(),
 });
@@ -258,6 +225,5 @@ module.exports = {
     verifySalonOtpValidationSchema,
     salonIdValidationSchema,
     updateSalonWithDetailsAppSchema,
-    registerSalonValidationSchema,
     salonServiceIdValidationSchema
 };

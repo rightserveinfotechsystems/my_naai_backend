@@ -59,7 +59,7 @@ const createSalon = async (request, response) => {
             genderType: salonData.genderType || 'UNISEX',
             state: salonData.state,
             pincode: salonData.pincode,
-            ratingAverage: Number(salonData.ratingAverage) || 0.00,
+            ratingAverage: parseFloat(salonData.ratingAverage) || 0.00,
             totalReviews: Number(salonData.totalReviews) || 0,
             latitude: salonData.latitude,
             longitude: salonData.longitude,

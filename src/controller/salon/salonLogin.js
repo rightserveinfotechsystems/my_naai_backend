@@ -16,22 +16,48 @@ const verifySalonOtpLogin = async (request, response) => {
         }
 
 
-        const isValid = true;
-        if (!isValid) {
-            return response.status(400).json({
-                status: 'FAILED',
-                message: 'Invalid or expired OTP'
-            });
-        }
+        const validData = validationResult.value;
 
         // Get salon by phone
-        const salon = await salonService.getSalonByPhone(phoneNumber);
+        const salon = await salonService.getSalonByPhone(validData.phoneNumber);
         if (!salon || !salon.isActive) {
             return response.status(404).json({
                 status: 'FAILED',
                 message: 'Salon not found or inactive'
             });
         }
+
+
+        // Verify OTP
+        const otpRow = await db.OtpLog.findOne({
+            where: {
+                phoneNumber: validData.phoneNumber,
+                otpCode: validData.otp,
+                purpose: 'login',
+                isVerified: false
+            },
+            order: [['createdAt', 'DESC']]
+        });
+
+        // Otp Expired / not found
+        if (!otpRow || otpRow.expiresAt < new Date()) {
+            return response.status(401).json({
+                status: 'FAILED',
+                message: 'Invalid or expired OTP'
+            });
+        }
+
+        //  Mark OTP as used
+        await otpRow.update({
+            isVerified: true,
+            verifiedAt: new Date()
+        });
+
+        // Update last login
+        await salonService.updateSalon(salon.salonId, {
+            lastLogin: new Date(),
+            deviceToken: request?.body?.deviceToken || user?.deviceToken
+        });
 
         // Generate JWT token
         const token = generateToken({

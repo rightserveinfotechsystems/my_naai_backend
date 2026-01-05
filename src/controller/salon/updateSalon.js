@@ -54,7 +54,7 @@ const updateSalonAdmin = async (request, response) => {
             state: salonData.state,
             pincode: salonData.pincode,
             latitude: salonData.latitude,
-            ratingAverage: Number(salonData.ratingAverage) || 0.00,
+            ratingAverage: parseFloat(salonData.ratingAverage) || 0.00,
             totalReviews: Number(salonData.totalReviews) || 0,
             longitude: salonData.longitude,
             imageUrl: salonData.imagesArray[0],

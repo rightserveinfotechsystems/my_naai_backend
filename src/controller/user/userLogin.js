@@ -23,7 +23,7 @@ const verifyOtpLogin = async (request, response) => {
         // Get user
         const user = await userService.getUserByPhone(validData.phoneNumber);
         if (!user || !user.isActive) {
-            return response.status(401).json({
+            return response.status(404).json({
                 status: 'FAILED',
                 message: 'User not found or inactive'
             });
@@ -42,7 +42,7 @@ const verifyOtpLogin = async (request, response) => {
 
         // Otp Expired / not found
         if (!otpRow || otpRow.expiresAt < new Date()) {
-            return response.status(400).json({
+            return response.status(401).json({
                 status: 'FAILED',
                 message: 'Invalid or expired OTP'
             });
