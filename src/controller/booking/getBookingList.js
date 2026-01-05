@@ -7,8 +7,8 @@ const adminGetBookingList = async (request, response) => {
             page = 1, 
             searchString = '', 
             statusFilter = '', 
-             salonFilter = '', 
-            createdDate = '', 
+            salonFilter = '', 
+            bookingDate = '', 
             limit 
         } = request.body || {};
 
@@ -16,8 +16,9 @@ const adminGetBookingList = async (request, response) => {
         const result = await BookingService.adminListBookings({
             page,
             searchString,
+            salonFilter, 
             statusFilter,
-            createdDate,
+            bookingDate,
             limit
         });
 
@@ -50,7 +51,7 @@ const adminGetBookingList = async (request, response) => {
         });
 
     } catch (error) {
-        console.error('❌ Error in adminGetBookingList:', error);
+        console.error('Error in adminGetBookingList:', error);
         return response.status(500).json({
             status: "FAILED",
             message: error.message || "Something went wrong!"
