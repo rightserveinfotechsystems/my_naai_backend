@@ -134,99 +134,17 @@ const getSalonWithDetails = async (salonId) => {
  * Get salon basic info + queue + barbers (SIMPLE VERSION)
  */
 
-// const getSalonBasicWithQueue = async (salonId) => {
-//   try {
-//     const salon = await db.Salon.findByPk(salonId, {
-//       include: [
-//         // ✅ Barbers 
-//         {
-//           model: db.Barber,
-//           as: 'barbers',
-//           where: { isActive: true },
-//           required: false,
-//           attributes: ['barberId', 'fullName','profileImageUrl', 'specialization', 'isAvailable', 'ratingAverage'],
-//         },
-//         {
-//           model: db.Service,
-//           as: 'services',
-//           where: { isActive: true },
-//           required: false,
-//           attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price', 'description'],
-//         },
-//         {
-//           model: db.BusinessHours,
-//           as: 'businessHours',
-//           required: false,
-//           attributes: [
-//             'scheduleId',
-//             'openingTime',
-//             'closingTime',
-//             'breakStartTime',
-//             'breakEndTime',
-//             'holidayDays'
-//           ],
-//         }
-//       ],
-//     });
-
-//     if (!salon) return null;
-
-
-
-//     // ✅ NEW: Total waiting time calculation (listSalons pattern)
-//     const queues = await db.Queue.findAll({
-//       where: {
-//         salonId: salonId,
-//         status: 'waiting'
-//       },
-//       include: [{
-//         model: db.Service,
-//         as: 'service',
-//         required: false,
-//         attributes: ['durationMinutes']
-//       }],
-//       attributes: ['queueNumber'],
-//       order: [['queueNumber', 'ASC']]
-//     });
-
-//     const totalMinutes = queues.reduce((sum, queue) => sum + (queue.service?.durationMinutes || 15), 0);
-
-//     const salonJson = salon.toJSON();
-//     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-//     if (Array.isArray(salonJson.businessHours)) {
-//       salonJson.businessHours = salonJson.businessHours.map(bh => ({
-//         ...bh,
-//         holidayDays: (bh.holidayDays || []).map(i => dayNames[i])
-//       }));
-//     }
-
-//     // ✅ ADD queue info to response
-//     // salonJson.currentQueueNumber = currentQueueCount + 1;
-//     salonJson.queueLength = queues.length;
-//     salonJson.totalWaitTime = {
-//       minutes: totalMinutes,
-//       display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
-//     };
-
-//     return salonJson;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
-
-
-
-const getSalonBasicWithQueue = async (salonId, selectedDate = new Date().toISOString().split('T')[0]) => {
+const getSalonBasicWithQueue = async (salonId) => {
   try {
     const salon = await db.Salon.findByPk(salonId, {
       include: [
+        // ✅ Barbers 
         {
           model: db.Barber,
           as: 'barbers',
           where: { isActive: true },
           required: false,
-          attributes: ['barberId', 'fullName', 'profileImageUrl', 'specialization', 'isAvailable', 'ratingAverage'],
+          attributes: ['barberId', 'fullName','profileImageUrl', 'specialization', 'isAvailable', 'ratingAverage'],
         },
         {
           model: db.Service,
@@ -239,16 +157,28 @@ const getSalonBasicWithQueue = async (salonId, selectedDate = new Date().toISOSt
           model: db.BusinessHours,
           as: 'businessHours',
           required: false,
-          attributes: ['scheduleId', 'openingTime', 'closingTime', 'breakStartTime', 'breakEndTime', 'holidayDays'],
+          attributes: [
+            'scheduleId',
+            'openingTime',
+            'closingTime',
+            'breakStartTime',
+            'breakEndTime',
+            'holidayDays'
+          ],
         }
       ],
     });
 
     if (!salon) return null;
 
-    // ✅ EXISTING: Salon total queue (Queue table)
+
+
+    // ✅ NEW: Total waiting time calculation (listSalons pattern)
     const queues = await db.Queue.findAll({
-      where: { salonId: salonId, status: 'waiting' },
+      where: {
+        salonId: salonId,
+        status: 'waiting'
+      },
       include: [{
         model: db.Service,
         as: 'service',
@@ -261,32 +191,6 @@ const getSalonBasicWithQueue = async (salonId, selectedDate = new Date().toISOSt
 
     const totalMinutes = queues.reduce((sum, queue) => sum + (queue.service?.durationMinutes || 15), 0);
 
-    // ✅ NEW: Barber durations from BOOKING (barberId exists!)
-    const barberDurations = await db.Booking.findAll({
-      where: {
-        salonId: salonId,
-        status: { [Op.in]: ['confirmed', 'queued', 'in_progress'] },
-        bookingDate: selectedDate
-      },
-      include: [{
-        model: db.Service,
-        as: 'service',  // Service association from model
-        required: false,
-        attributes: ['durationMinutes']
-      }],
-      attributes: [
-        [db.sequelize.col('barberId'), 'barberId'],
-        [db.sequelize.fn('COALESCE', db.sequelize.fn('SUM', db.sequelize.col('service.durationMinutes')), 0), 'totalDuration']
-      ],
-      group: [db.sequelize.col('barberId')],
-      raw: true
-    });
-
-    const barberDurationMap = {};
-    barberDurations.forEach(bd => {
-      barberDurationMap[bd.barberId] = parseInt(bd.totalDuration) || 0;
-    });
-
     const salonJson = salon.toJSON();
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -297,15 +201,8 @@ const getSalonBasicWithQueue = async (salonId, selectedDate = new Date().toISOSt
       }));
     }
 
-    // Assign to barbers
-    salonJson.barbers.forEach(barber => {
-      const mins = barberDurationMap[barber.barberId] || 0;
-      barber.totalUpcomingDuration = {
-        minutes: mins,
-        display: `${Math.floor(mins / 60)}h ${mins % 60}m`
-      };
-    });
-
+    // ✅ ADD queue info to response
+    // salonJson.currentQueueNumber = currentQueueCount + 1;
     salonJson.queueLength = queues.length;
     salonJson.totalWaitTime = {
       minutes: totalMinutes,
@@ -317,6 +214,10 @@ const getSalonBasicWithQueue = async (salonId, selectedDate = new Date().toISOSt
     throw error;
   }
 };
+
+
+
+
 
 
 /**
