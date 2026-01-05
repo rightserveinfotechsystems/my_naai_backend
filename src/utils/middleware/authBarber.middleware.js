@@ -37,7 +37,7 @@ const authenticateBarber = async (request, response, next) => {
       email: barber.email
     };
     
-    console.log('✅ request.barber SET:', request.barber);  // Debug
+    console.log('✅ request.barber SET:', request.barber);  
     next();
   } catch (error) {
     console.log('❌ BarberAuth ERROR:', error.message);

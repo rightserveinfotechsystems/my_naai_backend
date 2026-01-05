@@ -135,7 +135,7 @@ const getBarbersList = async ({ page = 1, searchString = '' }) => {
     const totalPages = Math.ceil(totalBarbers / limit) || 1;
 
     return {
-      barbers: barbers.map(b => b.toJSON()),  // ✅ Clean JSON
+      barbers: barbers.map(b => b.toJSON()), 
       pagination: {
         page: safePage,
         limit,
@@ -260,30 +260,6 @@ const updateBarberAvailability = async (barberId, isAvailable) => {
     }
 };
 
-/**
- * Toggle barber status
- */
-
-const updateBarberStatus = async (barberId, salonId, updateData) => {
-  const { currentStatus, busyMinutes } = updateData;
-  const now = new Date();
-  
-  
-  let estimatedFinishTime = null;
-  if (currentStatus === 'busy' && busyMinutes) {
-    const finishTime = new Date(now.getTime() + busyMinutes * 60 * 1000);
-    estimatedFinishTime = finishTime.toTimeString().slice(0, 8); // "17:30:00"
-  }
-  
-  return await db.Barber.update({
-    currentStatus,
-    statusUpdatedAt: now,
-    estimatedFinishTime  
-  }, {
-    where: { barberId, salon_id: salonId, is_active: true }
-  });
-};
-
 
 
 module.exports = {
@@ -297,6 +273,5 @@ module.exports = {
     hasActiveBookings,
     hasActiveQueues,
     deleteBarber,
-    updateBarberAvailability,
-    updateBarberStatus
+    updateBarberAvailability
 };

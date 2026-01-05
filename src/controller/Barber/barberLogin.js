@@ -1,6 +1,7 @@
 const barberService = require('../../services/barber.service');
 const { generateToken } = require('../../utils/middleware/token.util');
 const { verifyBarberOtpValidationSchema } = require('../../validations/barber.validation');
+const db = require('../../database/models');
 
 
 const verifyBarberOtpLogin = async (request, response) => {
@@ -15,14 +16,14 @@ const verifyBarberOtpLogin = async (request, response) => {
             });
         }
 
-
-        const isValid = true;
-        if (!isValid) {
-            return response.status(400).json({
-                status: 'FAILED',
-                message: 'Invalid or expired OTP'
-            });
-        }
+        const validData = validationResult.value;
+        // const isValid = true;
+        // if (!isValid) {
+        //     return response.status(400).json({
+        //         status: 'FAILED',
+        //         message: 'Invalid or expired OTP'
+        //     });
+        // }
 
         // Get barber by phone
         const barber = await barberService.getBarberByPhoneNumber(phoneNumber);
@@ -33,6 +34,40 @@ const verifyBarberOtpLogin = async (request, response) => {
             });
         }
 
+        // Verify OTP
+        const otpRow = await db.OtpLog.findOne({
+            where: {
+                phoneNumber: validData.phoneNumber,
+                otpCode: validData.otp,
+                purpose: 'login',
+                isVerified: false
+            },
+            order: [['createdAt', 'DESC']]
+        });
+
+        // Otp Expired / not found
+        if (!otpRow || otpRow.expiresAt < new Date()) {
+            return response.status(401).json({
+                status: 'FAILED',
+                message: 'Invalid or expired OTP'
+            });
+        }
+
+
+        // Mark OTP as used
+        await otpRow.update({
+            isVerified: true,
+            verifiedAt: new Date()
+        });
+
+
+        // Update last login
+        await barberService.updateBarber(barber.barberId, {
+            lastLogin: new Date(),
+            deviceToken: request?.body?.deviceToken || barber?.deviceToken
+        });
+
+
         // Generate JWT token
         const token = generateToken({
             barberId: barber.barberId
@@ -40,16 +75,20 @@ const verifyBarberOtpLogin = async (request, response) => {
 
         return response.status(200).json({
             status: 'SUCCESS',
-            message: 'barber login successful',
-            data: {
-                // barber,
+            message: 'Barber login successful',
                 barber: {
-                    barberId: barber.barberId,
-                    barberName: barber.barberName,
-                    phoneNumber: barber.phoneNumber,
+                    barberId: barber?.barberId,
+                    fullName: barber?.fullName,
+                    phoneNumber: barber?.phoneNumber,
+                    email: barber?.email,
+                    profileImageUrl: barber?.profileImageUrl || null,
+                    isActive: barber?.isActive,
+                    isAvailable: barber?.isAvailable,
+                    isVerified: barber?.isVerified,
+                    totalServices: barber?.totalServices,
+                    ratingAverage:barber?.ratingAverage,
+                    token
                 },
-                token
-            }
         });
     } catch (error) {
         return response.status(500).json({
