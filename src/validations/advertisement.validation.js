@@ -26,19 +26,22 @@ const createAdvertisementSchema = Joi.object({
 const updateAdvertisementSchema = Joi.object({
   advertisementId: Joi.string().uuid().required(),
   title: Joi.string().trim().min(3).max(255).optional(),
-  images: Joi.array().items(Joi.string().uri()).optional(),
-//   status: Joi.string().valid('active', 'inactive').optional(),
-//   startDate: Joi.date().optional(),
-//   endDate: Joi.date().optional()
+  images: Joi.array().items(Joi.string().uri()).optional()   
 });
 
 const toggleStatusValidationSchema = Joi.object({
   advertisementId: Joi.string().uuid().required(),
-  status: Joi.string().valid('active', 'inactive').required()
+  isActive: Joi.boolean().required()
+});
+
+
+const deleteAdvertisementSchema = Joi.object({
+  advertisementId: Joi.string().uuid().required()
 });
 
 module.exports = {
   createAdvertisementSchema,
   updateAdvertisementSchema,
+  deleteAdvertisementSchema,
   toggleStatusValidationSchema
 };

@@ -72,7 +72,7 @@ const listAdvertisements = async ({ page = 1, searchString = '' }) => {
 const getActiveAdvertisementForUser = async () => {
   try {
     const ad = await db.Advertisement.findOne({
-      where: { status: 'active' }, 
+      where: { isActive: 'true' }, 
       order: [['createdAt', 'DESC']], 
       attributes: ['advertisementId', 'title', 'images', 'createdAt'],
     });
@@ -102,10 +102,21 @@ const updateAdvertisement = async (advertisementId, updateData) => {
   }
 };
 
+/**
+ * Update Advertisement
+ */
+const deleteAdvertisement = async (advertisementId) => {
+  return await db.Advertisement.destroy({
+    where: { advertisementId }
+  });
+};
+
+
 
 module.exports = {
     createAdvertisement,
     getAdvertisementById,
+    deleteAdvertisement,
     updateAdvertisement,
     listAdvertisements,
     getActiveAdvertisementForUser
