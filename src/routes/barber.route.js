@@ -9,15 +9,12 @@ const getBarberList = require('../controller/Barber/barberList');
 const toggleStatus = require('../controller/Barber/toggleBarberStatus');
 const deleteBarber = require('../controller/Barber/deleteBarber');
 const toggleAvailability = require('../controller/Barber/toggleBarberAvailability');
-
-
-
-
+const verifyBarberOtpLogin = require('../controller/Barber/login');
 
 const barberRouter = express.Router();
 
 barberRouter.post('/send-otp', sendBarberOtp);
-// barberRouter.post('/login', verifyBarberOtpLogin);
+barberRouter.post('/login', verifyBarberOtpLogin);
 
 //barber authenticate api
 barberRouter.get('/get-profile',authenticateBarber,getBarberProfile);
