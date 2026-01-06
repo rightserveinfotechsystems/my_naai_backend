@@ -5,15 +5,15 @@ const { userBookingListSchema } = require('../../validations/booking.validation'
 const userGetBookingList = async (request, response) => {
   try {
 
-    const {userId} = request.body || {}; 
-     const { error, value } = userBookingListSchema.validate(request.body);
+    const { userId } = request.body || {};
+    const { error, value } = userBookingListSchema.validate(request.body);
     if (error) {
       return response.status(400).json({
         status: "FAILED",
         message: error.details[0].message
       });
     }
-    
+
     if (!userId) {
       return response.status(400).json({
         status: "FAILED",
@@ -21,33 +21,32 @@ const userGetBookingList = async (request, response) => {
       });
     }
 
-    const {
-      page = 1,
-      date = '',
-      statusFilter = '',
-      limit
-    } = request.body || {};
+    const { page = 1, date = '', statusFilter = '', limit } = request.body || {};
 
     const result = await BookingService.userListBookings(userId, {
       page, date, statusFilter, limit
     });
 
     // Format response
-    const bookingsData = result.bookings.map(booking => ({
-      bookingId: booking.bookingId,
-      salonName: booking.salon?.salonName || '',
-      salonCity: booking.salon?.city || '',   
-      serviceName: booking.service?.serviceName || '',
-      queueNumber: booking.queue?.queueNumber || null,
-      queueStatus: booking.queue?.status || '',
-      serviceDuration: booking.service?.durationMinutes || 0,
-      amount: parseFloat(booking.amount || 0).toFixed(2),
-      bookingDate: booking.bookingDate,
-      bookingTime: booking.bookingTime,
-      barberName: booking.barber?.fullName,
-      status: booking.bookingStatus
-   
-    }));
+ const bookingsData = result.bookings.map(booking => {
+    const services = Array.isArray(booking.services) ? booking.services : JSON.parse(booking.services || '[]');
+    return {
+        bookingId: booking.bookingId,
+        salonName: booking.salon?.salonName || '',
+        salonCity: booking.salon?.city || '',
+        // ✅ Correct key from JSON
+        serviceName: services.map(s => s.serviceName).join(', '),
+        queueNumber: booking.queue?.queueNumber || null,
+        queueStatus: booking.queue?.status || '',
+        serviceDuration: services.reduce((sum, s) => sum + (s.durationMinutes || 0), 0),
+        amount: parseFloat(booking.amount || 0).toFixed(2),
+        bookingDate: booking.bookingDate,
+        bookingTime: booking.bookingTime,
+        barberName: booking.barber?.fullName || '',
+        status: booking.bookingStatus
+    };
+});
+
 
     return response.status(200).json({
       status: "SUCCESS",
