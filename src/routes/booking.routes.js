@@ -11,10 +11,6 @@ const { completeService } = require('../controller/booking/completeService');
 const userGetBookingList = require('../controller/booking/userBookingList');
 const adminGetAllBookings = require('../controller/booking/adminGetAllBookings');
 
-
-
-
-
 const bookingRouter = express.Router();
 
 bookingRouter.post('/book',authenticateUser, createBooking);
