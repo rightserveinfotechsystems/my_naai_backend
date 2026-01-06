@@ -26,7 +26,7 @@ const createAdvertisementSchema = Joi.object({
 const updateAdvertisementSchema = Joi.object({
   advertisementId: Joi.string().uuid().required(),
   title: Joi.string().trim().min(3).max(255).optional(),
-  images: Joi.array().items(Joi.string().uri()).optional()   
+  images: Joi.array().items(Joi.string()).optional()   
 });
 
 const toggleStatusValidationSchema = Joi.object({

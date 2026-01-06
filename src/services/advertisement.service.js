@@ -43,7 +43,7 @@ const listAdvertisements = async ({ page = 1, searchString = '' }) => {
     const { count: totalAdvertisements, rows: advertisements } = await db.Advertisement.findAndCountAll({
       where,
       attributes: [
-        'advertisementId', 'title', 'images', 'status', 'createdAt', 'updatedAt'  
+        'advertisementId', 'title', 'images',  'createdAt', 'updatedAt'  
       ],
       order: [['createdAt', 'DESC']],
       limit,
