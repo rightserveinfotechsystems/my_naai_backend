@@ -138,20 +138,32 @@ const getSalonBasicWithQueue = async (salonId) => {
   try {
     const salon = await db.Salon.findByPk(salonId, {
       include: [
-        // ✅ Barbers 
         {
           model: db.Barber,
           as: 'barbers',
           where: { isActive: true },
           required: false,
-          attributes: ['barberId', 'fullName','profileImageUrl', 'specialization', 'isAvailable', 'ratingAverage'],
+          attributes: [
+            'barberId',
+            'fullName',
+            'profileImageUrl',
+            'specialization',
+            'isAvailable',
+            'ratingAverage'
+          ],
         },
         {
           model: db.Service,
           as: 'services',
           where: { isActive: true },
           required: false,
-          attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price', 'description'],
+          attributes: [
+            'serviceId',
+            'serviceName',
+            'durationMinutes',
+            'price',
+            'description'
+          ],
         },
         {
           model: db.BusinessHours,
@@ -171,9 +183,46 @@ const getSalonBasicWithQueue = async (salonId) => {
 
     if (!salon) return null;
 
+    // ✅ BARBER-WISE DURATION TIME
+    const barbersWithDuration = await Promise.all(
+      salon.barbers.map(async (barber) => {
 
+        const barberQueues = await db.Queue.findAll({
+          where: {
+            salonId: salonId,
+            barberId: barber.barberId,
+            status: {
+              [Op.in]: ['waiting']
+            }
+          },
+          include: [{
+            model: db.Service,
+            as: 'service',
+            attributes: ['durationMinutes'],
+            required: false
+          }],
+          attributes: ['queueId']
+        });
 
-    // ✅ NEW: Total waiting time calculation (listSalons pattern)
+        const durationTime = barberQueues.reduce(
+          (sum, q) => sum + (q.service?.durationMinutes || 15),
+          0
+        );
+
+        return {
+          ...barber.toJSON(),
+          durationTime
+        };
+      })
+    );
+
+    // ✅ Convert salon to JSON ONCE
+    const salonJson = salon.toJSON();
+
+    // ✅ Replace barbers with enriched data
+    salonJson.barbers = barbersWithDuration;
+
+    // ✅ SALON-LEVEL TOTAL WAIT TIME (AS IT IS)
     const queues = await db.Queue.findAll({
       where: {
         salonId: salonId,
@@ -189,9 +238,11 @@ const getSalonBasicWithQueue = async (salonId) => {
       order: [['queueNumber', 'ASC']]
     });
 
-    const totalMinutes = queues.reduce((sum, queue) => sum + (queue.service?.durationMinutes || 15), 0);
+    const totalMinutes = queues.reduce(
+      (sum, queue) => sum + (queue.service?.durationMinutes || 15),
+      0
+    );
 
-    const salonJson = salon.toJSON();
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     if (Array.isArray(salonJson.businessHours)) {
@@ -201,8 +252,6 @@ const getSalonBasicWithQueue = async (salonId) => {
       }));
     }
 
-    // ✅ ADD queue info to response
-    // salonJson.currentQueueNumber = currentQueueCount + 1;
     salonJson.queueLength = queues.length;
     salonJson.totalWaitTime = {
       minutes: totalMinutes,
@@ -210,10 +259,12 @@ const getSalonBasicWithQueue = async (salonId) => {
     };
 
     return salonJson;
+
   } catch (error) {
     throw error;
   }
 };
+
 
 
 
@@ -385,7 +436,7 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
  * filter api city wise
  */
 
-const getCitiesService = async (statusFilter = 'all') => {  
+const getCitiesService = async (statusFilter = 'all') => {
   try {
     const where = {
       city: { [Op.ne]: null }
@@ -415,25 +466,25 @@ const getCitiesService = async (statusFilter = 'all') => {
 
 // ✅ USER SERVICE  filter api city wise
 const getCitySalonsService = async (statusFilter = 'all') => {
-    try {
-        // ✅ User view: Only active salons + No status filter needed
-        const where = { 
-            city: { [Op.ne]: null },
-            isActive: true  // Only active salons for users
-        };
+  try {
+    // ✅ User view: Only active salons + No status filter needed
+    const where = {
+      city: { [Op.ne]: null },
+      isActive: true  // Only active salons for users
+    };
 
-        // statusFilter ignore (user ko inactive nahi dikhana)
-        const cities = await db.Salon.findAll({
-            attributes: ['city'],
-            where,
-            order: [['city', 'ASC']]
-        });
+    // statusFilter ignore (user ko inactive nahi dikhana)
+    const cities = await db.Salon.findAll({
+      attributes: ['city'],
+      where,
+      order: [['city', 'ASC']]
+    });
 
-        const cityNames = [...new Set(cities.map(c => c.get('city')))];
-        return cityNames;
-    } catch (error) {
-        throw error;
-    }
+    const cityNames = [...new Set(cities.map(c => c.get('city')))];
+    return cityNames;
+  } catch (error) {
+    throw error;
+  }
 };
 
 
