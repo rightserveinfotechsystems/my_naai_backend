@@ -26,6 +26,11 @@ module.exports = (sequelize) => {
             allowNull: false,
             field: "is_active",
         },
+        isDeletedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: "deleted_at",
+        },
 
     }, {
         tableName: "advertisements",
