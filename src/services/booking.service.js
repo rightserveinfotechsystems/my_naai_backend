@@ -423,9 +423,6 @@ const getFiltersDropdownData = async () => {
     throw error;
   }
 };
-
-
-// services/booking.service.js
 /**
  * SALON: Complete service & advance queue (same pattern)
  */

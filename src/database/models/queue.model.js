@@ -71,7 +71,7 @@ module.exports = (sequelize) => {
         },
         tokenNumber: {
             type: DataTypes.STRING(20),
-            allowNull: false,
+            allowNull: true,
             field: 'token_number'
         },
         status: {

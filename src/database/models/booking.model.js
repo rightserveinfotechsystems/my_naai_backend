@@ -45,15 +45,24 @@ module.exports = (sequelize) => {
             },
             field: 'barber_id'
         },
-        serviceId: {
-            type: DataTypes.UUID,
-            allowNull: true,
-            references: {
-                model: 'services',
-                key: 'service_id'
-            },
-            field: 'service_id'
+        // serviceId: {
+        //     type: DataTypes.UUID,
+        //     allowNull: true,
+        //     references: {
+        //         model: 'services',
+        //         key: 'service_id'
+        //     },
+        //     field: 'service_id'
+        // },
+
+        services: {
+            type: DataTypes.JSONB,
+            allowNull: false,
+            defaultValue: [],
+            comment: 'Array of services [{serviceId, name, duration, price}]',
+            field: 'services'
         },
+
         bookingStatus: {
             type: DataTypes.ENUM('completed', 'cancelled', 'pending'),
             allowNull: false,
@@ -80,7 +89,7 @@ module.exports = (sequelize) => {
             field: 'booking_date'
         },
         bookingTime: {
-            type: DataTypes.TIME,    
+            type: DataTypes.TIME,
             allowNull: true,
             field: 'booking_time'
         },
@@ -165,10 +174,10 @@ module.exports = (sequelize) => {
             as: 'barber'
         });
 
-        Booking.belongsTo(models.Service, {
-            foreignKey: 'serviceId',
-            as: 'service'
-        });
+        // Booking.belongsTo(models.Service, {
+        //     foreignKey: 'serviceId',
+        //     as: 'service'
+        // });
 
         Booking.hasOne(models.Review, {
             foreignKey: 'bookingId',
