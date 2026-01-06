@@ -200,8 +200,7 @@ const adminListBookings = async ({
       include: [
         { model: Queue, as: 'queue', attributes: [], required: false },
         { model: Salon, as: 'salon', attributes: [], required: false },
-        { model: User, as: 'user', attributes: [], required: false },
-        { model: Service, as: 'service', attributes: [], required: false }
+        { model: User, as: 'user', attributes: [], required: false }
       ]
     });
 
@@ -211,25 +210,33 @@ const adminListBookings = async ({
       attributes: [
         'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'createdAt',
         [Sequelize.col('salon.salon_name'), 'salonName'],
-        [Sequelize.col('service.service_name'), 'serviceName'],
         [Sequelize.col('user.full_name'), 'userName'],
         [Sequelize.col('user.phone_number'), 'userPhone'],
-        [Sequelize.col('service.price'), 'servicePrice'],
-        [Sequelize.col('queue.queue_number'), 'queueNumber']
+        [Sequelize.col('queue.queue_number'), 'queueNumber'],
+        'services'
       ],
       include: [
         { model: Queue, as: 'queue', attributes: [] },
         { model: Salon, as: 'salon', attributes: [] },
-        { model: User, as: 'user', attributes: [] },
-        { model: Service, as: 'service', attributes: [] }
+        { model: User, as: 'user', attributes: [] }
       ],
       order: [['createdAt', 'DESC']],
       limit,
       offset
     });
 
+    // Format response to include service names and total price
+    const formattedBookings = bookings.map(b => {
+      const services = b.services;
+      return {
+        ...b.dataValues,
+        serviceNames: services.map(s => s.serviceName).join(', '), // e.g., "Haircut, Shave"
+        servicePrice: services.reduce((sum, s) => sum + parseFloat(s.price || 0), 0)
+      };
+    });
+
     return {
-      bookings,
+      bookings: formattedBookings,
       totalBookings,
       page,
       limit,
@@ -564,7 +571,7 @@ const userListBookings = async (userId, {
       where,
       include: [
         { model: Queue, as: 'queue', attributes: [] },
-        { model: Service, as: 'service', attributes: [] },
+        // { model: Service, as: 'service', attributes: [] },
         { model: Salon, as: 'salon', attributes: [] },
         { model: Barber, as: 'barber', attributes: ['fullName'] }
       ]
@@ -573,10 +580,10 @@ const userListBookings = async (userId, {
     // Fetch bookings
     const bookings = await Booking.findAll({
       where,
-      attributes: ['bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount'],
+      attributes: ['bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services'],
       include: [
         { model: Queue, as: 'queue', attributes: ['queueNumber', 'status'] },
-        { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
+        // { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
         { model: Salon, as: 'salon', attributes: ['salonName', 'city', 'phoneNumber'] },
 
         { model: Barber, as: 'barber', attributes: ['fullName'] }
