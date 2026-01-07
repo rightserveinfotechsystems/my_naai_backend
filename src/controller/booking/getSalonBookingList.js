@@ -3,7 +3,7 @@ const BookingService = require('../../services/booking.service');
 const salonGetBookingList = async (request, response) => {
     try {
         
-        const {salonId} = request.body || {};
+       const salonId = request.salon?.salonId;
 
         if (!salonId) {
             return response.status(400).json({
@@ -42,14 +42,14 @@ const salonGetBookingList = async (request, response) => {
         }
 
         return response.status(200).json({
-            status: "SUCCESS",
+            status: "FAILED",
             message: "No bookings available",
             data: [],
             pagination: {
                 total: 0,
                 page,
-                limit: parseInt(limit) || 10,
-                totalPages: 0
+                limit: result.limit,
+                totalPages: 1
             }
         });
 
