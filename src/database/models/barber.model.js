@@ -31,7 +31,7 @@ module.exports = (sequelize) => {
         },
         phoneNumber: {
             type: DataTypes.STRING(10),
-            allowNull: false,
+            allowNull: true,
             validate: {
                 isNumeric: true
             },
