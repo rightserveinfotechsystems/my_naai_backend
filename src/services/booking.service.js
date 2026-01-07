@@ -424,7 +424,7 @@ const salonOwnerListBookings = async (salonId, {
     return {
       bookings: formattedBookings,
       totalBookings,
-      page:safePage,
+      page: safePage,
       limit: safeLimit,
       totalPages: Math.ceil(totalBookings / safeLimit)
     };
@@ -551,8 +551,8 @@ const createWalkInCustomers = async ({ salonId, count = 1, services = [] }) => {
 
   for (let i = 0; i < count; i++) {
     // Guest user
-    const guestUser = await db.User.create({
-      fullName: `Guest ${nextQueueNumber}`,
+    const offlineUser = await db.User.create({
+      fullName: `Offline Customer ${nextQueueNumber}`,
       phoneNumber: null,
       email: null,
       isActive: true,
@@ -562,7 +562,7 @@ const createWalkInCustomers = async ({ salonId, count = 1, services = [] }) => {
     // Booking
     const booking = await db.Booking.create({
       salonId,
-      userId: guestUser.userId,
+      userId: offlineUser.userId,
       services,
       bookingStatus: 'pending'
     });
@@ -577,7 +577,7 @@ const createWalkInCustomers = async ({ salonId, count = 1, services = [] }) => {
 
     createdBookings.push({
       bookingId: booking.bookingId,
-      userName: guestUser.fullName,
+      userName: offlineUser.fullName,
       queueNumber: nextQueueNumber
     });
 
@@ -622,137 +622,70 @@ const getFiltersDropdownData = async () => {
  * SALON: Complete service & advance queue (same pattern)
  */
 const completeService = async (salonId, bookingId) => {
+
+
+  // Find pending booking with queue
+  const booking = await Booking.findOne({
+    where: { bookingId, salonId, bookingStatus: 'pending' },
+    include: [{ model: Queue, as: 'queue', attributes: ['queueId', 'queueNumber', 'status'] }]
+  });
+
+  if (!booking) throw new Error('Booking already completed');
+
+  // Start transaction
+  const t = await db.sequelize.transaction();
+
   try {
-    if (!salonId || !bookingId) {
-      throw new Error('salonId and bookingId are required');
-    }
+    // Update booking → completed
+    await Booking.update(
+      { bookingStatus: 'completed', updatedAt: new Date() },
+      { where: { bookingId, salonId }, transaction: t }
+    );
 
-    //  Find pending booking with queue
-    const booking = await Booking.findOne({
-      where: {
-        bookingId,
-        salonId,
-        bookingStatus: 'pending'
-      },
-      include: [
-        {
-          model: Queue,
-          as: 'queue',
-          attributes: ['queueId', 'queueNumber', 'status']
-        }
-      ]
-    });
+    // Update current queue → completed
+    await Queue.update(
+      { status: 'completed', completedAt: new Date() },
+      { where: { queueId: booking.queue.queueId, salonId }, transaction: t }
+    );
 
-    if (!booking) {
-      throw new Error('Pending booking not found for this salon');
-    }
-
-    //Start transaction
-    const t = await db.sequelize.transaction();
-
-    try {
-      // Update booking → completed
-      await Booking.update(
-        {
-          bookingStatus: 'completed',
-          updatedAt: new Date()
-        },
-        {
-          where: { bookingId, salonId },
-          transaction: t
-        }
-      );
-
-      //  Update current queue → completed
-      await Queue.update(
-        {
-          status: 'completed',
-          completedAt: new Date()
-        },
-        {
-          where: {
-            queueId: booking.queue.queueId,
-            salonId
-          },
-          transaction: t
-        }
-      );
-
-
-      //Commit transaction
-      await t.commit();
-
-      // 5️⃣ Fetch FULL completed booking data (for response)
-      const completedBooking = await Booking.findOne({
-        where: {
-          bookingId,
-          salonId
-        },
-        attributes: [
-          'bookingId',
-          'bookingDate',
-          'bookingTime',
-          'bookingStatus',
-          'services',
-          'amount'
-        ],
-        include: [
-          {
-            model: User,
-            as: 'user',
-            attributes: ['fullName', 'phoneNumber']
-          },
-          {
-            model: Barber,
-            as: 'barber',
-            attributes: ['fullName']
-          },
-          {
-            model: Queue,
-            as: 'queue',
-            attributes: ['queueNumber']
-          }
-        ]
-      });
-
-      // Services safety
-      const services = Array.isArray(completedBooking.services)
-        ? completedBooking.services
-        : [];
-
-      return {
-        success: true,
-        message: 'Service completed successfully',
-        data: {
-          bookingId: completedBooking.bookingId,
-          bookingDate: completedBooking.bookingDate,
-          bookingTime: completedBooking.bookingTime,
-          bookingStatus: completedBooking.bookingStatus,
-
-          userName: completedBooking.user?.fullName,
-          userPhone: completedBooking.user?.phoneNumber,
-
-          barberName: completedBooking.barber?.fullName,
-          queueNumber: completedBooking.queue?.queueNumber,
-
-          services: services.map(s => s.serviceName).join(', '),
-          totalAmount: services.reduce(
-            (sum, s) => sum + Number(s.price || 0),
-            0
-          )
-        },
-        nextQueueNumber: nextQueueNumberActive
-      };
-
-    } catch (error) {
-      await t.rollback();
-      throw error;
-    }
-
+    // Commit transaction
+    await t.commit();
   } catch (error) {
+    await t.rollback();
     throw error;
   }
+
+  // AFTER commit: fetch completed booking for response
+  const completedBooking = await Booking.findOne({
+    where: { bookingId, salonId },
+    attributes: ['bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'services', 'amount'],
+    include: [
+      { model: User, as: 'user', attributes: ['fullName', 'phoneNumber'] },
+      { model: Barber, as: 'barber', attributes: ['fullName'] },
+      { model: Queue, as: 'queue', attributes: ['queueNumber'] }
+    ]
+  });
+
+  const services = Array.isArray(completedBooking.services) ? completedBooking.services : [];
+
+  return {
+    success: true,
+    message: 'Service completed successfully',
+    data: {
+      bookingId: completedBooking.bookingId,
+      bookingDate: completedBooking.bookingDate,
+      bookingTime: completedBooking.bookingTime,
+      bookingStatus: completedBooking.bookingStatus,
+      userName: completedBooking.user?.fullName,
+      userPhone: completedBooking.user?.phoneNumber,
+      barberName: completedBooking.barber?.fullName,
+      queueNumber: completedBooking.queue?.queueNumber,
+      services: services.map(s => s.serviceName).join(', '),
+      totalAmount: services.reduce((sum, s) => sum + Number(s.price || 0), 0)
+    },
+  };
 };
+
 
 
 // services/booking.service.js - Add this
@@ -821,6 +754,83 @@ const userListBookings = async (userId, {
 };
 
 
+const getBookingById = async (salonId, bookingId) => {
+  return await Booking.findOne({
+    where: { salonId, bookingId },
+    attributes: ['bookingId', 'bookingDate', 'bookingStatus']
+  });
+};
+
+// services/booking.service.js
+const addWalkInCustomers = async ({ salonId, count }) => {
+  if (!salonId || count <= 0) throw new Error('Invalid input');
+
+  const today = new Date();
+
+  const walkInUser = await db.User.findOne({
+    where: { phoneNumber: '0000000000' }
+  });
+
+  if (!walkInUser) throw new Error('Walk-in user not found');
+
+  const lastQueue = await db.Queue.findOne({
+    where: { salonId },
+    order: [['queueNumber', 'DESC']]
+  });
+
+  let nextQueueNumber = lastQueue ? lastQueue.queueNumber + 1 : 1;
+
+  const result = [];
+
+  for (let i = 0; i < count; i++) {
+
+    // 1️⃣ Queue FIRST
+    const queue = await db.Queue.create({
+      salonId,
+      userId: walkInUser.userId,
+      bookingDate: today,
+      queueNumber: nextQueueNumber,
+      status: 'waiting'
+    });
+
+    // 2️⃣ Booking with queueId
+    const booking = await db.Booking.create({
+      salonId,
+      userId: walkInUser.userId,
+      queueId: queue.queueId,   // ✅ FIX
+      bookingDate: today,
+      bookingStatus: 'pending',
+      bookingType: 'WALK_IN'
+    });
+
+    // 3️⃣ Update queue with bookingId
+    await queue.update({
+      bookingId: booking.bookingId
+    });
+
+    result.push({
+       bookingId: booking.bookingId,
+      queueId: queue.queueId,
+      name: walkInUser.fullName,
+      mobileNumber: walkInUser.phoneNumber,
+      queueNumber: nextQueueNumber,
+      bookingType: 'WALK_IN',
+      status: 'pending'
+    });
+
+
+    nextQueueNumber++;
+  }
+
+  return {
+    message: `${count} walk-in customers added`,
+    data: result
+  };
+};
+
+
+
+
 
 
 // ✅ Export ALL functions
@@ -838,5 +848,7 @@ module.exports = {
   verifyBarber,
   adminListAllBookings,
   salonOwnerCompletedBookings,
-  createWalkInCustomers
+  createWalkInCustomers,
+  getBookingById,
+  addWalkInCustomers
 };

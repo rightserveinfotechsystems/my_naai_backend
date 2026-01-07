@@ -1,29 +1,30 @@
-// controllers/booking.controller.js
 const BookingService = require('../../services/booking.service');
 
-const addWalkInCustomers = async (req, res) => {
+const addWalkInController = async (request, response) => {
   try {
-    const { salonId, count, services } = req.body;
+    const { salonId, count } = request.body;
 
-    const result = await BookingService.createWalkInCustomers({
-      salonId,
-      count,
-      services
-    });
+    if (!salonId) {
+      return response.status(400).json({
+        status: 'FAILED',
+        message: 'salonId is required'
+      });
+    }
 
-    return res.status(200).json({
+    const result = await BookingService.addWalkInCustomers({ salonId, count });
+
+    return response.status(200).json({
       status: 'SUCCESS',
       message: result.message,
-      data: result.bookings
+      data: result.queues
     });
-
   } catch (err) {
     console.error(err);
-    return res.status(500).json({
+    return response.status(500).json({
       status: 'FAILED',
       message: err.message
     });
   }
 };
 
-module.exports = addWalkInCustomers ;
+module.exports = addWalkInController;

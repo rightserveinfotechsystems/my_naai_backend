@@ -26,4 +26,11 @@ const userBookingListSchema = Joi.object({
       'any.required': 'userId is required'
     })
   });
-module.exports = { createBookingSchema,userBookingListSchema };
+
+  const completeBookingSchema = Joi.object({
+  salonId: Joi.string().uuid().required(),
+  bookingId: Joi.string().uuid().required()
+});
+module.exports = { createBookingSchema,userBookingListSchema,
+  completeBookingSchema
+ };
