@@ -1,13 +1,13 @@
-const { updateSalonValidationSchema } = require('../../validations/salon.validation');
+const { updateSalonValidationSchemaApp } = require('../../validations/salon.validation');
 const salonService = require('../../services/salon.service');
-const { Service, BusinessHours, sequelize } = require('../../database/models');
+const { Service, BusinessHours, Barber, sequelize } = require('../../database/models');
 
 const updateSalonApp = async (request, response) => {
     const t = await sequelize.transaction();
 
     try {
 
-        const { salonId, existingServices = [], newServices = [], businessHours = [], ...salonData } = request.body || {};
+        const { salonId, existingServices = [], newServices = [], businessHours = [], existingBarbers = [],newBarbers = [], ...salonData } = request.body || {};
 
         // salonId check
         if (!salonId) {
@@ -19,7 +19,7 @@ const updateSalonApp = async (request, response) => {
         }
 
         // Validate input 
-        const validationResult = updateSalonValidationSchema.validate(request.body, {
+        const validationResult = updateSalonValidationSchemaApp.validate(request.body, {
             abortEarly: true
         });
 
@@ -123,6 +123,65 @@ const updateSalonApp = async (request, response) => {
                 );
             }
         }
+
+        // UPDATE EXISTING BARBERS
+        if (Array.isArray(existingBarbers) && existingBarbers.length > 0) {
+            for (const b of existingBarbers) {
+                if (!b.barberId) {
+                    await t.rollback();
+                    return response.status(400).json({
+                        status: 'FAILED',
+                        message: 'barberId is required for existingBarbers'
+                    });
+                }
+
+                const [affected] = await Barber.update(
+                    {
+                        fullName: b.fullName,
+                        profileImageUrl: b.profileImageUrl
+                    },
+                    {
+                        where: { barberId: b.barberId, salonId },
+                        transaction: t
+                    }
+                );
+
+                if (!affected) {
+                    await t.rollback();
+                    return response.status(400).json({
+                        status: 'FAILED',
+                        message: `Invalid barberId in existingBarbers: ${b.barberId}`
+                    });
+                }
+            }
+        }
+
+        // CREATE NEW BARBERS
+        if (Array.isArray(newBarbers) && newBarbers.length > 0) {
+            for (const b of newBarbers) {
+                if (b.barberId) {
+                    await t.rollback();
+                    return response.status(400).json({
+                        status: 'FAILED',
+                        message: 'barberId must NOT be sent in newBarbers'
+                    });
+                }
+
+                await Barber.create(
+                    {
+                        salonId,
+                        fullName: b.fullName,
+                        profileImageUrl: b.profileImageUrl,
+                        isActive: true,
+                        isAvailable: true
+                    },
+                    { transaction: t }
+                );
+            }
+        }
+
+
+
 
         //update buisnesshours
         if (Array.isArray(businessHours) && businessHours.length > 0) {

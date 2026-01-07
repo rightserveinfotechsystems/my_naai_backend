@@ -53,17 +53,17 @@ const createSalonValidationSchema = Joi.object({
     isActive: Joi.boolean(),
     totalReviews: Joi.number().integer().min(0).optional(),
     ratingAverage: Joi.number().precision(1).min(0).max(5).optional(),
-    imagesArray: Joi.array()  .items(
+    imagesArray: Joi.array().items(
         Joi.string()
             .pattern(/\.jpe?g$|\.png$|\.webp$/i)  // jpg, jpeg, png, webp only
             .max(500)
             .required()
-    ).min(1) .max(20).required().messages({
-            'array.min': 'At least 1 image required',
-            'array.max': 'Maximum 20 images allowed',
-            'array.includes': 'All images must be valid URLs'
-        }),
-     
+    ).min(1).max(20).required().messages({
+        'array.min': 'At least 1 image required',
+        'array.max': 'Maximum 20 images allowed',
+        'array.includes': 'All images must be valid URLs'
+    }),
+
 
     //services
     services: Joi.array().items(
@@ -106,8 +106,8 @@ const updateSalonValidationSchema = Joi.object({
     longitude: Joi.number().allow(null),
     imageUrl: Joi.string().allow(null, ''),
     imagesArray: Joi.array()
-    .items(Joi.string().pattern(/\.jpe?g$|\.png$|\.webp$/i))
-    .optional(),
+        .items(Joi.string().pattern(/\.jpe?g$|\.png$|\.webp$/i))
+        .optional(),
     genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').optional(),
     isActive: Joi.boolean(),
     totalReviews: Joi.number().integer().min(0).optional(),
@@ -148,6 +148,76 @@ const updateSalonValidationSchema = Joi.object({
     ).optional(),
 });
 
+const updateSalonValidationSchemaApp = Joi.object({
+    salonId: Joi.string().uuid().required(),
+    salonName: Joi.string().min(2).max(150),
+    ownerName: Joi.string().min(2).max(100).allow(null, ''),
+    phoneNumber: Joi.string().pattern(/^[0-9]{10}$/),
+    email: Joi.string().email().allow(null, ''),
+    addressLine1: Joi.string().min(5).max(255),
+    addressLine2: Joi.string().max(255).allow(null, ''),
+    city: Joi.string().min(2).max(100),
+    state: Joi.string().min(2).max(100),
+    pincode: Joi.string().pattern(/^[0-9]{6}$/),
+    latitude: Joi.number().allow(null),
+    longitude: Joi.number().allow(null),
+    imageUrl: Joi.string().allow(null, ''),
+    imagesArray: Joi.array()
+        .items(Joi.string().pattern(/\.jpe?g$|\.png$|\.webp$/i))
+        .optional(),
+    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').optional(),
+    isActive: Joi.boolean(),
+    totalReviews: Joi.number().integer().min(0).optional(),
+    ratingAverage: Joi.number().precision(1).min(0).max(5).optional(),
+
+
+
+    existingServices: Joi.array().items(
+        Joi.object({
+            serviceId: Joi.string().uuid().required(),
+            serviceName: Joi.string().required(),
+            durationMinutes: Joi.number().required(),
+            price: Joi.number().min(0).required(),
+            description: Joi.string().optional()
+        })
+    ).optional(),
+
+    newServices: Joi.array().items(
+        Joi.object({
+            serviceName: Joi.string().required(),
+            durationMinutes: Joi.number().required(),
+            price: Joi.number().min(0).required(),
+            description: Joi.string().optional()
+        })
+    ).optional(),
+
+    // businessHours
+    businessHours: Joi.array().items(Joi.object({
+        scheduleId: Joi.string().uuid().required(),
+        openingTime: Joi.string().required(),
+        closingTime: Joi.string().required(),
+        breakStartTime: Joi.string().allow(null),
+        breakEndTime: Joi.string().allow(null),
+        holidayDays: Joi.array().items(Joi.number().min(0).max(6)).default([])
+    })
+    ).optional(),
+
+    //barbers
+    existingBarbers: Joi.array().items(
+        Joi.object({
+            barberId: Joi.string().uuid().required(),
+            fullName: Joi.string().optional(),
+            profileImageUrl: Joi.string().allow(null, '')
+        })
+    ).optional(),
+
+    newBarbers: Joi.array().items(
+        Joi.object({
+            fullName: Joi.string().required(),
+            profileImageUrl: Joi.string().allow(null, '')
+        })
+    ).optional()
+});
 
 // update-salon for app
 const updateSalonFieldsSchema = Joi.object({
@@ -225,5 +295,6 @@ module.exports = {
     verifySalonOtpValidationSchema,
     salonIdValidationSchema,
     updateSalonWithDetailsAppSchema,
+    updateSalonValidationSchemaApp,
     salonServiceIdValidationSchema
 };

@@ -535,60 +535,60 @@ const salonOwnerCompletedBookings = async (
 
 /**
  * SALON OWNER: create walk in
- */
-const createWalkInCustomers = async ({ salonId, count = 1, services = [] }) => {
-  if (!salonId) throw new Error('salonId is required');
-  if (count <= 0) throw new Error('count must be greater than 0');
+//  */
+// const createWalkInCustomers = async ({ salonId, count = 1, services = [] }) => {
+//   if (!salonId) throw new Error('salonId is required');
+//   if (count <= 0) throw new Error('count must be greater than 0');
 
-  // Get last queue number
-  const lastQueue = await db.Queue.findOne({
-    where: { salonId },
-    order: [['queueNumber', 'DESC']]
-  });
-  let nextQueueNumber = lastQueue ? lastQueue.queueNumber + 1 : 1;
+//   // Get last queue number
+//   const lastQueue = await db.Queue.findOne({
+//     where: { salonId },
+//     order: [['queueNumber', 'DESC']]
+//   });
+//   let nextQueueNumber = lastQueue ? lastQueue.queueNumber + 1 : 1;
 
-  const createdBookings = [];
+//   const createdBookings = [];
 
-  for (let i = 0; i < count; i++) {
-    // Guest user
-    const offlineUser = await db.User.create({
-      fullName: `Offline Customer ${nextQueueNumber}`,
-      phoneNumber: null,
-      email: null,
-      isActive: true,
-      isVerified: false
-    });
+//   for (let i = 0; i < count; i++) {
+//     // Guest user
+//     const offlineUser = await db.User.create({
+//       fullName: `Offline Customer ${nextQueueNumber}`,
+//       phoneNumber: null,
+//       email: null,
+//       isActive: true,
+//       isVerified: false
+//     });
 
-    // Booking
-    const booking = await db.Booking.create({
-      salonId,
-      userId: offlineUser.userId,
-      services,
-      bookingStatus: 'pending'
-    });
+//     // Booking
+//     const booking = await db.Booking.create({
+//       salonId,
+//       userId: offlineUser.userId,
+//       services,
+//       bookingStatus: 'pending'
+//     });
 
-    // Queue
-    await db.Queue.create({
-      salonId,
-      bookingId: booking.bookingId,
-      queueNumber: nextQueueNumber,
-      status: 'waiting'
-    });
+//     // Queue
+//     await db.Queue.create({
+//       salonId,
+//       bookingId: booking.bookingId,
+//       queueNumber: nextQueueNumber,
+//       status: 'waiting'
+//     });
 
-    createdBookings.push({
-      bookingId: booking.bookingId,
-      userName: offlineUser.fullName,
-      queueNumber: nextQueueNumber
-    });
+//     createdBookings.push({
+//       bookingId: booking.bookingId,
+//       userName: offlineUser.fullName,
+//       queueNumber: nextQueueNumber
+//     });
 
-    nextQueueNumber++;
-  }
+//     nextQueueNumber++;
+//   }
 
-  return {
-    message: `${count} walk-in customers added successfully`,
-    bookings: createdBookings
-  };
-};
+//   return {
+//     message: `${count} walk-in customers added successfully`,
+//     bookings: createdBookings
+//   };
+// };
 
 
 
@@ -761,7 +761,7 @@ const getBookingById = async (salonId, bookingId) => {
   });
 };
 
-// services/booking.service.js
+
 const addWalkInCustomers = async ({ salonId, count }) => {
   if (!salonId || count <= 0) throw new Error('Invalid input');
 
@@ -784,7 +784,7 @@ const addWalkInCustomers = async ({ salonId, count }) => {
 
   for (let i = 0; i < count; i++) {
 
-    // 1️⃣ Queue FIRST
+    // Queue FIRST
     const queue = await db.Queue.create({
       salonId,
       userId: walkInUser.userId,
@@ -793,23 +793,30 @@ const addWalkInCustomers = async ({ salonId, count }) => {
       status: 'waiting'
     });
 
-    // 2️⃣ Booking with queueId
+    // Booking with queueId
     const booking = await db.Booking.create({
       salonId,
       userId: walkInUser.userId,
       queueId: queue.queueId,   // ✅ FIX
       bookingDate: today,
       bookingStatus: 'pending',
-      bookingType: 'WALK_IN'
+      bookingType: 'WALK_IN',
+      services: [
+        {
+          serviceName: 'Walk-in Service',
+          durationMinutes: 20,
+          price: 0
+        }
+      ]
     });
 
-    // 3️⃣ Update queue with bookingId
+    // Update queue with bookingId
     await queue.update({
       bookingId: booking.bookingId
     });
 
     result.push({
-       bookingId: booking.bookingId,
+      bookingId: booking.bookingId,
       queueId: queue.queueId,
       name: walkInUser.fullName,
       mobileNumber: walkInUser.phoneNumber,
@@ -848,7 +855,7 @@ module.exports = {
   verifyBarber,
   adminListAllBookings,
   salonOwnerCompletedBookings,
-  createWalkInCustomers,
+  // createWalkInCustomers,
   getBookingById,
   addWalkInCustomers
 };
