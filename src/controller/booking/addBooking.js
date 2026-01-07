@@ -1,5 +1,7 @@
 // controllers/booking/createBooking.js
 const db = require('../../database/models');
+const { Op } = require('sequelize');
+
 const { createBookingSchema } = require('../../validations/booking.validation');
 
 const createBooking = async (req, res) => {
@@ -23,8 +25,46 @@ const createBooking = async (req, res) => {
     });
 
     if (!allowedDates.includes(bookingDate)) {
+        await t.rollback();
       return res.status(400).json({ status: 'FAILED', message: 'Booking allowed only for 3 days' });
     }
+    // ✅ Check: user can book only once per day
+    const existingBooking = await db.Booking.findOne({
+      where: {
+        userId,
+        bookingDate
+      }
+    });
+
+    if (existingBooking) {
+        await t.rollback();
+      return res.status(409).json({
+        status: 'FAILED',
+        message: 'You already have a booking for this date'
+      });
+    }
+    // ✅ Check if time slot already booked
+    if (bookingTime) {
+      const slotBooked = await db.Booking.findOne({
+        where: {
+          salonId,
+          bookingDate,
+          bookingTime,
+          bookingStatus: {
+            [Op.in]: ['pending']
+          }
+        }
+      });
+
+      if (slotBooked) {
+          await t.rollback();
+        return res.status(409).json({
+          status: 'FAILED',
+          message: 'This time slot is already booked'
+        });
+      }
+    }
+
 
     // ✅ Fetch services and calculate total
     const services = await db.Service.findAll({ where: { serviceId: serviceIds } });
@@ -76,7 +116,7 @@ const createBooking = async (req, res) => {
     }, { transaction: t });
 
     await t.commit();
-     let barberName = null;
+    let barberName = null;
     if (barberId) {
       const barber = await db.Barber.findByPk(barberId);
       barberName = barber ? barber.fullName || barber.barberName : null;
@@ -102,6 +142,6 @@ const createBooking = async (req, res) => {
   }
 };
 
-    
+
 
 module.exports = { createBooking };

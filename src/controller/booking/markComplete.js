@@ -1,6 +1,6 @@
 // controllers/booking.controller.js
 const BookingService = require('../../services/booking.service');
-const completeService = async (request, response) => {
+const markBookingDone = async (request, response) => {
   try {
     const salonId = request.salon?.salonId || request.body.salonId;
     const { bookingId } = request.body;
@@ -33,4 +33,4 @@ const completeService = async (request, response) => {
 };
 
 
-module.exports = { completeService };
+module.exports =  markBookingDone ;

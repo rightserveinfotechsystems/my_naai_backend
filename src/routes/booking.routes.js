@@ -7,9 +7,11 @@ const { authenticateSalon } = require('../utils/middleware/authSalon.middleware'
 const salonGetBookingList = require('../controller/booking/getSalonBookingList');
 const adminGetBookingList = require('../controller/booking/getBookingList');
 const getFiltersDropdown = require('../controller/booking/getFiltersDropdown');
-const { completeService } = require('../controller/booking/completeService');
 const userGetBookingList = require('../controller/booking/userBookingList');
 const adminGetAllBookings = require('../controller/booking/adminGetAllBookings');
+const markBookingDone = require('../controller/booking/markComplete');
+const getCompletedBookings = require('../controller/booking/completedBookingList');
+const addWalkInCustomers = require('../controller/booking/createWalkInBooking');
 
 const bookingRouter = express.Router();
 
@@ -23,7 +25,12 @@ bookingRouter.get('/get-all-list', authenticateAdmin, adminGetAllBookings);
 
 
 bookingRouter.post('/get-booking-list', authenticateSalon, salonGetBookingList);
-bookingRouter.post('/booking-complete', authenticateSalon, completeService);
+bookingRouter.post('/booking-complete', authenticateSalon, markBookingDone);
+bookingRouter.get('/get-completed-bookings', authenticateSalon, getCompletedBookings);
+bookingRouter.post('/create-walk-in', authenticateSalon, addWalkInCustomers);
+
+
+
 
 
 module.exports = bookingRouter;
