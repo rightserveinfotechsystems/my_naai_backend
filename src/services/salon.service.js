@@ -68,7 +68,7 @@ const getSalonWithDetails = async (salonId) => {
           as: 'barbers',
           where: { isActive: true },
           required: false,
-          attributes: ['barberId', 'fullName', 'specialization','profileImageUrl', 'isAvailable'],
+          attributes: ['barberId', 'fullName', 'specialization','profileImageUrl', 'isAvailable', 'phoneNumber','email', 'isActive','ratingAverage',],
         },
         {
           model: db.Service,

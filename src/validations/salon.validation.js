@@ -207,14 +207,16 @@ const updateSalonValidationSchemaApp = Joi.object({
         Joi.object({
             barberId: Joi.string().uuid().required(),
             fullName: Joi.string().optional(),
-            profileImageUrl: Joi.string().allow(null, '')
+            profileImageUrl: Joi.string().allow(null, ''),
+            ratingAverage: Joi.number().precision(1).min(0).max(5).optional()
         })
     ).optional(),
 
     newBarbers: Joi.array().items(
         Joi.object({
             fullName: Joi.string().required(),
-            profileImageUrl: Joi.string().allow(null, '')
+            profileImageUrl: Joi.string().allow(null, ''),
+            ratingAverage: Joi.number().precision(1).min(0).max(5).optional()
         })
     ).optional()
 });
