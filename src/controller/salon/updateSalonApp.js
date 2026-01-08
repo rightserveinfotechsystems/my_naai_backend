@@ -7,7 +7,7 @@ const updateSalonApp = async (request, response) => {
 
     try {
 
-        const { salonId, existingServices = [], newServices = [], businessHours = [], existingBarbers = [],newBarbers = [], ...salonData } = request.body || {};
+        const { salonId, existingServices = [], newServices = [], businessHours = [], existingBarbers = [], newBarbers = [], ...salonData } = request.body || {};
 
         // salonId check
         if (!salonId) {
@@ -138,7 +138,8 @@ const updateSalonApp = async (request, response) => {
                 const [affected] = await Barber.update(
                     {
                         fullName: b.fullName,
-                        profileImageUrl: b.profileImageUrl
+                        profileImageUrl: b.profileImageUrl,
+                        ratingAverage: b.ratingAverage ?? 0,
                     },
                     {
                         where: { barberId: b.barberId, salonId },
@@ -172,6 +173,7 @@ const updateSalonApp = async (request, response) => {
                         salonId,
                         fullName: b.fullName,
                         profileImageUrl: b.profileImageUrl,
+                        ratingAverage: b.ratingAverage ?? 0,
                         isActive: true,
                         isAvailable: true
                     },
