@@ -347,7 +347,7 @@ const deleteSalon = async (salonId) => {
 };
 
 /**
- * List salons with pagination
+ * List salons with pagination and search
  */
 const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL', statusFilter = 'all' }) => {
   try {
@@ -377,7 +377,7 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
       where.isActive = false;
     }
 
-    // ✅ 1. SALON COUNT SEPARATE KARO
+    // ✅ 1. SALON COUNT
     const totalSalons = await db.Salon.count({ where });
 
     // ✅ 2. SALONS FETCH
@@ -434,6 +434,91 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
   }
 };
 
+/**
+ * List salons with pagination for users (only active salons)
+ */
+const getActiveSalonsListForUsers
+ = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL' }) => {
+  try {
+    const offset = (page - 1) * limit;
+
+    //only active salons for users
+    const where = {
+      isActive: true
+    };
+
+    if (searchString?.trim()) {
+      const like = `%${searchString.trim()}%`;
+      where[Op.or] = [
+        { salonName: { [Op.iLike]: like } },
+        { phoneNumber: { [Op.iLike]: like } },
+        { city: { [Op.iLike]: like } },
+        { addressLine1: { [Op.iLike]: like } }
+      ];
+    }
+
+
+    // ✅ City filter
+    if (cityFilter !== 'ALL') {
+      where.city = { [Op.iLike]: `%${cityFilter}%` };
+    }
+
+    // ✅ 1. SALON COUNT 
+    const totalSalons = await db.Salon.count({ where });
+
+    // ✅ 2. SALONS FETCH
+    const salons = await db.Salon.findAll({
+      where,
+      attributes: { exclude: ['deletedAt'] },
+      include: [{
+        model: db.Queue,
+        as: 'queues',
+        where: { status: 'waiting' },
+        required: false,
+        include: [{
+          model: db.Service,
+          as: 'service',
+          required: false,
+          attributes: ['durationMinutes']
+        }],
+        attributes: ['queueNumber'],
+        order: [['queueNumber', 'ASC']]
+      }],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
+
+    // ✅ 3. Calculate wait time (same)
+    const salonsWithWaitTime = salons.map(salon => {
+      const queues = salon.queues || [];
+      const totalMinutes = queues.reduce((sum, queue) => sum + (queue.service?.durationMinutes || 15), 0);
+
+      const salonData = salon.toJSON();
+      delete salonData.queues;
+
+      return {
+        ...salonData,
+        queueLength: queues.length,
+        totalWaitTime: {
+          minutes: totalMinutes,
+          display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+        }
+      };
+    });
+
+    // ✅ 4. CORRECT PAGINATION
+    return {
+      salons: salonsWithWaitTime,
+      totalSalons: totalSalons,  // ✅ SALON COUNT
+      page,
+      limit,
+      totalPages: Math.ceil(totalSalons / limit)
+    };
+  } catch (error) {
+    throw error;
+  }
+};
 
 /**
  * filter api city wise
@@ -576,5 +661,8 @@ module.exports = {
   deleteSalonService,
   getServiceById,
   getCitySalonsService,
-  hasActiveQueueForService
+  hasActiveQueueForService,
+  getActiveSalonsListForUsers
+
+
 };

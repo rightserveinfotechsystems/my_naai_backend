@@ -1,13 +1,13 @@
 const salonService = require('../../services/salon.service');
 
-const listSalonsApp = async (request, response) => {
+const listSalonsByUser = async (request, response) => {
     try {
         const page = parseInt(request.body.page) || 1;
         const limit = parseInt(request.body.limit) || 20;
         const searchString = request.body.searchString || '';
         const cityFilter = request.body.cityFilter || 'ALL';
 
-        const result = await salonService.listSalons({ page, limit, searchString, cityFilter });
+        const result = await salonService.getActiveSalonsListForUsers({ page, limit, searchString, cityFilter });
          const message = result.totalSalons > 0 
             ? 'Salons fetched successfully'
             : 'No matching salons found';
@@ -33,4 +33,4 @@ const listSalonsApp = async (request, response) => {
 };
 
 
-module.exports = listSalonsApp;
+module.exports = listSalonsByUser;
