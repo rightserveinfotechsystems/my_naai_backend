@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-    const Salon = sequelize.define('Salon', {
+    const Salon = sequelize.define('Salon', {  
         salonId: {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4,
@@ -240,6 +240,11 @@ module.exports = (sequelize) => {
             as: 'businessHours',
             onDelete: 'CASCADE'
         });
+        Salon.hasMany(models.Product, {
+            foreignKey: 'salonId',
+            as: 'products',
+        });
+
     };
 
     return Salon;
