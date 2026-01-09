@@ -21,10 +21,10 @@ const authenticateSalon = async (request, response, next) => {
 
     const decoded = verifyToken(token);
 
-        if (!decoded || !decoded.salonId) {
+    if (!decoded || !decoded.salonId) {
       return response.status(401).json({
         status: 'FAILED',
-        message: 'Invalid token payload'  
+        message: 'Invalid token payload'
       });
     }
 
@@ -47,7 +47,7 @@ const authenticateSalon = async (request, response, next) => {
 
     next();
   } catch (error) {
-      console.log('ERROR:', error.message);
+    console.log('ERROR:', error.message);
     return response.status(401).json({
       status: 'FAILED',
       message: 'Not authorized'

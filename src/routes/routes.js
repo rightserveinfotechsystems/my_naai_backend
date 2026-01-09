@@ -7,6 +7,7 @@ const bookingRouter = require('./booking.routes');
 const salonRequestRouter = require('./salonrequest.routes');
 const ImageRoutes = require('./upload.routes');
 const advertisementRouter = require('./advertisement.routes');
+const productRouter = require('./product.routes');
 
 
 const routes = express.Router();
@@ -22,6 +23,7 @@ routes.use('/barbers', barberRouter)
 routes.use('/booking', bookingRouter);
 routes.use('/salonrequest', salonRequestRouter);
 routes.use('/advertisement', advertisementRouter);
+routes.use('/products', productRouter);
 routes.use('/upload', ImageRoutes);
 
 

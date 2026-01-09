@@ -5,7 +5,7 @@ const deleteSalonService = async (request, response) => {
     try {
         const { serviceId, salonId } = request.body || {};
 
-        // ✅ Single delete 
+
         if (serviceId) {
             // Validate single serviceId
             const { error } = salonServiceIdValidationSchema.validate(request.body, { abortEarly: true });
@@ -25,7 +25,7 @@ const deleteSalonService = async (request, response) => {
                 });
             }
 
-            // ✅ Delete using SERVICE LAYER (user pattern!)
+            // ✅ Delete using SERVICE LAYER
             const result = await salonService.deleteSalonService(serviceId);
             if (result) {
                 return response.status(200).json({
@@ -33,6 +33,7 @@ const deleteSalonService = async (request, response) => {
                     message: "Salon service deleted successfully",
                     data: {
                         deletedServiceId: serviceId,
+                        serviceName: existingService.serviceName,
                         salonId: existingService.salonId || salonId
                     }
                 });
@@ -42,7 +43,7 @@ const deleteSalonService = async (request, response) => {
                     message: "Failed to delete service, Please try again!",
                 });
             }
-        } 
+        }
         // Neither provided
         else {
             return response.status(400).json({
