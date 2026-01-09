@@ -507,6 +507,22 @@ const hasActiveQueues = async (salonId) => {
   }
 };
 
+
+
+/**
+ * Check if service has active queues
+ */
+const hasActiveQueueForService = async (serviceId) => {
+    const count = await Queue.count({
+        where: {
+            serviceId,
+            QueueStatus: ['pending']
+        }
+    });
+
+    return count > 0;
+};
+
 /**
  * Get single service by serviceId
  */
@@ -556,5 +572,6 @@ module.exports = {
   getSalonBasicWithQueue,
   deleteSalonService,
   getServiceById,
-  getCitySalonsService
+  getCitySalonsService,
+  hasActiveQueueForService
 };

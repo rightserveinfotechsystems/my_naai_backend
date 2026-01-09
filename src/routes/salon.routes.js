@@ -18,6 +18,8 @@ const listSalons = require('../controller/salon/getSalonList');
 const deleteSalonService = require('../controller/salon/deleteSalonService');
 const { getListFilter } = require('../controller/salon/getList');
 const { getCityFilterUser } = require('../controller/salon/getFilterListUser');
+const deleteService = require('../controller/salon/deleteServiceBySalon');
+
 
 
 const salonRouter = express.Router();
@@ -27,11 +29,14 @@ salonRouter.post('/send-otp', sendSalonOtp);
 salonRouter.post('/login', verifySalonOtpLogin);
 salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
 salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
+salonRouter.post('/delete-salon-service', authenticateSalon, deleteService);
+
+
 
 //user login   
 salonRouter.post('/salon-list',authenticateUser, listSalonsApp);
 salonRouter.post('/get-salon-by-id',authenticateUser, getSalonByIdUser);
-salonRouter.get('/get-city-list',authenticateUser,getCityFilterUser )
+salonRouter.get('/get-city-list', authenticateUser, getCityFilterUser )
 
 
 // Salon operations
