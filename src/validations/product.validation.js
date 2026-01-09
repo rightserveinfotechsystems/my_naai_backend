@@ -15,7 +15,11 @@ const updateProductSchema = Joi.object({
     rating: Joi.number().min(0).max(5).optional(),
     isAvailable: Joi.boolean().optional()
 });
+const deleteProductSchema = Joi.object({
+    productId: Joi.string().uuid().required()
+});
 module.exports = { 
     addProductSchema,
-    updateProductSchema
+    updateProductSchema,
+    deleteProductSchema
  }

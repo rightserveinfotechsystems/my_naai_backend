@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const db = require('../database/models');
+const { required } = require('joi');
 /**
  * Create salon
  */
@@ -64,11 +65,11 @@ const getSalonWithDetails = async (salonId) => {
     const salon = await db.Salon.findByPk(salonId, {
       include: [
         {
-          model: db.Barber,        
+          model: db.Barber,
           as: 'barbers',
           where: { isActive: true },
           required: false,
-          attributes: ['barberId', 'fullName', 'specialization','profileImageUrl', 'isAvailable', 'phoneNumber','email', 'isActive','ratingAverage',],
+          attributes: ['barberId', 'fullName', 'specialization', 'profileImageUrl', 'isAvailable', 'phoneNumber', 'email', 'isActive', 'ratingAverage',],
         },
         {
           model: db.Service,
@@ -81,16 +82,9 @@ const getSalonWithDetails = async (salonId) => {
           model: db.BusinessHours,
           as: 'businessHours',
           required: false,
-          attributes: [
-            'scheduleId',
-            'openingTime',
-            'closingTime',
-            'breakStartTime',
-            'breakEndTime',
-            'holidayDays'
+          attributes: ['scheduleId','openingTime','closingTime','breakStartTime','breakEndTime', 'holidayDays'
           ],
-        },
-
+        }
 
         // {
         //   model: db.Booking,
@@ -141,7 +135,9 @@ const getSalonBasicWithQueue = async (salonId) => {
         {
           model: db.Barber,
           as: 'barbers',
-          where: { isActive: true },
+          where: { isActive: true,
+            isAvailable:true
+           },
           required: false,
           attributes: [
             'barberId',
@@ -177,6 +173,13 @@ const getSalonBasicWithQueue = async (salonId) => {
             'breakEndTime',
             'holidayDays'
           ],
+        },
+        {
+          model: db.Product,
+          as: 'products',
+          where: { isAvailable: true},
+          required:false,
+          attributes: ['productId', 'productName', 'price', 'rating', 'stockStatus','productImage'],
         }
       ],
     });
@@ -513,14 +516,14 @@ const hasActiveQueues = async (salonId) => {
  * Check if service has active queues
  */
 const hasActiveQueueForService = async (serviceId) => {
-    const count = await Queue.count({
-        where: {
-            serviceId,
-            QueueStatus: ['pending']
-        }
-    });
+  const count = await Queue.count({
+    where: {
+      serviceId,
+      QueueStatus: ['pending']
+    }
+  });
 
-    return count > 0;
+  return count > 0;
 };
 
 /**

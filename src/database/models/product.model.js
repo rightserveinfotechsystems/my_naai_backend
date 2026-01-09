@@ -35,14 +35,14 @@ module.exports = (sequelize) => {
         },
 
 
-        // FRONTEND TOGGLE USES THIS
+    
         isAvailable: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: true
         },
 
-        // BACKEND/UI READABLE STATUS
+    
         stockStatus: {
             type: DataTypes.ENUM('available', 'out_of_stock'),
             allowNull: false,
@@ -50,9 +50,10 @@ module.exports = (sequelize) => {
         },
 
 
-        isDeleted: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false
+         deletedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'deleted_at'
         }
     },
         {

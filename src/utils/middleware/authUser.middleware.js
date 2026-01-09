@@ -17,7 +17,8 @@ const authenticateUser = async (request, response, next) => {
         
         // Verify JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        
+        console.log('Decoded Token:', decoded);
+
         // validate user from token
         const user = await userService.getUserById(decoded.userId);
         if (!user || !user.isActive) {

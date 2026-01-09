@@ -3,13 +3,26 @@ const { authenticateSalon } = require('../utils/middleware/authSalon.middleware'
 const addProduct = require('../controller/product/createProduct');
 const updateProduct = require('../controller/product/updateProduct');
 const productList = require('../controller/product/getProductList');
+const deleteProduct = require('../controller/product/deleteProduct');
+const getAllSalonsProducts = require('../controller/product/allSalonsProductsList');
+const authenticateUser = require('../utils/middleware/authUser.middleware');
 
 
 const productRouter = express.Router();
 
-productRouter.post('/create', authenticateSalon, addProduct);
-productRouter.post('/update', authenticateSalon, updateProduct);
-productRouter.post('/list', authenticateSalon, productList);
+//user authenticate
+productRouter.post('/get-all-salons-products-list', authenticateUser, getAllSalonsProducts);
+
+// All routes require salon authentication
+productRouter.use(authenticateSalon);
+
+productRouter.post('/create', addProduct);
+productRouter.post('/update', updateProduct);
+productRouter.post('/list',  productList);
+productRouter.post('/delete',  deleteProduct);
+
+
+
 
 
 

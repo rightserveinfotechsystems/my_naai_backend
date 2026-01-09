@@ -68,10 +68,7 @@ const deleteProduct = async (productId) => {
 };
 
 /**
- * List products with pagination & filters
- */
-/**
- * Get users list with pagination
+ * List products with pagination & search
  */
 
 const listProducts = async ({ page = 1, searchString = '' }) => {
@@ -82,10 +79,10 @@ const listProducts = async ({ page = 1, searchString = '' }) => {
 
     const where = {};
 
-    if ((searchString=(searchString?.trim()))){
+    if ((searchString = (searchString?.trim()))) {
       const like = `%${searchString}%`;
       where[Op.or] = [
-        { productName:    { [Op.iLike]: like } }
+        { productName: { [Op.iLike]: like } }
       ];
     }
 
@@ -122,10 +119,74 @@ const listProducts = async ({ page = 1, searchString = '' }) => {
   }
 };
 
+/**
+ * All Salons products List with pagination & search
+ */
+
+const allSalonsProductsList = async ({ page = 1, searchString = '' }) => {
+  try {
+    const limit = DEFAULT_LIMIT;
+    const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+    const offset = (safePage - 1) * limit;
+
+    const where = {
+      isAvailable: true
+    };
+    const trimmedSearch = searchString?.trim();
+    if (trimmedSearch) {
+      const like = `%${trimmedSearch}%`;
+      where[Op.or] = [
+        { productName: { [Op.iLike]: like } },
+         { '$salon.salon_name$': { [Op.iLike]: like} }
+      ];
+    }
+
+    const { count: totalProducts, rows: products } = await db.Product.findAndCountAll({
+      where,
+      attributes: [
+        'productId',
+        'productName',
+        'price',
+        'rating',
+        'isAvailable',
+        'stockStatus'
+      ],
+      include: [
+        {
+          model: db.Salon,
+          as: 'salon',
+          attributes: ['salonId', 'salonName']
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+    });
+
+    const totalPages = Math.ceil(totalProducts / limit) || 1;
+
+    const result = {
+      products,
+      pagination: {
+        page: safePage,
+        limit,
+        totalProducts,
+        totalPages,
+      },
+    };
+    return result;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+
 module.exports = {
   createProduct,
   getProductById,
   updateProduct,
   deleteProduct,
-  listProducts
+  listProducts,
+  allSalonsProductsList
 };
