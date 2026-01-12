@@ -71,7 +71,7 @@ const createSalonValidationSchema = Joi.object({
             serviceName: Joi.string().min(2).max(100).required(),
             description: Joi.string().allow(null, ''),
             durationMinutes: Joi.number().min(1).required(),
-            price: Joi.number().min(0).required()
+            price: Joi.number().min(0).optional()
         })
     ).optional(),
 
@@ -120,7 +120,7 @@ const updateSalonValidationSchema = Joi.object({
             serviceId: Joi.string().uuid().required(),
             serviceName: Joi.string().required(),
             durationMinutes: Joi.number().required(),
-            price: Joi.number().min(0).required(),
+            price: Joi.number().min(0).optional(),
             description: Joi.string().optional()
         })
     ).optional(),
@@ -129,7 +129,7 @@ const updateSalonValidationSchema = Joi.object({
         Joi.object({
             serviceName: Joi.string().required(),
             durationMinutes: Joi.number().required(),
-            price: Joi.number().min(0).required(),
+            price: Joi.number().min(0).optional(),
             description: Joi.string().optional()
         })
     ).optional(),
@@ -177,7 +177,7 @@ const updateSalonValidationSchemaApp = Joi.object({
             serviceId: Joi.string().uuid().required(),
             serviceName: Joi.string().required(),
             durationMinutes: Joi.number().required(),
-            price: Joi.number().min(0).required(),
+            price: Joi.number().min(0).optional(),
             description: Joi.string().optional()
         })
     ).optional(),
@@ -186,7 +186,7 @@ const updateSalonValidationSchemaApp = Joi.object({
         Joi.object({
             serviceName: Joi.string().required(),
             durationMinutes: Joi.number().required(),
-            price: Joi.number().min(0).required(),
+            price: Joi.number().min(0).optional(),
             description: Joi.string().optional()
         })
     ).optional(),
