@@ -8,7 +8,7 @@ const db = require('../../database/models');
 // controllers/user/sendOtp.controller.js
 const sendOtp = async (request, response) => {
     try {
-        const { phoneNumber } = request.body;
+        const { phoneNumber } = request.body || {};
         // Validate
         const validationResult = sendOtpValidationSchema.validate({ phoneNumber });
         if (validationResult.error) {

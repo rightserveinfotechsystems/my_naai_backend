@@ -6,6 +6,8 @@ const authenticateUser = async (request, response, next) => {
     try {
         // get token from headers
         const authHeader = request.headers.authorization;
+
+        //check if token is missing
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return response.status(401).json({
                 status: 'FAILED',
@@ -21,11 +23,20 @@ const authenticateUser = async (request, response, next) => {
 
         // validate user from token
         const user = await userService.getUserById(decoded.userId);
-        if (!user || !user.isActive) {
+        // check if user exists
+        if (!user) {
             return response.status(401).json({
                 status: 'FAILED',
-                message: 'Invalid or inactive user'
+                message: 'User not found'
             });
+        }
+
+        // check if user is active
+        if(!user.isActive){
+            return response.status(403).json({
+                status: 'FAILED',
+                message: 'User is not active. Please contact support.'
+            })
         }
 
         //attach user to request object
