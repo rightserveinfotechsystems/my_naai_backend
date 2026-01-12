@@ -103,7 +103,7 @@ const User = (sequelize) => {
         modelName: 'User',
         tableName: 'users',
         timestamps: true,
-        paranoid: true,
+        // paranoid: true,
         
         indexes: [
             {
