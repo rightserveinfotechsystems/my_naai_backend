@@ -91,6 +91,7 @@ const listProducts = async ({ page = 1, searchString = '' }) => {
       attributes: [
         'productId',
         'productName',
+        'productImage',
         'price',
         'rating',
         'isAvailable',

@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-    const Salon = sequelize.define('Salon', {  
+    const Salon = sequelize.define('Salon', {
         salonId: {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4,
@@ -27,6 +27,7 @@ module.exports = (sequelize) => {
             allowNull: true,
             field: 'owner_name'
         },
+
         phoneNumber: {
             type: DataTypes.STRING(15),
             allowNull: false,
@@ -47,6 +48,11 @@ module.exports = (sequelize) => {
                 }
             },
             field: 'email'
+        },
+        deviceToken: {
+            type: DataTypes.STRING(500),
+            allowNull: true,
+            field: 'device_token'
         },
         addressLine1: {
             type: DataTypes.STRING(255),
