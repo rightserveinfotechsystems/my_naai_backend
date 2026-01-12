@@ -1,8 +1,15 @@
-var firebaseAdmin = require("firebase-admin");
-var serviceAccount = require("./blueladder-firebase.json");
+const admin = require("firebase-admin");
+const path = require("path");
 
-firebaseAdmin.initializeApp({
-  credential: firebaseAdmin.credential.cert(serviceAccount)
-});
+const serviceAccount = require(path.join(
+  __dirname,
+  "my-naai-firebase.json"
+));
 
-module.exports = firebaseAdmin;
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
+
+module.exports = admin;

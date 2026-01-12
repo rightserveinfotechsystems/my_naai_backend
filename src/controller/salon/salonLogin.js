@@ -56,7 +56,7 @@ const verifySalonOtpLogin = async (request, response) => {
         // Update last login
         await salonService.updateSalon(salon.salonId, {
             lastLogin: new Date(),
-            deviceToken: request?.body?.deviceToken || user?.deviceToken
+            deviceToken: request?.body?.deviceToken || null
         });
 
         // Generate JWT token
