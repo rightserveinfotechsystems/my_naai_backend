@@ -140,6 +140,7 @@ const updateSalonApp = async (request, response) => {
                         fullName: b.fullName,
                         profileImageUrl: b.profileImageUrl,
                         ratingAverage: b.ratingAverage ?? 0,
+                        isAvailable: b.isAvailable !== undefined ? b.isAvailable : true
                     },
                     {
                         where: { barberId: b.barberId, salonId },
@@ -175,7 +176,7 @@ const updateSalonApp = async (request, response) => {
                         profileImageUrl: b.profileImageUrl,
                         ratingAverage: b.ratingAverage ?? 0,
                         isActive: true,
-                        isAvailable: true
+                        isAvailable: b.isAvailable !== undefined ? b.isAvailable : true
                     },
                     { transaction: t }
                 );
