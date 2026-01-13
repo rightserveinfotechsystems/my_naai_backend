@@ -10,9 +10,12 @@ const createBookingSchema = Joi.object({
     .required()
      .messages({
     'date.min': 'bookingDate cannot be in the past!',
-    'date.base': 'bookingDate must be a valid date in YYYY-MM-DD format'
+    'date.base': 'bookingDate must be a valid date in YYYY-MM-DD format',
+    'string.pattern.base': 'bookingDate must be in YYYY-MM-DD format'
   }),
-  bookingTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).allow(null, '').optional(),
+  bookingTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/).allow(null, '').optional()
+  .messages({ 'string.pattern.base': 'Please enter bookingTime in 24-hour format HH:MM:SS (e.g., 12:00:00)',
+    'any.required': 'bookingTime is required'}),
   amount: Joi.number().min(0).allow(null),
    serviceIds: Joi.array().items(Joi.string().uuid()).min(1).required()
 });

@@ -1,6 +1,8 @@
 // controllers/booking/createBooking.js
 const db = require('../../database/models');
 const { Op } = require('sequelize');
+const { Notification } = db;
+
 
 const { createBookingSchema } = require('../../validations/booking.validation');
 
@@ -25,7 +27,7 @@ const createBooking = async (req, res) => {
     });
 
     if (!allowedDates.includes(bookingDate)) {
-        await t.rollback();
+      await t.rollback();
       return res.status(400).json({ status: 'FAILED', message: 'Booking allowed only for 3 days' });
     }
     // ✅ Check: user can book only once per day
@@ -37,7 +39,7 @@ const createBooking = async (req, res) => {
     });
 
     if (existingBooking) {
-        await t.rollback();
+      await t.rollback();
       return res.status(409).json({
         status: 'FAILED',
         message: 'You already have a booking for this date'
@@ -57,7 +59,7 @@ const createBooking = async (req, res) => {
       });
 
       if (slotBooked) {
-          await t.rollback();
+        await t.rollback();
         return res.status(409).json({
           status: 'FAILED',
           message: 'This time slot is already booked'
@@ -116,6 +118,15 @@ const createBooking = async (req, res) => {
     }, { transaction: t });
 
     await t.commit();
+
+    // 🔔 IN-APP NOTIFICATION 
+    await Notification.create({
+      receiverType: 'SALON',
+      receiverId: salonId,
+      title: 'New Booking',
+      message: 'You have received a new booking request'
+    });
+
     let barberName = null;
     if (barberId) {
       const barber = await db.Barber.findByPk(barberId);
