@@ -9,6 +9,7 @@ const db = require("./src/database/models");
 const routes = require("./src/routes/routes");
 const errorHandler = require("./src/utils/middleware/error.middleware");
 const fs = require('fs');
+const sendPushNotification = require("./src/firebase/sendNotification");
 
 dotenv.config();
 
@@ -110,7 +111,8 @@ process.on('SIGTERM', async () => {
 
 //connect db
 connectDb();
+// sendPushNotification("fc2A21LpQ4W3IBj7ry6RyW:APA91bHexWAirHUAVKOZKqsl_BSxon1wTcvqhk40qWCWE1YGzQjdd76Q520S-zuX0rUtcNfyux60kk7GdtuNtm6H6f_G60SL4ODvKPTUbx55qBmKWtQVrjI","Test Title","This is test notification body")
 // listen on PORT
-app.listen(PORT, () => {
+app.listen(PORT,'0.0.0.0', () => {
     console.log(`Server is running on port ${PORT} 🏃‍♂️`);
 });

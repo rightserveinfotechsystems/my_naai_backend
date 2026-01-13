@@ -54,10 +54,21 @@ const verifySalonOtpLogin = async (request, response) => {
         });
 
         // Update last login
-        await salonService.updateSalon(salon.salonId, {
-            lastLogin: new Date(),
-            deviceToken: request?.body?.deviceToken || null
-        });
+        // await salonService.updateSalon(salon.salonId, {
+        //     lastLogin: new Date(),
+        //     deviceToken: request?.body?.deviceToken || null
+        // });
+
+        if (salon.deviceToken !== request.body.deviceToken) {
+            await salonService.updateSalon(salon.salonId, {
+                lastLogin: new Date(),
+                deviceToken: request.body.deviceToken
+            });
+        } else {
+            await salonService.updateSalon(salon.salonId, {
+                lastLogin: new Date()
+            });
+        }
 
         // Generate JWT token
         const token = generateToken({

@@ -60,7 +60,7 @@ const deleteProduct = async (productId) => {
     }
 
     // Soft delete: isDeleted = true
-    await product.update({ isDeleted: true });
+    await product.destroy();
     return true;
   } catch (error) {
     throw error;
@@ -146,6 +146,7 @@ const allSalonsProductsList = async ({ page = 1, searchString = '' }) => {
       where,
       attributes: [
         'productId',
+        'productImage',
         'productName',
         'price',
         'rating',
