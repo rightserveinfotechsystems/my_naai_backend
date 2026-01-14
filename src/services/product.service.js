@@ -71,13 +71,13 @@ const deleteProduct = async (productId) => {
  * List products with pagination & search
  */
 
-const listProducts = async ({ page = 1, searchString = '' }) => {
+const listProducts = async ({salonId, page = 1, searchString = '' }) => {
   try {
     const limit = DEFAULT_LIMIT;
     const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
     const offset = (safePage - 1) * limit;
 
-    const where = {};
+    const where = { salonId: salonId};
 
     if ((searchString = (searchString?.trim()))) {
       const like = `%${searchString}%`;
