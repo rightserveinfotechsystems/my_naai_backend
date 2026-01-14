@@ -14,7 +14,7 @@ const getNotificationById =   async (notificationId) => {
     return await db.Notification.findOne({
         where: { notificationId }
     });
-};
+};     
 
 const getNotificationsByIds = async (notificationIds = []) => {
     return await db.Notification.findAll({
