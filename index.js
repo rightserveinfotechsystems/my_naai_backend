@@ -108,6 +108,8 @@ process.on('SIGTERM', async () => {
     console.log('👋 SIGTERM received, closing server gracefully');
     process.exit(0);
 });
+// 🔥 CRON REGISTER
+require('./cron/notification.cron');
 
 //connect db
 connectDb();
