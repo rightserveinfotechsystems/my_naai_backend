@@ -133,7 +133,7 @@ const createBooking = async (req, res) => {
       barberName = barber ? barber.fullName || barber.barberName : null;
     }
 
-    return res.status(201).json({
+    return res.status(200).json({
       status: 'SUCCESS',
       message: 'Booking created successfully',
       data: {
