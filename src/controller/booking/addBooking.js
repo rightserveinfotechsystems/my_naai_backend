@@ -20,11 +20,17 @@ const createBooking = async (req, res) => {
     // ✅ Date validation: only today + 2 days
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     const allowedDates = [0, 1, 2].map(d => {
       const dt = new Date(today);
       dt.setDate(today.getDate() + d);
-      return dt.toISOString().split('T')[0];
+      // Get YYYY-MM-DD in local time
+      const year = dt.getFullYear();
+      const month = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     });
+
 
     if (!allowedDates.includes(bookingDate)) {
       await t.rollback();
@@ -69,7 +75,13 @@ const createBooking = async (req, res) => {
 
 
     // ✅ Fetch services and calculate total
-    const services = await db.Service.findAll({ where: { serviceId: serviceIds } });
+    const services = await db.Service.findAll({
+      where: {
+        serviceId: {
+          [Op.in]: serviceIds
+        }
+      }
+    });
     if (services.length !== serviceIds.length) {
       return res.status(400).json({ status: 'FAILED', message: 'Invalid service selected' });
     }
@@ -100,7 +112,8 @@ const createBooking = async (req, res) => {
       bookingTime,
       queueNumber,
       estimatedWaitTime: totalDuration,
-      status: 'waiting'
+      // status: 'waiting'
+      serviceId: serviceIds.length === 1 ? serviceIds[0] : null
     }, { transaction: t });
 
     // ✅ Create booking with multiple services
@@ -118,6 +131,16 @@ const createBooking = async (req, res) => {
     }, { transaction: t });
 
     await t.commit();
+   // ✅ EXACT TOTAL WAIT TIME (client logic)
+const allQueues = await db.Queue.findAll({
+  where: { salonId, bookingDate }
+});
+
+const salonTotalWait = allQueues.reduce(
+  (sum, q) => sum + Number(q.estimatedWaitTime || 0),
+  0
+);
+
 
     // 🔔 IN-APP NOTIFICATION 
     await Notification.create({
@@ -126,29 +149,31 @@ const createBooking = async (req, res) => {
       title: 'New Booking',
       message: 'You have received a new booking request'
     });
-    // 🔴 REAL-TIME SOCKET EVENT
-   req.io
-  .to(`salon_${salonId}`)
-  .emit("new_notification", {
-      title: Notification.title,
-      message: Notification.message,
-      createdAt: Notification.createdAt
-  });
+    //  REAL-TIME SOCKET EVENT
+    req.io
+      .to(`salon_${salonId}`)
+      .emit("new_notification", {
+        title: Notification.title,
+        message: Notification.message,
+        createdAt: Notification.createdAt
+      });
 
-    // 🔴 OPTIONAL: notification count update
+    //  OPTIONAL: notification count update
     req.io
       .to(`salon_${salonId}`)
       .emit('notification_count_updated');
+
+
     let barberName = null;
     if (barberId) {
       const barber = await db.Barber.findByPk(barberId);
       barberName = barber ? barber.fullName || barber.barberName : null;
     }
     req.io.to(`salon_${salonId}`).emit("new_notification", {
-    title: "New Booking",
-    message: "You have received a new booking request",
-    bookingId: booking.bookingId
-});
+      title: "New Booking",
+      message: "You have received a new booking request",
+      bookingId: booking.bookingId
+    });
 
     return res.status(200).json({
       status: 'SUCCESS',
@@ -158,7 +183,8 @@ const createBooking = async (req, res) => {
         queueNumber,
         totalDuration,
         totalAmount,
-        services: servicesPayload
+        services: servicesPayload,
+        salonTotalWait
       }
     });
 
