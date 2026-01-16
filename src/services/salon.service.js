@@ -481,7 +481,7 @@ const getActiveSalonsListForUsers
           required: false,
           attributes: ['durationMinutes']
         }],
-        attributes: ['queueNumber'],
+        attributes: ['queueNumber', 'estimatedWaitTime'],
         order: [['queueNumber', 'ASC']]
       }],
       limit,
@@ -492,7 +492,7 @@ const getActiveSalonsListForUsers
     // ✅ 3. Calculate wait time (same)
     const salonsWithWaitTime = salons.map(salon => {
       const queues = salon.queues || [];
-      const totalMinutes = queues.reduce((sum, queue) => sum + (queue.service?.durationMinutes || 15), 0);
+      const totalMinutes = queues.reduce((sum, queue) => sum + queue.estimatedWaitTime, 0);
 
       const salonData = salon.toJSON();
       delete salonData.queues;

@@ -414,7 +414,7 @@ const salonOwnerListBookings = async (salonId, {
         queueNumber: b.queue?.queueNumber,
         userName: b.user?.fullName,
         userPhone: b.user?.phoneNumber,
-
+        barberName: b.barber?.fullName,  
         serviceNames: services.map(s => s.serviceName).join(', '),
         servicePrice: services.reduce((sum, s) => sum + Number(s.price || 0), 0)
       };
