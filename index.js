@@ -10,6 +10,8 @@ const routes = require("./src/routes/routes");
 const errorHandler = require("./src/utils/middleware/error.middleware");
 const fs = require('fs');
 const sendPushNotification = require("./src/firebase/sendNotification");
+const http = require('http');
+const { Server } = require('socket.io');
 
 dotenv.config();
 
@@ -17,8 +19,34 @@ const PORT = process.env.PORT || 8000;
 
 
 const app = express();
+// Create HTTP server
+const server = http.createServer(app);
+// Create Socket.io server
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+    }
+});
 
+// socket connection
+io.on("connection", (socket) => {
+    console.log("🟢 Socket connected:", socket.id);
 
+    socket.on("join_salon", (salonId) => {
+        socket.join(`salon_${salonId}`);
+        console.log(`🏪 Salon joined room: salon_${salonId}`);
+    });
+
+    socket.on("disconnect", () => {
+        console.log("🔴 Socket disconnected:", socket.id);
+    });
+});
+
+// make io available in controllers
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
 // Middleware
 app.use(cors({ origin: "*" }));
 app.use(
@@ -115,6 +143,10 @@ require('./cron/notification.cron');
 connectDb();
 // sendPushNotification("fc2A21LpQ4W3IBj7ry6RyW:APA91bHexWAirHUAVKOZKqsl_BSxon1wTcvqhk40qWCWE1YGzQjdd76Q520S-zuX0rUtcNfyux60kk7GdtuNtm6H6f_G60SL4ODvKPTUbx55qBmKWtQVrjI","Test Title","This is test notification body")
 // listen on PORT
-app.listen(PORT,'0.0.0.0', () => {
+// app.listen(PORT,'0.0.0.0', () => {
+//     console.log(`Server is running on port ${PORT} 🏃‍♂️`);
+// });
+
+server.listen(PORT,'0.0.0.0', () => {
     console.log(`Server is running on port ${PORT} 🏃‍♂️`);
 });
