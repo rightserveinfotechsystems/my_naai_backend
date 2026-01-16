@@ -126,12 +126,29 @@ const createBooking = async (req, res) => {
       title: 'New Booking',
       message: 'You have received a new booking request'
     });
+    // 🔴 REAL-TIME SOCKET EVENT
+   req.io
+  .to(`salon_${salonId}`)
+  .emit("new_notification", {
+      title: Notification.title,
+      message: Notification.message,
+      createdAt: Notification.createdAt
+  });
 
+    // 🔴 OPTIONAL: notification count update
+    req.io
+      .to(`salon_${salonId}`)
+      .emit('notification_count_updated');
     let barberName = null;
     if (barberId) {
       const barber = await db.Barber.findByPk(barberId);
       barberName = barber ? barber.fullName || barber.barberName : null;
     }
+    req.io.to(`salon_${salonId}`).emit("new_notification", {
+    title: "New Booking",
+    message: "You have received a new booking request",
+    bookingId: booking.bookingId
+});
 
     return res.status(200).json({
       status: 'SUCCESS',
