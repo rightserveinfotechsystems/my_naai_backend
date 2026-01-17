@@ -6,11 +6,11 @@ const {createSalonReqValidationSchema} = require("../../validations/salonreq.val
 
 const createSalonRequest = async (req, res) => {
   try {
-    const { fullName, salonName, phoneNumber, address } = req.body || {};
+    const { fullName, salonName, phoneNumber, address, city } = req.body || {};
 
     // Validate Input
     const { error, value } = createSalonReqValidationSchema.validate(
-      { fullName, salonName, phoneNumber: phoneNumber?.toString(), address },
+      { fullName, salonName, phoneNumber: phoneNumber?.toString(), address, city },
       { abortEarly: true }
     );
 
@@ -34,10 +34,11 @@ const createSalonRequest = async (req, res) => {
 
     // Prepare Data
     const insertData = {
-      fullName: validData.fullName || null,
-      salonName: validData.salonName || null,
-      phoneNumber: validData.phoneNumber.trim(),
-      address: validData.address || null
+      fullName: validData?.fullName || null,
+      salonName: validData?.salonName || null,
+      phoneNumber: validData?.phoneNumber.trim(),
+      address: validData?.address || null,
+      city: validData?.city,
     };
 
     // Create Request via Service

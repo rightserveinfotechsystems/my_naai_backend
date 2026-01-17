@@ -33,7 +33,7 @@ const deleteSalonRequest = async (request, response) => {
                     message: "Salon request deleted successfully",
                 });
             } else {
-                return response.status(500).json({
+                return response.status(400).json({
                     status: "FAILED",
                     message: "Failed to delete salon request, Please try again!",
                 });
