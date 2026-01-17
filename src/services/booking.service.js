@@ -360,6 +360,7 @@ const salonOwnerListBookings = async (salonId, {
       where[Op.or] = [
         { '$user.full_name$': { [Op.iLike]: like } },        // ✅ correct column name
         { '$user.phone_number$': { [Op.iLike]: like } },
+          { walkinName: { [Op.iLike]: like } }
       ];
 
       const likeService = [{ serviceName: searchString.trim() }];
@@ -382,7 +383,8 @@ const salonOwnerListBookings = async (salonId, {
     const bookings = await Booking.findAll({
       where,
       attributes: [
-        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'services'
+        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'services',  'walkinName',
+  'walkinPhone'
       ],
       include: [
         { model: Queue, as: 'queue', attributes: ['queueNumber', 'tokenNumber'] },
@@ -412,8 +414,16 @@ const salonOwnerListBookings = async (salonId, {
         bookingTime: b.bookingTime,
         bookingStatus: b.bookingStatus,
         queueNumber: b.queue?.queueNumber,
-        userName: b.user?.fullName,
-        userPhone: b.user?.phoneNumber,
+        // userName: b.user?.fullName,
+        // userPhone: b.user?.phoneNumber,
+        userName: b.user
+          ? b.user.fullName
+          : b.walkinName,
+
+        userPhone: b.user
+          ? b.user.phoneNumber
+          : b.walkinPhone || '0000000000',
+
         barberName: b.barber?.fullName,
         serviceNames: services.map(s => s.serviceName).join(', '),
         servicePrice: services.reduce((sum, s) => sum + Number(s.price || 0), 0)
@@ -452,7 +462,7 @@ const salonOwnerCompletedBookings = async (
     const safeLimit = parseInt(limit, 10) || DEFAULT_LIMIT;
     const offset = (page - 1) * safeLimit;
 
-    // 🔥 ONLY COMPLETED BOOKINGS
+    // ONLY COMPLETED BOOKINGS
     const where = {
       salonId,
       bookingStatus: 'completed'
@@ -683,7 +693,7 @@ const userListBookings = async (userId, {
       limit: safeLimit,
       offset
     });
-  
+
     return {
       bookings,
       totalBookings,
@@ -708,10 +718,10 @@ const getBookingById = async (salonId, bookingId) => {
 const addWalkInCustomer = async ({ salonId, customerName, serviceDuration }) => {
 
   const today = new Date();
-  const walkInUser = await db.User.findOne({
-    where: { phoneNumber: '0000000000' } // default walk-in user
-  });
-  if (!walkInUser) throw new Error('Default walk-in user not found. Please create one.');
+  // const walkInUser = await db.User.findOne({
+  //   where: { phoneNumber: '0000000000' } 
+  // });
+  // if (!walkInUser) throw new Error('Default walk-in user not found. Please create one.');
   // 1️⃣ Get last queue number for this salon
   const lastQueue = await db.Queue.findOne({
     where: { salonId },
@@ -721,22 +731,25 @@ const addWalkInCustomer = async ({ salonId, customerName, serviceDuration }) => 
 
   // 2️⃣ Create queue entry
   const queue = await db.Queue.create({
-    userId: walkInUser.userId,
+    // userId: walkInUser.userId,
     salonId,
     customerName,               // direct customer name
     bookingDate: today,
     queueNumber: nextQueueNumber,
-    status: 'waiting'
+    status: 'waiting',
+    userId: null
   });
 
   // 3️⃣ Create booking entry
   const booking = await db.Booking.create({
-     userId: walkInUser.userId, 
+    //  userId: walkInUser.userId, 
     salonId,
     queueId: queue.queueId,
     bookingDate: today,
     bookingStatus: 'pending',
     bookingType: 'WALK_IN',
+    walkinName: customerName,
+
     services: [
       {
         serviceName: 'Walk-in Service',
@@ -750,20 +763,20 @@ const addWalkInCustomer = async ({ salonId, customerName, serviceDuration }) => 
   await queue.update({ bookingId: booking.bookingId });
 
   // 5️⃣ Calculate total duration for salon queue
-//   const totalDurationResult = await db.Queue.findAll({
-//     where: { salonId },
-//     include: [{ model: db.Booking, as: 'booking' }]
-//   });
+  //   const totalDurationResult = await db.Queue.findAll({
+  //     where: { salonId },
+  //     include: [{ model: db.Booking, as: 'booking' }]
+  //   });
 
- 
-// let totalDuration = 0;
-// totalDurationResult.forEach(q => {
-//     if (q.booking?.services?.length) {
-//       q.booking.services.forEach(s => {
-//         totalDuration += Number(s.durationMinutes) || 0; // ensure number addition
-//       });
-//     }
-// });
+
+  // let totalDuration = 0;
+  // totalDurationResult.forEach(q => {
+  //     if (q.booking?.services?.length) {
+  //       q.booking.services.forEach(s => {
+  //         totalDuration += Number(s.durationMinutes) || 0; // ensure number addition
+  //       });
+  //     }
+  // });
 
   return {
     message: `Customer added to queue`,
