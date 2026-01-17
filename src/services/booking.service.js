@@ -675,7 +675,7 @@ const userListBookings = async (userId, {
       include: [
         { model: Queue, as: 'queue', attributes: ['queueNumber', 'status'] },
         // { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
-        { model: Salon, as: 'salon', attributes: ['salonName', 'city', 'phoneNumber'] },
+        { model: Salon, as: 'salon', attributes: ['salonName', 'city', 'phoneNumber', 'imageUrl'] },
 
         { model: Barber, as: 'barber', attributes: ['fullName'] }
       ],
@@ -683,7 +683,7 @@ const userListBookings = async (userId, {
       limit: safeLimit,
       offset
     });
-    console.log('Raw booking data:', JSON.stringify(bookings[0]?.toJSON(), null, 2));
+  
     return {
       bookings,
       totalBookings,

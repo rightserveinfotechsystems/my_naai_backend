@@ -50,11 +50,8 @@ const listSalonRequests = async ({ page = 1, searchString = '', salonNameFilter 
       };
     }
 
-
     const totalRequests = await db.SalonRequest.count({where});
-
-
-    
+ 
     const requests = await db.SalonRequest.findAll({
       where,
       attributes: { exclude: ['deletedAt'] },

@@ -34,6 +34,7 @@ const userGetBookingList = async (request, response) => {
         bookingId: booking.bookingId,
         salonName: booking.salon?.salonName || '',
         salonCity: booking.salon?.city || '',
+         salonImage:booking.salon?.imageUrl,
         // ✅ Correct key from JSON
         serviceName: services.map(s => s.serviceName).join(', '),
         queueNumber: booking.queue?.queueNumber || null,
