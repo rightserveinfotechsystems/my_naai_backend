@@ -2,6 +2,8 @@ const salonService = require('../../services/salon.service');
 const { verifySalonOtpValidationSchema } = require('../../validations/salon.validation');
 const { generateToken } = require('../../utils/middleware/token.util');
 const db = require('../../database/models');
+const { DeviceToken } = db;
+
 
 const verifySalonOtpLogin = async (request, response) => {
     try {
@@ -53,18 +55,29 @@ const verifySalonOtpLogin = async (request, response) => {
             verifiedAt: new Date()
         });
 
-        // Update last login
-        // await salonService.updateSalon(salon.salonId, {
-        //     lastLogin: new Date(),
-        //     deviceToken: request?.body?.deviceToken || null
-        // });
 
-        const updateData = { lastLogin: new Date() };
-        if (!salon.deviceToken && deviceToken) {
-            updateData.deviceToken = deviceToken;
+        // Update last login ONLY
+        await salonService.updateSalon(salon.salonId, {
+            lastLogin: new Date()
+        });
+
+        // ✅ NEW DEVICE TOKEN FLOW (MULTIPLE DEVICES SAFE)
+        if (deviceToken) {
+            const existingToken = await DeviceToken.findOne({
+                where: {
+                    salonId: salon.salonId,
+                    token: deviceToken
+                }
+            });
+
+            if (!existingToken) {
+                await DeviceToken.create({
+                    salonId: salon.salonId,
+                    token: deviceToken
+                });
+            }
         }
 
-        await salonService.updateSalon(salon.salonId, updateData);
 
         // Generate JWT token
         const token = generateToken({
