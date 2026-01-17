@@ -9,16 +9,17 @@
       'string.empty': 'Phone number is required',
       'string.pattern.base': 'Phone number must be exactly 10 digits'
     }),
-    salonName: Joi.string().min(2).max(100).required().messages({  // ✅ FIXED
-      'string.empty': 'Salon name is required',                  // salon name
-      'string.min': 'Salon name must be at least 2 characters',  // salon name
-      'string.max': 'Salon name cannot exceed 100 characters'    // salon name
+    salonName: Joi.string().min(2).max(100).required().messages({  
+      'string.empty': 'Salon name is required',                
+      'string.min': 'Salon name must be at least 2 characters',  
+      'string.max': 'Salon name cannot exceed 100 characters'    
     }),
     address: Joi.string().min(5).max(255).required().messages({
       'string.empty': 'Address is required',
       'string.min': 'Address must be at least 5 characters',
       'string.max': 'Address cannot exceed 255 characters'
-    })
+    }),
+      city: Joi.string().valid('Katol', 'Warud').required()
   });
 
   const salonReqIdValidationSchema = Joi.object({
