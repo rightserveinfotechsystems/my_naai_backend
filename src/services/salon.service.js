@@ -482,12 +482,16 @@ const getActiveSalonsListForUsers = async ({ page = 1, searchString = '', limit 
         },
         required: false,
         include: [{
-          model: db.Service,
-          as: 'service',
-          required: false,
-          attributes: ['durationMinutes']
+          model: db.Booking,
+          as: 'booking',
+          // include: [{
+          //   model: db.Service,
+          //   as: 'service',
+          //   required: false,
+          //   attributes: ['durationMinutes']
+          // }]
         }],
-        attributes: ['queueNumber', 'estimatedWaitTime'],
+        attributes: ['queueNumber'],
         order: [['queueNumber', 'ASC']]
       }],
       limit,
@@ -498,7 +502,14 @@ const getActiveSalonsListForUsers = async ({ page = 1, searchString = '', limit 
     // ✅ 3. Calculate wait time (same)
     const salonsWithWaitTime = salons.map(salon => {
       const queues = salon.queues || [];
-      const totalMinutes = queues.reduce((sum, queue) => sum + queue.estimatedWaitTime, 0);
+     const totalMinutes = queues.reduce((sum, queue) => {
+    const booking = queue.booking;
+    if (booking && booking.services?.length) {
+        return sum + booking.services.reduce((s, svc) => s + Number(svc.durationMinutes || 0), 0);
+    }
+    return sum;
+}, 0);
+
 
       const salonData = salon.toJSON();
       delete salonData.queues;
