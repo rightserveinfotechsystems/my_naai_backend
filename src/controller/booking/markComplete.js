@@ -7,10 +7,17 @@ const markBookingDone = async (request, response) => {
 
     console.log('🔍 Complete service:', { salonId, bookingId });
 
-    if (!salonId || !bookingId) {
+    if (!salonId) {
+      return response.status(404).json({
+        status: "FAILED",
+        message: "salonId not found in token"
+      });
+    }
+
+        if ( !bookingId) {
       return response.status(400).json({
         status: "FAILED",
-        message: "salonId and bookingId required"
+        message: "bookingId required"
       });
     }
 

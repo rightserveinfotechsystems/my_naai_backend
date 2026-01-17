@@ -237,14 +237,10 @@ const getSalonBasicWithQueue = async (salonId) => {
         required: false,
         attributes: ['durationMinutes']
       }],
-      attributes: ['queueNumber'],
+      attributes: ['queueNumber' ,'estimatedWaitTime'],
       order: [['queueNumber', 'ASC']]
     });
-
-    const totalMinutes = queues.reduce(
-      (sum, queue) => sum + (queue.service?.durationMinutes || 15),
-      0
-    );
+    const totalMinutes = queues.reduce((sum, queue) => sum + queue.estimatedWaitTime, 0);
 
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -267,9 +263,6 @@ const getSalonBasicWithQueue = async (salonId) => {
     throw error;
   }
 };
-
-
-
 
 
 
@@ -437,8 +430,7 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
 /**
  * List salons with pagination for users (only active salons)
  */
-const getActiveSalonsListForUsers
- = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL' }) => {
+const getActiveSalonsListForUsers = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL' }) => {
   try {
     const offset = (page - 1) * limit;
 
