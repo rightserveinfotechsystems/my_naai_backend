@@ -34,6 +34,21 @@ const userBookingListSchema = Joi.object({
   salonId: Joi.string().uuid().required(),
   bookingId: Joi.string().uuid().required()
 });
-module.exports = { createBookingSchema, userBookingListSchema,
-  completeBookingSchema
- };
+
+const addWalkInSchema = Joi.object({
+  customerName: Joi.string().trim().required().messages({
+    'string.empty': 'customerName is required',
+    'any.required': 'customerName is required'
+  }),
+  serviceDuration: Joi.number().integer().min(1).required().messages({
+    'number.base': 'serviceDuration must be a number',
+    'number.min': 'serviceDuration must be at least 1 minute',
+    'any.required': 'serviceDuration is required'
+  })
+});
+module.exports = { 
+  createBookingSchema, 
+  userBookingListSchema,
+  completeBookingSchema,
+  addWalkInSchema
+};

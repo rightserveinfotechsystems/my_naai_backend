@@ -414,7 +414,7 @@ const salonOwnerListBookings = async (salonId, {
         queueNumber: b.queue?.queueNumber,
         userName: b.user?.fullName,
         userPhone: b.user?.phoneNumber,
-        barberName: b.barber?.fullName,  
+        barberName: b.barber?.fullName,
         serviceNames: services.map(s => s.serviceName).join(', '),
         servicePrice: services.reduce((sum, s) => sum + Number(s.price || 0), 0)
       };
@@ -762,78 +762,79 @@ const getBookingById = async (salonId, bookingId) => {
 };
 
 
-const addWalkInCustomers = async ({ salonId, count }) => {
-  if (!salonId || count <= 0) throw new Error('Invalid input');
+const addWalkInCustomer = async ({ salonId, customerName, serviceDuration }) => {
 
   const today = new Date();
-
   const walkInUser = await db.User.findOne({
-    where: { phoneNumber: '0000000000' }
+    where: { phoneNumber: '0000000000' } // default walk-in user
   });
-
-  if (!walkInUser) throw new Error('Walk-in user not found');
-
+  if (!walkInUser) throw new Error('Default walk-in user not found. Please create one.');
+  // 1️⃣ Get last queue number for this salon
   const lastQueue = await db.Queue.findOne({
     where: { salonId },
     order: [['queueNumber', 'DESC']]
   });
+  const nextQueueNumber = lastQueue ? lastQueue.queueNumber + 1 : 1;
 
-  let nextQueueNumber = lastQueue ? lastQueue.queueNumber + 1 : 1;
+  // 2️⃣ Create queue entry
+  const queue = await db.Queue.create({
+    userId: walkInUser.userId,
+    salonId,
+    customerName,               // direct customer name
+    bookingDate: today,
+    queueNumber: nextQueueNumber,
+    status: 'waiting'
+  });
 
-  const result = [];
+  // 3️⃣ Create booking entry
+  const booking = await db.Booking.create({
+     userId: walkInUser.userId, 
+    salonId,
+    queueId: queue.queueId,
+    bookingDate: today,
+    bookingStatus: 'pending',
+    bookingType: 'WALK_IN',
+    services: [
+      {
+        serviceName: 'Walk-in Service',
+        durationMinutes: serviceDuration,
+        price: 0
+      }
+    ]
+  });
 
-  for (let i = 0; i < count; i++) {
+  // 4️⃣ Update queue with bookingId
+  await queue.update({ bookingId: booking.bookingId });
 
-    // Queue FIRST
-    const queue = await db.Queue.create({
-      salonId,
-      userId: walkInUser.userId,
-      bookingDate: today,
-      queueNumber: nextQueueNumber,
-      status: 'waiting'
-    });
+  // 5️⃣ Calculate total duration for salon queue
+//   const totalDurationResult = await db.Queue.findAll({
+//     where: { salonId },
+//     include: [{ model: db.Booking, as: 'booking' }]
+//   });
 
-    // Booking with queueId
-    const booking = await db.Booking.create({
-      salonId,
-      userId: walkInUser.userId,
-      queueId: queue.queueId,   // ✅ FIX
-      bookingDate: today,
-      bookingStatus: 'pending',
-      bookingType: 'WALK_IN',
-      services: [
-        {
-          serviceName: 'Walk-in Service',
-          durationMinutes: 20,
-          price: 0
-        }
-      ]
-    });
-
-    // Update queue with bookingId
-    await queue.update({
-      bookingId: booking.bookingId
-    });
-
-    result.push({
-      bookingId: booking.bookingId,
-      queueId: queue.queueId,
-      name: walkInUser.fullName,
-      mobileNumber: walkInUser.phoneNumber,
-      queueNumber: nextQueueNumber,
-      bookingType: 'WALK_IN',
-      status: 'pending'
-    });
-
-
-    nextQueueNumber++;
-  }
+ 
+// let totalDuration = 0;
+// totalDurationResult.forEach(q => {
+//     if (q.booking?.services?.length) {
+//       q.booking.services.forEach(s => {
+//         totalDuration += Number(s.durationMinutes) || 0; // ensure number addition
+//       });
+//     }
+// });
 
   return {
-    message: `${count} walk-in customers added`,
-    data: result
+    message: `Customer added to queue`,
+    queue: {
+      queueId: queue.queueId,
+      bookingId: booking.bookingId,
+      customerName,
+      queueNumber: nextQueueNumber,
+      status: 'waiting',
+      serviceDuration
+    },
   };
 };
+
 
 
 
@@ -857,5 +858,5 @@ module.exports = {
   salonOwnerCompletedBookings,
   // createWalkInCustomers,
   getBookingById,
-  addWalkInCustomers
+  addWalkInCustomer
 };
