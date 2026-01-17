@@ -82,7 +82,7 @@ const getSalonWithDetails = async (salonId) => {
           model: db.BusinessHours,
           as: 'businessHours',
           required: false,
-          attributes: ['scheduleId','openingTime','closingTime','breakStartTime','breakEndTime', 'holidayDays'
+          attributes: ['scheduleId', 'openingTime', 'closingTime', 'breakStartTime', 'breakEndTime', 'holidayDays'
           ],
         }
 
@@ -130,14 +130,19 @@ const getSalonWithDetails = async (salonId) => {
 
 const getSalonBasicWithQueue = async (salonId) => {
   try {
+    const today = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+    ).toISOString().split('T')[0];
+
     const salon = await db.Salon.findByPk(salonId, {
       include: [
         {
           model: db.Barber,
           as: 'barbers',
-          where: { isActive: true,
-            isAvailable:true
-           },
+          where: {
+            isActive: true,
+            isAvailable: true
+          },
           required: false,
           attributes: [
             'barberId',
@@ -177,9 +182,9 @@ const getSalonBasicWithQueue = async (salonId) => {
         {
           model: db.Product,
           as: 'products',
-          where: { isAvailable: true},
-          required:false,
-          attributes: ['productId', 'productName', 'price', 'rating', 'stockStatus','productImage'],
+          where: { isAvailable: true },
+          required: false,
+          attributes: ['productId', 'productName', 'price', 'rating', 'stockStatus', 'productImage'],
         }
       ],
     });
@@ -196,7 +201,8 @@ const getSalonBasicWithQueue = async (salonId) => {
             barberId: barber.barberId,
             status: {
               [Op.in]: ['waiting']
-            }
+            },
+            bookingDate: today
           },
           include: [{
             model: db.Service,
@@ -225,11 +231,12 @@ const getSalonBasicWithQueue = async (salonId) => {
     // ✅ Replace barbers with enriched data
     salonJson.barbers = barbersWithDuration;
 
-    // ✅ SALON-LEVEL TOTAL WAIT TIME (AS IT IS)
+    // ✅ SALON-LEVEL TOTAL WAIT TIME 
     const queues = await db.Queue.findAll({
       where: {
         salonId: salonId,
-        status: 'waiting'
+        status: 'waiting',
+        bookingDate: today
       },
       include: [{
         model: db.Service,
@@ -237,7 +244,7 @@ const getSalonBasicWithQueue = async (salonId) => {
         required: false,
         attributes: ['durationMinutes']
       }],
-      attributes: ['queueNumber' ,'estimatedWaitTime'],
+      attributes: ['queueNumber', 'estimatedWaitTime'],
       order: [['queueNumber', 'ASC']]
     });
     const totalMinutes = queues.reduce((sum, queue) => sum + queue.estimatedWaitTime, 0);
@@ -432,6 +439,10 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
  */
 const getActiveSalonsListForUsers = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL' }) => {
   try {
+    const today = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+    ).toISOString().split('T')[0];
+
     const offset = (page - 1) * limit;
 
     //only active salons for users
@@ -465,7 +476,10 @@ const getActiveSalonsListForUsers = async ({ page = 1, searchString = '', limit 
       include: [{
         model: db.Queue,
         as: 'queues',
-        where: { status: 'waiting' },
+        where: {
+          status: 'waiting',
+          bookingDate: today
+        },
         required: false,
         include: [{
           model: db.Service,
