@@ -533,63 +533,6 @@ const salonOwnerCompletedBookings = async (
   }
 };
 
-/**
- * SALON OWNER: create walk in
-//  */
-// const createWalkInCustomers = async ({ salonId, count = 1, services = [] }) => {
-//   if (!salonId) throw new Error('salonId is required');
-//   if (count <= 0) throw new Error('count must be greater than 0');
-
-//   // Get last queue number
-//   const lastQueue = await db.Queue.findOne({
-//     where: { salonId },
-//     order: [['queueNumber', 'DESC']]
-//   });
-//   let nextQueueNumber = lastQueue ? lastQueue.queueNumber + 1 : 1;
-
-//   const createdBookings = [];
-
-//   for (let i = 0; i < count; i++) {
-//     // Guest user
-//     const offlineUser = await db.User.create({
-//       fullName: `Offline Customer ${nextQueueNumber}`,
-//       phoneNumber: null,
-//       email: null,
-//       isActive: true,
-//       isVerified: false
-//     });
-
-//     // Booking
-//     const booking = await db.Booking.create({
-//       salonId,
-//       userId: offlineUser.userId,
-//       services,
-//       bookingStatus: 'pending'
-//     });
-
-//     // Queue
-//     await db.Queue.create({
-//       salonId,
-//       bookingId: booking.bookingId,
-//       queueNumber: nextQueueNumber,
-//       status: 'waiting'
-//     });
-
-//     createdBookings.push({
-//       bookingId: booking.bookingId,
-//       userName: offlineUser.fullName,
-//       queueNumber: nextQueueNumber
-//     });
-
-//     nextQueueNumber++;
-//   }
-
-//   return {
-//     message: `${count} walk-in customers added successfully`,
-//     bookings: createdBookings
-//   };
-// };
-
 
 
 const getFiltersDropdownData = async () => {
@@ -856,7 +799,6 @@ module.exports = {
   verifyBarber,
   adminListAllBookings,
   salonOwnerCompletedBookings,
-  // createWalkInCustomers,
   getBookingById,
   addWalkInCustomer
 };
