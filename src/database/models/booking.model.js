@@ -29,7 +29,7 @@ module.exports = (sequelize) => {
         },
         userId: {
             type: DataTypes.UUID,
-            allowNull: false,
+            allowNull: true,
             references: {
                 model: 'users',
                 key: 'user_id'
@@ -92,6 +92,14 @@ module.exports = (sequelize) => {
             type: DataTypes.TIME,
             allowNull: true,
             field: 'booking_time'
+        },
+        walkinName: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        walkinPhone: {
+            type: DataTypes.STRING,
+            allowNull: true
         },
 
         // paymentStatus: {

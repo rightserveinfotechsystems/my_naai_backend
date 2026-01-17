@@ -59,16 +59,12 @@ const verifySalonOtpLogin = async (request, response) => {
         //     deviceToken: request?.body?.deviceToken || null
         // });
 
-        if (salon.deviceToken !== request.body.deviceToken) {
-            await salonService.updateSalon(salon.salonId, {
-                lastLogin: new Date(),
-                deviceToken: request.body.deviceToken
-            });
-        } else {
-            await salonService.updateSalon(salon.salonId, {
-                lastLogin: new Date()
-            });
+        const updateData = { lastLogin: new Date() };
+        if (!salon.deviceToken && deviceToken) {
+            updateData.deviceToken = deviceToken;
         }
+
+        await salonService.updateSalon(salon.salonId, updateData);
 
         // Generate JWT token
         const token = generateToken({

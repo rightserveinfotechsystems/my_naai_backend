@@ -49,11 +49,6 @@ module.exports = (sequelize) => {
             },
             field: 'email'
         },
-        deviceToken: {
-            type: DataTypes.STRING(500),
-            allowNull: true,
-            field: 'device_token'
-        },
         addressLine1: {
             type: DataTypes.STRING(255),
             allowNull: false,
