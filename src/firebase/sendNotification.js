@@ -9,7 +9,7 @@ async function sendNotificationToDevice(deviceToken = null, title, body) {
                 title: title,
                 body: body,
             },
-            data: { name: "BlueLadder" },
+            data: { name: "MyNaai" },
             token: deviceToken, // FCM device token
         };
 

@@ -66,14 +66,14 @@ const verifySalonOtpLogin = async (request, response) => {
             const existingToken = await DeviceToken.findOne({
                 where: {
                     salonId: salon.salonId,
-                    token: deviceToken
+                    deviceToken: deviceToken
                 }
             });
 
             if (!existingToken) {
                 await DeviceToken.create({
                     salonId: salon.salonId,
-                    token: deviceToken
+                    deviceToken: deviceToken
                 });
             }
         }

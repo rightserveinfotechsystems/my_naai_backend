@@ -1,6 +1,6 @@
 var firebaseAdmin = require("firebase-admin");
 
-var serviceAccount = require("./blueladder-firebase.json");
+var serviceAccount = require("./myNaai-firebase.json");
 
 firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.cert(serviceAccount)
