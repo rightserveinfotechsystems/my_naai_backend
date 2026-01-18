@@ -133,25 +133,25 @@ const createBooking = async (req, res) => {
 
 
     // 🔥 GET SALON DEVICE TOKENS
-const deviceTokens = await db.DeviceToken.findAll({
-  where: {
-    salonId,
-    isActive: true
-  }
-});
+    const deviceTokens = await db.DeviceToken.findAll({
+      where: {
+        salonId,
+        isActive: true
+      }
+    });
 
-console.log("Total device tokens found =>", deviceTokens.length);
+    console.log("Total device tokens found =>", deviceTokens.length);
 
-// 🔔 SEND PUSH NOTIFICATION
-for (const dt of deviceTokens) {
-  console.log("Sending push to =>", dt.deviceToken);
+    // 🔔 SEND PUSH NOTIFICATION
+    for (const dt of deviceTokens) {
+      console.log("Sending push to =>", dt.deviceToken);
 
-  await sendNotificationToDevice(
-    dt.deviceToken,
-    "New Booking",
-    "You have received a new booking request"
-  );
-}
+      await sendNotificationToDevice(
+        dt.deviceToken,
+        "New Booking",
+        "You have received a new booking request"
+      );
+    }
 
     // 🔔 IN-APP NOTIFICATION 
     await Notification.create({
