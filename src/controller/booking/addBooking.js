@@ -3,8 +3,6 @@ const db = require('../../database/models');
 const { Op } = require('sequelize');
 const { Notification } = db;
 const sendNotificationToDevice = require('../../firebase/sendNotification');
-
-
 const { createBookingSchema } = require('../../validations/booking.validation');
 
 const createBooking = async (req, res) => {
@@ -65,6 +63,7 @@ const createBooking = async (req, res) => {
         }
       });
 
+
       if (slotBooked) {
         await t.rollback();
         return res.status(409).json({
@@ -113,7 +112,6 @@ const createBooking = async (req, res) => {
       bookingTime,
       queueNumber,
       estimatedWaitTime: totalDuration,
-      // status: 'waiting'
       serviceId: serviceIds.length === 1 ? serviceIds[0] : null
     }, { transaction: t });
 
@@ -132,16 +130,28 @@ const createBooking = async (req, res) => {
     }, { transaction: t });
 
     await t.commit();
-    // ✅ EXACT TOTAL WAIT TIME (client logic)
-    const allQueues = await db.Queue.findAll({
-      where: { salonId, bookingDate }
-    });
 
-    const salonTotalWait = allQueues.reduce(
-      (sum, q) => sum + Number(q.estimatedWaitTime || 0),
-      0
-    );
 
+    // 🔥 GET SALON DEVICE TOKENS
+const deviceTokens = await db.DeviceToken.findAll({
+  where: {
+    salonId,
+    isActive: true
+  }
+});
+
+console.log("Total device tokens found =>", deviceTokens.length);
+
+// 🔔 SEND PUSH NOTIFICATION
+for (const dt of deviceTokens) {
+  console.log("Sending push to =>", dt.deviceToken);
+
+  await sendNotificationToDevice(
+    dt.deviceToken,
+    "New Booking",
+    "You have received a new booking request"
+  );
+}
 
     // 🔔 IN-APP NOTIFICATION 
     await Notification.create({
@@ -151,18 +161,6 @@ const createBooking = async (req, res) => {
       message: 'You have received a new booking request'
     });
 
-    // PUSH NOTIFICATION
-   const salon = await db.Salon.findByPk(salonId);
-if (salon && salon.deviceToken) {
-  const tokens = Array.isArray(salon.deviceToken) ? salon.deviceToken : [salon.deviceToken];
-  for (const token of tokens) {
-    await sendNotificationToDevice(
-      token,
-      "New Booking",
-      "You have received a new booking request"
-    );
-  }
-}
     //  REAL-TIME SOCKET EVENT
     req.io
       .to(`salon_${salonId}`)
@@ -197,8 +195,7 @@ if (salon && salon.deviceToken) {
         queueNumber,
         totalDuration,
         totalAmount,
-        services: servicesPayload,
-        salonTotalWait
+        services: servicesPayload
       }
     });
 
