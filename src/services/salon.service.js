@@ -1,6 +1,10 @@
-const { Op } = require('sequelize');
+const { Op, literal  } = require('sequelize');
 const db = require('../database/models');
-const { required } = require('joi');
+
+
+const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
+const RADIUS = parseFloat(process.env.NEARBY_SALON_RADIUS) || 5;
+
 /**
  * Create salon
  */
@@ -446,105 +450,140 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
 /**
  * List salons with pagination for users (only active salons)
  */
-  const getActiveSalonsListForUsers = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL' }) => {
+
+const getActiveSalonsListForUsers = async ({ 
+    page = 1, 
+    searchString = '', 
+    limit = DEFAULT_LIMIT, 
+    cityFilter = 'ALL',
+    latitude,  
+    longitude,  
+    radius = RADIUS 
+}) => {
     try {
-      const today = new Date(
-        new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
-      ).toISOString().split('T')[0];
+      
+        const today = new Date(
+            new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+        ).toISOString().split('T')[0];
 
-      const offset = (page - 1) * limit;
+        const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+        const offset = (safePage - 1) * limit;
+        // Basic filters
+        const where = { isActive: true };
 
-      //only active salons for users
-      const where = {
-        isActive: true
-      };
+        if (searchString?.trim()) {
+            const like = `%${searchString.trim()}%`;
+            where[Op.or] = [
+                { salonName: { [Op.iLike]: like } },
+                { phoneNumber: { [Op.iLike]: like } },
+                { city: { [Op.iLike]: like } },
+                { addressLine1: { [Op.iLike]: like } }
+            ];
+        }
 
-      if (searchString?.trim()) {
-        const like = `%${searchString.trim()}%`;
-        where[Op.or] = [
-          { salonName: { [Op.iLike]: like } },
-          { phoneNumber: { [Op.iLike]: like } },
-          { city: { [Op.iLike]: like } },
-          { addressLine1: { [Op.iLike]: like } }
-        ];
-      }
+        if (cityFilter !== 'ALL') {
+            where.city = { [Op.iLike]: `%${cityFilter}%` };
+        }
 
+        let salons = [];
+        let totalSalons = 0;
 
-      // ✅ City filter
-      if (cityFilter !== 'ALL') {
-        where.city = { [Op.iLike]: `%${cityFilter}%` };
-      }
+        // ✅ NEARBY LOGIC
+        if (latitude && longitude) {
+            const userLat = parseFloat(latitude);
+            const userLng = parseFloat(longitude);
+            const maxDistance = parseFloat(radius);
 
-      // ✅ 1. SALON COUNT 
-      const totalSalons = await db.Salon.count({ where });
+            const distanceFormula = `(6371 * acos(
+                cos(radians(${userLat}))
+                * cos(radians("latitude"))
+                * cos(radians("longitude") - radians(${userLng}))
+                + sin(radians(${userLat}))
+                * sin(radians("latitude"))
+            ))`;
 
-      // ✅ 2. SALONS FETCH
-      const salons = await db.Salon.findAll({
-        where,
-        attributes: { exclude: ['deletedAt'] },
-        include: [{
-          model: db.Queue,
-          as: 'queues',
-          where: {
-            status: 'waiting',
-            bookingDate: today
-          },
-          required: false,
-          include: [{
-            model: db.Booking,
-            as: 'booking',
-            // include: [{
-            //   model: db.Service,
-            //   as: 'service',
-            //   required: false,
-            //   attributes: ['durationMinutes']
-            // }]
-          }],
-          attributes: ['queueNumber'],
-          order: [['queueNumber', 'ASC']]
-        }],
-        limit,
-        offset,
-        order: [['createdAt', 'DESC']]
-      });
+            salons = await db.Salon.findAll({
+                attributes: {
+                    include: [[literal(distanceFormula), 'distance']]
+                },
+                where,
+                order: literal(`${distanceFormula} ASC`)
+            });
 
-      // ✅ 3. Calculate wait time (same)
-      const salonsWithWaitTime = salons.map(salon => {
-        const queues = salon.queues || [];
-      const totalMinutes = queues.reduce((sum, queue) => {
-      const booking = queue.booking;
-      if (booking && booking.services?.length) {
-          return sum + booking.services.reduce((s, svc) => s + Number(svc.durationMinutes || 0), 0);
-      }
-      return sum;
-  }, 0);
+            // JS-side radius filter to avoid GROUP BY issue
+            salons = salons.filter(
+                s => parseFloat(s.get('distance')) <= maxDistance
+            );
 
+            totalSalons = salons.length;
+        }
 
-        const salonData = salon.toJSON();
-        delete salonData.queues;
+        // ✅ FALLBACK if no nearby salons
+        if (!salons.length) {
+            totalSalons = await db.Salon.count({ where });
+
+            salons = await db.Salon.findAll({
+                where,
+                attributes: { exclude: ['deletedAt'] },
+                include: [{
+                    model: db.Queue,
+                    as: 'queues',
+                    where: {
+                        status: 'waiting',
+                        bookingDate: today
+                    },
+                    required: false,
+                    include: [{
+                        model: db.Booking,
+                        as: 'booking'
+                    }],
+                    attributes: ['queueNumber'],
+                    order: [['queueNumber', 'ASC']]
+                }],
+                limit,
+                offset,
+                order: [['createdAt', 'DESC']]
+            });
+        }
+
+        // ✅ CALCULATE WAIT TIME (same as before)
+        const salonsWithWaitTime = salons.map(salon => {
+            const queues = salon.queues || [];
+            const totalMinutes = queues.reduce((sum, queue) => {
+                const booking = queue.booking;
+                if (booking && booking.services?.length) {
+                    return sum + booking.services.reduce((s, svc) => s + Number(svc.durationMinutes || 0), 0);
+                }
+                return sum;
+            }, 0);
+
+            const salonData = salon.toJSON();
+            delete salonData.queues;
+
+            return {
+                ...salonData,
+                queueLength: queues.length,
+                totalWaitTime: {
+                    minutes: totalMinutes,
+                    display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+                }
+            };
+        });
 
         return {
-          ...salonData,
-          queueLength: queues.length,
-          totalWaitTime: {
-            minutes: totalMinutes,
-            display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
-          }
+            salons: salonsWithWaitTime,
+            totalSalons,
+            page,
+            limit,
+            totalPages: Math.ceil(totalSalons / limit)
         };
-      });
 
-      // ✅ 4. CORRECT PAGINATION
-      return {
-        salons: salonsWithWaitTime,
-        totalSalons: totalSalons,  // ✅ SALON COUNT
-        page,
-        limit,
-        totalPages: Math.ceil(totalSalons / limit)
-      };
     } catch (error) {
-      throw error;
+        throw error;
     }
-  };
+};
+
+
 
 /**
  * filter api city wise
