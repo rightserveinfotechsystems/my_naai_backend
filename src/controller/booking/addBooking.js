@@ -2,6 +2,7 @@
 const db = require('../../database/models');
 const { Op } = require('sequelize');
 const { Notification } = db;
+const sendNotificationToDevice = require('../../firebase/sendNotification');
 
 
 const { createBookingSchema } = require('../../validations/booking.validation');
@@ -131,15 +132,15 @@ const createBooking = async (req, res) => {
     }, { transaction: t });
 
     await t.commit();
-   // ✅ EXACT TOTAL WAIT TIME (client logic)
-const allQueues = await db.Queue.findAll({
-  where: { salonId, bookingDate }
-});
+    // ✅ EXACT TOTAL WAIT TIME (client logic)
+    const allQueues = await db.Queue.findAll({
+      where: { salonId, bookingDate }
+    });
 
-const salonTotalWait = allQueues.reduce(
-  (sum, q) => sum + Number(q.estimatedWaitTime || 0),
-  0
-);
+    const salonTotalWait = allQueues.reduce(
+      (sum, q) => sum + Number(q.estimatedWaitTime || 0),
+      0
+    );
 
 
     // 🔔 IN-APP NOTIFICATION 
@@ -149,6 +150,19 @@ const salonTotalWait = allQueues.reduce(
       title: 'New Booking',
       message: 'You have received a new booking request'
     });
+
+    // PUSH NOTIFICATION
+   const salon = await db.Salon.findByPk(salonId);
+if (salon && salon.deviceToken) {
+  const tokens = Array.isArray(salon.deviceToken) ? salon.deviceToken : [salon.deviceToken];
+  for (const token of tokens) {
+    await sendNotificationToDevice(
+      token,
+      "New Booking",
+      "You have received a new booking request"
+    );
+  }
+}
     //  REAL-TIME SOCKET EVENT
     req.io
       .to(`salon_${salonId}`)
