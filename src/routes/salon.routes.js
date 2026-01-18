@@ -19,14 +19,19 @@ const deleteSalonService = require('../controller/salon/deleteSalonService');
 const { getListFilter } = require('../controller/salon/getList');
 const { getCityFilterUser } = require('../controller/salon/getFilterListUser');
 const deleteService = require('../controller/salon/deleteServiceBySalon');
+const { getNearbySalons } = require('../controller/salon/nearbySalons');
 
 
 
 const salonRouter = express.Router();
 
+
+
+
 //Salon login
 salonRouter.post('/send-otp', sendSalonOtp);
 salonRouter.post('/login', verifySalonOtpLogin);
+salonRouter.post('/nearby', getNearbySalons);
 salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
 salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
 salonRouter.post('/delete-salon-service', authenticateSalon, deleteService);
