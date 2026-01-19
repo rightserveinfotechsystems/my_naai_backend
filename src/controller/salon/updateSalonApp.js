@@ -45,7 +45,7 @@ const updateSalonApp = async (request, response) => {
         const dataToUpdate = {
             salonName: salonData.salonName,
             ownerName: salonData.ownerName,
-            phoneNumber: salonData.phoneNumber,
+            // phoneNumber: salonData.phoneNumber,
             email: salonData.email?.toLowerCase(),
             addressLine1: salonData.addressLine1,
             addressLine2: salonData.addressLine2,
