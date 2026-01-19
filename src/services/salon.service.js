@@ -461,13 +461,14 @@ const getActiveSalonsListForUsers = async ({
     radius = RADIUS 
 }) => {
     try {
-      
+        // Today's date in Asia/Kolkata timezone
         const today = new Date(
             new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
         ).toISOString().split('T')[0];
 
         const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
         const offset = (safePage - 1) * limit;
+
         // Basic filters
         const where = { isActive: true };
 
@@ -485,10 +486,11 @@ const getActiveSalonsListForUsers = async ({
             where.city = { [Op.iLike]: `%${cityFilter}%` };
         }
 
+        let nearbySalons = [];
         let salons = [];
         let totalSalons = 0;
 
-        // ✅ NEARBY LOGIC
+        // ================= NEARBY LOGIC =================
         if (latitude && longitude) {
             const userLat = parseFloat(latitude);
             const userLng = parseFloat(longitude);
@@ -502,7 +504,7 @@ const getActiveSalonsListForUsers = async ({
                 * sin(radians("latitude"))
             ))`;
 
-            salons = await db.Salon.findAll({
+            const allSalonsWithDistance = await db.Salon.findAll({
                 attributes: {
                     include: [[literal(distanceFormula), 'distance']]
                 },
@@ -510,43 +512,50 @@ const getActiveSalonsListForUsers = async ({
                 order: literal(`${distanceFormula} ASC`)
             });
 
-            // JS-side radius filter to avoid GROUP BY issue
-            salons = salons.filter(
+            nearbySalons = allSalonsWithDistance.filter(
                 s => parseFloat(s.get('distance')) <= maxDistance
             );
-
-            totalSalons = salons.length;
         }
 
-        // ✅ FALLBACK if no nearby salons
-        if (!salons.length) {
-            totalSalons = await db.Salon.count({ where });
+        // ================= REMAINING SALONS LOGIC =================
+        const nearbySalonIds = nearbySalons.map(s => s.salonId);
 
-            salons = await db.Salon.findAll({
-                where,
-                attributes: { exclude: ['deletedAt'] },
+        const remainingWhere = {
+            ...where,
+            ...(nearbySalonIds.length && {
+                salonId: { [Op.notIn]: nearbySalonIds }
+            })
+        };
+
+        totalSalons = await db.Salon.count({ where });
+
+        const remainingSalons = await db.Salon.findAll({
+            where: remainingWhere,
+            attributes: { exclude: ['deletedAt'] },
+            include: [{
+                model: db.Queue,
+                as: 'queues',
+                where: {
+                    status: 'waiting',
+                    bookingDate: today
+                },
+                required: false,
                 include: [{
-                    model: db.Queue,
-                    as: 'queues',
-                    where: {
-                        status: 'waiting',
-                        bookingDate: today
-                    },
-                    required: false,
-                    include: [{
-                        model: db.Booking,
-                        as: 'booking'
-                    }],
-                    attributes: ['queueNumber'],
-                    order: [['queueNumber', 'ASC']]
+                    model: db.Booking,
+                    as: 'booking'
                 }],
-                limit,
-                offset,
-                order: [['createdAt', 'DESC']]
-            });
-        }
+                attributes: ['queueNumber'],
+                order: [['queueNumber', 'ASC']]
+            }],
+            limit,
+            offset,
+            order: [['createdAt', 'DESC']]
+        });
 
-        // ✅ CALCULATE WAIT TIME (same as before)
+        // Merge: nearby first
+        salons = [...nearbySalons, ...remainingSalons];
+
+        // ================= CALCULATE WAIT TIME =================
         const salonsWithWaitTime = salons.map(salon => {
             const queues = salon.queues || [];
             const totalMinutes = queues.reduce((sum, queue) => {
@@ -573,7 +582,7 @@ const getActiveSalonsListForUsers = async ({
         return {
             salons: salonsWithWaitTime,
             totalSalons,
-            page,
+            page: safePage,
             limit,
             totalPages: Math.ceil(totalSalons / limit)
         };
