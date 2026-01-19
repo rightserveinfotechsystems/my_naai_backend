@@ -50,7 +50,7 @@ const authenticateAdmin = async (request, response, next) => {
         request.admin = admin;
         next();
     } catch (error) {
-        console.log('❌ Token error:', error.message); // ADD THIS
+       
         return response.status(500).json({
             status: 'FAILED',
             message: error.message

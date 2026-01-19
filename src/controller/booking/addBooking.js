@@ -140,11 +140,10 @@ const createBooking = async (req, res) => {
       }
     });
 
-    console.log("Total device tokens found =>", deviceTokens.length);
+
 
     // 🔔 SEND PUSH NOTIFICATION
     for (const dt of deviceTokens) {
-      console.log("Sending push to =>", dt.deviceToken);
 
       await sendNotificationToDevice(
         dt.deviceToken,
