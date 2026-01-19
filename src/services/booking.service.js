@@ -189,9 +189,9 @@ const adminListBookings = async ({
       const like = `%${searchString.trim()}%`;
       where[Op.or] = [
         { '$salon.salon_name$': { [Op.iLike]: like } },      // ✅ salon_name
-        { '$service.service_name$': { [Op.iLike]: like } },   // ✅ service_name
         { '$user.full_name$': { [Op.iLike]: like } },         // ✅ full_name
-        { '$user.phone_number$': { [Op.iLike]: like } }       // ✅ phone_number
+        { '$user.phone_number$': { [Op.iLike]: like } },      // ✅ phone_number
+
       ];
     }
     // ✅ FIXED: Count with SAME includes
@@ -200,7 +200,8 @@ const adminListBookings = async ({
       include: [
         { model: Queue, as: 'queue', attributes: [], required: false },
         { model: Salon, as: 'salon', attributes: [], required: false },
-        { model: User, as: 'user', attributes: [], required: false }
+        { model: User, as: 'user', attributes: [], required: false },
+        // { model: Service, as: 'service', attributes: [] }
       ]
     });
 
@@ -360,7 +361,7 @@ const salonOwnerListBookings = async (salonId, {
       where[Op.or] = [
         { '$user.full_name$': { [Op.iLike]: like } },        // ✅ correct column name
         { '$user.phone_number$': { [Op.iLike]: like } },
-          { walkinName: { [Op.iLike]: like } }
+        { walkinName: { [Op.iLike]: like } }
       ];
 
       const likeService = [{ serviceName: searchString.trim() }];
@@ -383,8 +384,8 @@ const salonOwnerListBookings = async (salonId, {
     const bookings = await Booking.findAll({
       where,
       attributes: [
-        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'services',  'walkinName',
-  'walkinPhone'
+        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'services', 'walkinName',
+        'walkinPhone'
       ],
       include: [
         { model: Queue, as: 'queue', attributes: ['queueNumber', 'tokenNumber'] },
