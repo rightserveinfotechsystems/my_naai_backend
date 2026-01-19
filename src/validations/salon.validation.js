@@ -152,7 +152,7 @@ const updateSalonValidationSchemaApp = Joi.object({
     salonId: Joi.string().uuid().required(),
     salonName: Joi.string().min(2).max(150),
     ownerName: Joi.string().min(2).max(100).allow(null, ''),
-    phoneNumber: Joi.string().pattern(/^[0-9]{10}$/),
+    // phoneNumber: Joi.string().pattern(/^[0-9]{10}$/),
     email: Joi.string().email().allow(null, ''),
     addressLine1: Joi.string().min(5).max(255),
     addressLine2: Joi.string().max(255).allow(null, ''),
