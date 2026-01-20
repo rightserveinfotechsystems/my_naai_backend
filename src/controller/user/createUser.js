@@ -3,6 +3,7 @@ const { createUserValidationSchema } = require('../../validations/user.validatio
 const userService = require('../../services/user.service');
 const db = require('../../database/models');
 const jwt = require('jsonwebtoken');
+const { where } = require('sequelize');
 
 const createUser = async (request, response) => {
     try {
@@ -78,7 +79,11 @@ const createUser = async (request, response) => {
                 process.env.JWT_SECRET || 'your-secret-key',
             );
             //delete the verified otp
-            await db.OtpLog.destroy({ phoneNumber });
+            await db.OtpLog.destroy({
+                where: {
+                    phoneNumber
+                }
+            });
             return response.status(200).json({
                 status: 'SUCCESS',
                 message: 'User created successfully',
