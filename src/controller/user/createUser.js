@@ -44,12 +44,23 @@ const createUser = async (request, response) => {
             order: [['createdAt', 'DESC']]
         });
 
-        if (!otpRow || otpRow.expiresAt < new Date()) {
-            return response.status(400).json({
+      
+        //OTP not found OR OTP does not match
+        if (!otpRow || otpRow.otpCode !== validData.otp) {
+            return response.status(401).json({
                 status: 'FAILED',
-                message: 'Invalid or expired OTP'
+                message: 'Invalid OTP'
             });
         }
+
+        //  OTP expired
+        if (otpRow.expiresAt < new Date()) {
+            return response.status(401).json({
+                status: 'FAILED',
+                message: 'OTP has expired'
+            });
+        }
+
 
         // Mark OTP as used 
         await otpRow.update({
@@ -59,11 +70,11 @@ const createUser = async (request, response) => {
 
         // Create user
         const dataToInsert = {
-            phoneNumber: validData.phoneNumber.trim(),
-            fullName: validData.fullName || null,
+            phoneNumber: validData?.phoneNumber.trim(),
+            fullName: validData?.fullName || null,
             email: validData.email ? validData.email.toLowerCase().trim() : null,
-            profileImageUrl: validData.profileImageUrl || null,
-            deviceToken: validData.deviceToken || null,
+            profileImageUrl: validData?.profileImageUrl || null,
+            deviceToken: validData?.deviceToken || null,
             isActive: true,
             isVerified: true
         };

@@ -22,13 +22,19 @@ const verifySalonOtpLogin = async (request, response) => {
 
         // Get salon by phone
         const salon = await salonService.getSalonByPhone(validData.phoneNumber);
-        if (!salon || !salon.isActive) {
+        if (!salon) {
             return response.status(404).json({
                 status: 'FAILED',
-                message: 'Salon not found or inactive'
+                message: 'Salon not found.'
             });
         }
 
+        if (!salon.isActive) {
+            return response.status(404).json({
+                status: 'FAILED',
+                message: 'Salon account is inactive.'
+            });
+        }
 
         // Verify OTP
         const otpRow = await db.OtpLog.findOne({
@@ -41,13 +47,23 @@ const verifySalonOtpLogin = async (request, response) => {
             order: [['createdAt', 'DESC']]
         });
 
-        // Otp Expired / not found
-        if (!otpRow || otpRow.expiresAt < new Date()) {
+        //OTP not found OR OTP does not match
+        if (!otpRow || otpRow.otpCode !== validData.otp) {
             return response.status(401).json({
                 status: 'FAILED',
-                message: 'Invalid or expired OTP'
+                message: 'Invalid OTP'
             });
         }
+
+
+        //  OTP expired
+        if (otpRow.expiresAt < new Date()) {
+            return response.status(401).json({
+                status: 'FAILED',
+                message: 'OTP has expired'
+            });
+        }
+
 
         //  Mark OTP as used
         await otpRow.update({
@@ -103,7 +119,7 @@ const verifySalonOtpLogin = async (request, response) => {
                 phoneNumber
             }
         });
-        
+
         return response.status(200).json({
             status: 'SUCCESS',
             message: 'Salon login successful',
