@@ -96,6 +96,14 @@ const verifySalonOtpLogin = async (request, response) => {
             // role: 'SALON'
         });
 
+
+        //delete the verified otp
+        await db.OtpLog.destroy({
+            where: {
+                phoneNumber
+            }
+        });
+        
         return response.status(200).json({
             status: 'SUCCESS',
             message: 'Salon login successful',

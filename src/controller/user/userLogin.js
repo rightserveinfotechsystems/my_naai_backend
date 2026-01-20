@@ -66,6 +66,13 @@ const verifyOtpLogin = async (request, response) => {
             process.env.JWT_SECRET || 'your-secret-key'
         );
 
+        //delete the verified otp
+        await db.OtpLog.destroy({
+            where: {
+                phoneNumber
+            }
+        });
+
         return response.status(200).json({
             status: 'SUCCESS',
             message: 'Login successful',
