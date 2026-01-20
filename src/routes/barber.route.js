@@ -10,6 +10,7 @@ const toggleStatus = require('../controller/Barber/toggleBarberStatus');
 const deleteBarber = require('../controller/Barber/deleteBarber');
 const toggleAvailability = require('../controller/Barber/toggleBarberAvailability');
 const verifyBarberOtpLogin = require('../controller/Barber/login');
+const getSalonBarbers = require('../controller/Barber/getSalonsBarbers');
 
 const barberRouter = express.Router();
 
@@ -27,7 +28,10 @@ barberRouter.post('/create-barber', authenticateSalon, createBarber);
 barberRouter.post('/get-barbers-list', authenticateSalon, getBarberList);
 barberRouter.post('/toggle-status', authenticateSalon, toggleStatus);
 barberRouter.delete('/delete',authenticateSalon,deleteBarber );
-barberRouter.post('/toggle-availability', authenticateSalon, toggleAvailability)
+barberRouter.post('/toggle-availability', authenticateSalon, toggleAvailability);
+barberRouter.get('/get-salon-barbers', authenticateSalon, getSalonBarbers);
+
+
 
 
 module.exports = barberRouter;

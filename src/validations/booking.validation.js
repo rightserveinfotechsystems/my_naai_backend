@@ -44,6 +44,9 @@ const addWalkInSchema = Joi.object({
     'number.base': 'serviceDuration must be a number',
     'number.min': 'serviceDuration must be at least 1 minute',
     'any.required': 'serviceDuration is required'
+  }),
+    barberId: Joi.string().uuid().required().messages({
+    'any.required': 'barberId is required'
   })
 });
 module.exports = { 

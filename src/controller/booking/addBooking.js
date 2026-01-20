@@ -8,6 +8,7 @@ const { createBookingSchema } = require('../../validations/booking.validation');
 const createBooking = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
+    const { name } = req;
     // ✅ Validate request
     const { error, value } = createBookingSchema.validate(req.body, { abortEarly: false });
     if (error) {
@@ -148,7 +149,7 @@ const createBooking = async (req, res) => {
       await sendNotificationToDevice(
         dt.deviceToken,
         "New Booking",
-        "You have received a new booking request"
+        `You have received a new booking request from ${name}`
       );
     }
 
@@ -157,7 +158,7 @@ const createBooking = async (req, res) => {
       receiverType: 'SALON',
       receiverId: salonId,
       title: 'New Booking',
-      message: 'You have received a new booking request'
+      message: `You have received a new booking request from ${name}`
     });
 
     //  REAL-TIME SOCKET EVENT
@@ -202,7 +203,7 @@ const createBooking = async (req, res) => {
     await t.rollback();
     console.error(err);
     console.error('Booking error:', err);
-    return res.status(500).json({ status: 'FAILED', message: 'Server error' });
+    return res.status(500).json({ status: 'FAILED', message: err.message });
   }
 };
 

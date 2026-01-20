@@ -12,10 +12,10 @@ const addWalkInCustomers = async (request, response) => {
       });
     }
 
-    const { customerName, serviceDuration } = request?.body || {};
+    const { customerName, serviceDuration, barberId  } = request?.body || {};
 
    // ✅ Validate input
-    const validationResult = addWalkInSchema.validate({customerName, serviceDuration}, { abortEarly: true });
+    const validationResult = addWalkInSchema.validate({customerName, serviceDuration, barberId }, { abortEarly: true });
 
     if (validationResult.error) {
       return response.status(400).json({
@@ -28,7 +28,8 @@ const addWalkInCustomers = async (request, response) => {
     const result = await BookingService.addWalkInCustomer({
       salonId,
       customerName,
-      serviceDuration
+      serviceDuration,
+      barberId,
     });
 
     return response.status(200).json({
