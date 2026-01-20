@@ -38,7 +38,7 @@ const sendOtpRegister = async (request, response) => {
             const otpLog = await db.OtpLog.create({
                 phoneNumber,
                 otpCode: otp,
-                purpose: 'login',
+                purpose: 'registration',
                 expiresAt
             });
 
