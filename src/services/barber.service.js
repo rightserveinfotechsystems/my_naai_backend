@@ -150,6 +150,8 @@ const getBarbersList = async ({ page = 1, searchString = '' }) => {
 };
 
 
+
+
 /**
  * Check if barber has active bookings
  */
@@ -260,6 +262,31 @@ const updateBarberAvailability = async (barberId, isAvailable) => {
     }
 };
 
+/**
+ * Get active barbers for a salon (for dropdown / walk-in)
+ */
+const getSalonBarbers = async (salonId) => {
+    try {
+
+        const barbers = await db.Barber.findAll({
+            where: {
+                salonId: salonId,
+                isActive: true,
+                deletedAt: null
+            },
+            attributes: [
+                'barberId',
+                'fullName'
+            ],
+            order: [['fullName', 'ASC']]
+        });
+
+        return barbers;
+    } catch (error) {
+        throw error;
+    }
+};
+
 
 
 module.exports = {
@@ -273,5 +300,6 @@ module.exports = {
     hasActiveBookings,
     hasActiveQueues,
     deleteBarber,
-    updateBarberAvailability
+    updateBarberAvailability,
+    getSalonBarbers
 };

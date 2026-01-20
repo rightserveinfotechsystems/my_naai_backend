@@ -1,6 +1,6 @@
 // middleware/authUser.js
 const jwt = require('jsonwebtoken');
-const userService = require('../../services/user.service'); 
+const userService = require('../../services/user.service');
 
 const authenticateUser = async (request, response, next) => {
     try {
@@ -16,7 +16,7 @@ const authenticateUser = async (request, response, next) => {
         }
 
         const token = authHeader.split(' ')[1]; // Bearer token
-        
+
         // Verify JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
         console.log('Decoded Token:', decoded);
@@ -32,7 +32,7 @@ const authenticateUser = async (request, response, next) => {
         }
 
         // check if user is active
-        if(!user.isActive){
+        if (!user.isActive) {
             return response.status(403).json({
                 status: 'FAILED',
                 message: 'User is not active. Please contact support.'
@@ -44,7 +44,8 @@ const authenticateUser = async (request, response, next) => {
             id: user.userId,
             phoneNumber: user.phoneNumber
         };
-        
+        request.name = user?.fullName
+
         next(); //call next middleware
     } catch (error) {
         console.log("error : ", error)

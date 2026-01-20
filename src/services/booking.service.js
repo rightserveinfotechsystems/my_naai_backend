@@ -716,7 +716,16 @@ const getBookingById = async (salonId, bookingId) => {
 };
 
 
-const addWalkInCustomer = async ({ salonId, customerName, serviceDuration }) => {
+const addWalkInCustomer = async ({ salonId, customerName, serviceDuration, barberId }) => {
+
+  // ✅ Check barber belongs to same salon
+  const barber = await db.Barber.findOne({
+    where: { barberId, salonId, isActive: true }
+  });
+
+  if (!barber) {
+    throw new Error('Invalid barber selected');
+  }
 
   const today = new Date();
   // const walkInUser = await db.User.findOne({
@@ -738,7 +747,9 @@ const addWalkInCustomer = async ({ salonId, customerName, serviceDuration }) => 
     bookingDate: today,
     queueNumber: nextQueueNumber,
     status: 'waiting',
-    userId: null
+    userId: null,
+     barberId: barber.barberId,
+    barberName: barber.fullName
   });
 
   // 3️⃣ Create booking entry
@@ -750,6 +761,7 @@ const addWalkInCustomer = async ({ salonId, customerName, serviceDuration }) => 
     bookingStatus: 'pending',
     bookingType: 'WALK_IN',
     walkinName: customerName,
+      barberId: barber.barberId,
 
     services: [
       {
@@ -786,11 +798,13 @@ const addWalkInCustomer = async ({ salonId, customerName, serviceDuration }) => 
       bookingId: booking.bookingId,
       customerName,
       queueNumber: nextQueueNumber,
+       barberName: barber.fullName,
       status: 'waiting',
       serviceDuration
     },
   };
 };
+
 
 
 
