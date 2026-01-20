@@ -22,10 +22,20 @@ const verifyOtpLogin = async (request, response) => {
 
         // Get user
         const user = await userService.getUserByPhone(validData.phoneNumber);
-        if (!user || !user.isActive) {
+
+        //User not found
+        if (!user) {
             return response.status(404).json({
                 status: 'FAILED',
-                message: 'User not found or inactive'
+                message: 'User not found'
+            });
+        }
+
+        // User found but inactive
+        if (!user.isActive) {
+            return response.status(403).json({
+                status: 'FAILED',
+                message: 'User account is inactive'
             });
         }
 
@@ -40,11 +50,19 @@ const verifyOtpLogin = async (request, response) => {
             order: [['createdAt', 'DESC']]
         });
 
-        // Otp Expired / not found
-        if (!otpRow || otpRow.expiresAt < new Date()) {
+        //OTP not found OR OTP does not match
+        if (!otpRow || otpRow.otpCode !== validData.otp) {
             return response.status(401).json({
                 status: 'FAILED',
-                message: 'Invalid or expired OTP'
+                message: 'Invalid OTP'
+            });
+        }
+
+        //  OTP expired
+        if (otpRow.expiresAt < new Date()) {
+            return response.status(401).json({
+                status: 'FAILED',
+                message: 'OTP has expired'
             });
         }
 
@@ -77,13 +95,13 @@ const verifyOtpLogin = async (request, response) => {
             status: 'SUCCESS',
             message: 'Login successful',
             data: {
-                userId: user.userId,
-                phoneNumber: user.phoneNumber,
-                fullName: user.fullName || null,
-                email: user.email || null,
-                profileImageUrl: user.profileImageUrl || null,
-                isActive: user.isActive,
-                isVerified: user.isVerified,
+                userId: user?.userId,
+                phoneNumber: user?.phoneNumber,
+                fullName: user?.fullName || null,
+                email: user?.email || null,
+                profileImageUrl: user?.profileImageUrl || null,
+                isActive: user?.isActive,
+                isVerified: user?.isVerified,
                 token: token // JWT generate 
             }
         });
