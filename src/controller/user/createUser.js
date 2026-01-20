@@ -77,6 +77,8 @@ const createUser = async (request, response) => {
                 { userId: result.userId },
                 process.env.JWT_SECRET || 'your-secret-key',
             );
+            //delete the verified otp
+            await db.OtpLog.destroy({ phoneNumber });
             return response.status(200).json({
                 status: 'SUCCESS',
                 message: 'User created successfully',

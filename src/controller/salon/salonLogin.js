@@ -62,21 +62,32 @@ const verifySalonOtpLogin = async (request, response) => {
         });
 
         // ✅ NEW DEVICE TOKEN FLOW (MULTIPLE DEVICES SAFE)
+
+
         if (deviceToken) {
-            const existingToken = await DeviceToken.findOne({
-                where: {
-                    salonId: salon.salonId,
-                    deviceToken: deviceToken
-                }
+            const devices = await DeviceToken.findAll({
+                where: { salonId: salon.salonId }
             });
 
-            if (!existingToken) {
+            const alreadyExists = devices.some(
+                device => device.deviceToken === deviceToken
+            );
+
+            if (!alreadyExists && devices.length >= 10) {
+                return response.status(403).json({
+                    status: 'FAILED',
+                    message: 'Already logged in on 10 devices'
+                });
+            }
+
+            if (!alreadyExists) {
                 await DeviceToken.create({
                     salonId: salon.salonId,
-                    deviceToken: deviceToken
+                    deviceToken
                 });
             }
         }
+
 
 
         // Generate JWT token

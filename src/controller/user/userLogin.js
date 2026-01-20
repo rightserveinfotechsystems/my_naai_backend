@@ -6,7 +6,7 @@ const db = require('../../database/models');
 
 const verifyOtpLogin = async (request, response) => {
     try {
-        const { phoneNumber, otp, deviceToken } = request.body;
+        const { phoneNumber, otp, deviceToken } = request.body || {};
 
         // Validate
         const validationResult = verifyOtpValidationSchema.validate({ phoneNumber, otp, deviceToken }, { abortEarly: true });
