@@ -1,4 +1,4 @@
-const { Op, literal  } = require('sequelize');
+const { Op, literal } = require('sequelize');
 const db = require('../database/models');
 
 
@@ -209,18 +209,26 @@ const getSalonBasicWithQueue = async (salonId) => {
             bookingDate: today
           },
           include: [{
-            model: db.Service,
-            as: 'service',
-            attributes: ['durationMinutes'],
+            model: db.Booking,
+            as: 'booking',
+            // attributes: ['durationMinutes'],
             required: false
           }],
           attributes: ['queueId']
         });
 
-        const durationTime = barberQueues.reduce(
-          (sum, q) => sum + (q.service?.durationMinutes || 15),
-          0
-        );
+        // const durationTime = barberQueues.reduce(
+        //   (sum, q) => sum + (q.service?.durationMinutes || 15),
+        //   0
+        // );
+
+        const durationTime = barberQueues.reduce((sum, q) => {
+          const services = q.booking?.services || [];
+          return sum + services.reduce(
+            (s, serviceItem) => s + Number(serviceItem.durationMinutes || 0),
+            0
+          );
+        }, 0);
 
         return {
           ...barber.toJSON(),
@@ -451,52 +459,52 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
  * List salons with pagination for users (only active salons)
  */
 
-const getActiveSalonsListForUsers = async ({ 
-    page = 1, 
-    searchString = '', 
-    limit = DEFAULT_LIMIT, 
-    cityFilter = 'ALL',
-    latitude,  
-    longitude,  
-    radius = RADIUS 
+const getActiveSalonsListForUsers = async ({
+  page = 1,
+  searchString = '',
+  limit = DEFAULT_LIMIT,
+  cityFilter = 'ALL',
+  latitude,
+  longitude,
+  radius = RADIUS
 }) => {
-    try {
-        // Today's date in Asia/Kolkata timezone
-        const today = new Date(
-            new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
-        ).toISOString().split('T')[0];
+  try {
+    // Today's date in Asia/Kolkata timezone
+    const today = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+    ).toISOString().split('T')[0];
 
-        const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
-        const offset = (safePage - 1) * limit;
+    const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+    const offset = (safePage - 1) * limit;
 
-        // Basic filters
-        const where = { isActive: true };
+    // Basic filters
+    const where = { isActive: true };
 
-        if (searchString?.trim()) {
-            const like = `%${searchString.trim()}%`;
-            where[Op.or] = [
-                { salonName: { [Op.iLike]: like } },
-                { phoneNumber: { [Op.iLike]: like } },
-                { city: { [Op.iLike]: like } },
-                { addressLine1: { [Op.iLike]: like } }
-            ];
-        }
+    if (searchString?.trim()) {
+      const like = `%${searchString.trim()}%`;
+      where[Op.or] = [
+        { salonName: { [Op.iLike]: like } },
+        { phoneNumber: { [Op.iLike]: like } },
+        { city: { [Op.iLike]: like } },
+        { addressLine1: { [Op.iLike]: like } }
+      ];
+    }
 
-        if (cityFilter !== 'ALL') {
-            where.city = { [Op.iLike]: `%${cityFilter}%` };
-        }
+    if (cityFilter !== 'ALL') {
+      where.city = { [Op.iLike]: `%${cityFilter}%` };
+    }
 
-        let nearbySalons = [];
-        let salons = [];
-        let totalSalons = 0;
+    let nearbySalons = [];
+    let salons = [];
+    let totalSalons = 0;
 
-        // ================= NEARBY LOGIC =================
-        if (latitude && longitude) {
-            const userLat = parseFloat(latitude);
-            const userLng = parseFloat(longitude);
-            const maxDistance = parseFloat(radius);
+    // ================= NEARBY LOGIC =================
+    if (latitude && longitude) {
+      const userLat = parseFloat(latitude);
+      const userLng = parseFloat(longitude);
+      const maxDistance = parseFloat(radius);
 
-            const distanceFormula = `(6371 * acos(
+      const distanceFormula = `(6371 * acos(
                 cos(radians(${userLat}))
                 * cos(radians("latitude"))
                 * cos(radians("longitude") - radians(${userLng}))
@@ -504,92 +512,92 @@ const getActiveSalonsListForUsers = async ({
                 * sin(radians("latitude"))
             ))`;
 
-            const allSalonsWithDistance = await db.Salon.findAll({
-                attributes: {
-                    include: [[literal(distanceFormula), 'distance']]
-                },
-                where,
-                order: literal(`${distanceFormula} ASC`)
-            });
+      const allSalonsWithDistance = await db.Salon.findAll({
+        attributes: {
+          include: [[literal(distanceFormula), 'distance']]
+        },
+        where,
+        order: literal(`${distanceFormula} ASC`)
+      });
 
-            nearbySalons = allSalonsWithDistance.filter(
-                s => parseFloat(s.get('distance')) <= maxDistance
-            );
-        }
-
-        // ================= REMAINING SALONS LOGIC =================
-        const nearbySalonIds = nearbySalons.map(s => s.salonId);
-
-        const remainingWhere = {
-            ...where,
-            ...(nearbySalonIds.length && {
-                salonId: { [Op.notIn]: nearbySalonIds }
-            })
-        };
-
-        totalSalons = await db.Salon.count({ where });
-
-        const remainingSalons = await db.Salon.findAll({
-            where: remainingWhere,
-            attributes: { exclude: ['deletedAt'] },
-            include: [{
-                model: db.Queue,
-                as: 'queues',
-                where: {
-                    status: 'waiting',
-                    bookingDate: today
-                },
-                required: false,
-                include: [{
-                    model: db.Booking,
-                    as: 'booking'
-                }],
-                attributes: ['queueNumber'],
-                order: [['queueNumber', 'ASC']]
-            }],
-            limit,
-            offset,
-            order: [['createdAt', 'DESC']]
-        });
-
-        // Merge: nearby first
-        salons = [...nearbySalons, ...remainingSalons];
-
-        // ================= CALCULATE WAIT TIME =================
-        const salonsWithWaitTime = salons.map(salon => {
-            const queues = salon.queues || [];
-            const totalMinutes = queues.reduce((sum, queue) => {
-                const booking = queue.booking;
-                if (booking && booking.services?.length) {
-                    return sum + booking.services.reduce((s, svc) => s + Number(svc.durationMinutes || 0), 0);
-                }
-                return sum;
-            }, 0);
-
-            const salonData = salon.toJSON();
-            delete salonData.queues;
-
-            return {
-                ...salonData,
-                queueLength: queues.length,
-                totalWaitTime: {
-                    minutes: totalMinutes,
-                    display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
-                }
-            };
-        });
-
-        return {
-            salons: salonsWithWaitTime,
-            totalSalons,
-            page: safePage,
-            limit,
-            totalPages: Math.ceil(totalSalons / limit)
-        };
-
-    } catch (error) {
-        throw error;
+      nearbySalons = allSalonsWithDistance.filter(
+        s => parseFloat(s.get('distance')) <= maxDistance
+      );
     }
+
+    // ================= REMAINING SALONS LOGIC =================
+    const nearbySalonIds = nearbySalons.map(s => s.salonId);
+
+    const remainingWhere = {
+      ...where,
+      ...(nearbySalonIds.length && {
+        salonId: { [Op.notIn]: nearbySalonIds }
+      })
+    };
+
+    totalSalons = await db.Salon.count({ where });
+
+    const remainingSalons = await db.Salon.findAll({
+      where: remainingWhere,
+      attributes: { exclude: ['deletedAt'] },
+      include: [{
+        model: db.Queue,
+        as: 'queues',
+        where: {
+          status: 'waiting',
+          bookingDate: today
+        },
+        required: false,
+        include: [{
+          model: db.Booking,
+          as: 'booking'
+        }],
+        attributes: ['queueNumber'],
+        order: [['queueNumber', 'ASC']]
+      }],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Merge: nearby first
+    salons = [...nearbySalons, ...remainingSalons];
+
+    // ================= CALCULATE WAIT TIME =================
+    const salonsWithWaitTime = salons.map(salon => {
+      const queues = salon.queues || [];
+      const totalMinutes = queues.reduce((sum, queue) => {
+        const booking = queue.booking;
+        if (booking && booking.services?.length) {
+          return sum + booking.services.reduce((s, svc) => s + Number(svc.durationMinutes || 0), 0);
+        }
+        return sum;
+      }, 0);
+
+      const salonData = salon.toJSON();
+      delete salonData.queues;
+
+      return {
+        ...salonData,
+        queueLength: queues.length,
+        totalWaitTime: {
+          minutes: totalMinutes,
+          display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+        }
+      };
+    });
+
+    return {
+      salons: salonsWithWaitTime,
+      totalSalons,
+      page: safePage,
+      limit,
+      totalPages: Math.ceil(totalSalons / limit)
+    };
+
+  } catch (error) {
+    throw error;
+  }
 };
 
 
