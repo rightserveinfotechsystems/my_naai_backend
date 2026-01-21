@@ -217,12 +217,7 @@ const getSalonBasicWithQueue = async (salonId) => {
           attributes: ['queueId']
         });
 
-        // const durationTime = barberQueues.reduce(
-        //   (sum, q) => sum + (q.service?.durationMinutes || 15),
-        //   0
-        // );
-
-        const durationTime = barberQueues.reduce((sum, q) => {
+        const durationMinutes = barberQueues.reduce((sum, q) => {
           const services = q.booking?.services || [];
           return sum + services.reduce(
             (s, serviceItem) => s + Number(serviceItem.durationMinutes || 0),
@@ -230,9 +225,13 @@ const getSalonBasicWithQueue = async (salonId) => {
           );
         }, 0);
 
+        // Convert minutes to hours + minutes
+        const hours = Math.floor(durationMinutes / 60);
+        const minutes = durationMinutes % 60;
+
         return {
           ...barber.toJSON(),
-          durationTime
+          durationTime: `${hours}h ${minutes}m`
         };
       })
     );
