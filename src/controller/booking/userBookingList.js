@@ -28,25 +28,36 @@ const userGetBookingList = async (request, response) => {
     });
 
     // Format response
- const bookingsData = result.bookings.map(booking => {
-    const services = Array.isArray(booking.services) ? booking.services : JSON.parse(booking.services || '[]');
-    return {
-        bookingId: booking.bookingId,
-        salonName: booking.salon?.salonName || '',
-        salonCity: booking.salon?.city || '',
-         salonImage:booking.salon?.imageUrl,
-        // ✅ Correct key from JSON
-        serviceName: services.map(s => s.serviceName).join(', '),
-        queueNumber: booking.queue?.queueNumber || null,
-        queueStatus: booking.queue?.status || '',
-        serviceDuration: services.reduce((sum, s) => sum + (s.durationMinutes || 0), 0),
-        amount: parseFloat(booking.amount || 0).toFixed(2),
-        bookingDate: booking.bookingDate,
-        bookingTime: booking.bookingTime,
-        barberName: booking.barber?.fullName || '',
-        status: booking.bookingStatus
-    };
-});
+    const bookingsData = await Promise.all(
+      result.bookings.map(async (booking) => {
+        const services = booking.services || [];
+
+        const waitingTime =
+          booking.queue?.status === 'waiting'
+            ? await BookingService.getUserWaitingTime(booking)
+            : 0;
+        return {
+          bookingId: booking.bookingId,
+          salonName: booking.salon?.salonName || '',
+          salonCity: booking.salon?.city || '',
+          salonImage: booking.salon?.imageUrl,
+          // ✅ Correct key from JSON
+          serviceName: services.map(s => s.serviceName).join(', '),
+          queueNumber: booking.queue?.queueNumber || null,
+          queueStatus: booking.queue?.status || '',
+          serviceDuration: services.reduce((sum, s) => sum + (s.durationMinutes || 0), 0),
+          //waiting time
+          waitingTimeInMinutes: waitingTime,
+          waitingTimeDisplay: `${Math.floor(waitingTime / 60)}h ${waitingTime % 60}m`,
+
+
+          amount: parseFloat(booking.amount || 0).toFixed(2),
+          bookingDate: booking.bookingDate,
+          bookingTime: booking.bookingTime,
+          barberName: booking.barber?.fullName || '',
+          status: booking.bookingStatus
+        };
+      }));
 
 
     return response.status(200).json({

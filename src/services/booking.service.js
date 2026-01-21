@@ -642,7 +642,6 @@ const completeService = async (salonId, bookingId) => {
 
 
 
-// services/booking.service.js - Add this
 const userListBookings = async (userId, {
   page = 1,
   statusFilter = '',
@@ -682,7 +681,7 @@ const userListBookings = async (userId, {
     // Fetch bookings
     const bookings = await Booking.findAll({
       where,
-      attributes: ['bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services'],
+      attributes: ['bookingId','salonId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services'],
       include: [
         { model: Queue, as: 'queue', attributes: ['queueNumber', 'status'] },
         // { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
@@ -706,6 +705,44 @@ const userListBookings = async (userId, {
     throw error;
   }
 };
+
+
+const getUserWaitingTime = async (booking) => {
+  // agar queue hi nahi ya waiting me nahi
+  if (!booking.queue || booking.queue.status !== 'waiting') return 0;
+
+  const userQueueNumber = booking.queue.queueNumber;
+  const bookingDate = booking.bookingDate;
+
+  const aheadQueues = await db.Queue.findAll({
+    where: {
+      salonId: booking.salonId,
+      bookingDate: bookingDate,
+      status: 'waiting',
+      queueNumber: {
+        [Op.lt]: userQueueNumber
+      }
+    },
+    include: [{
+      model: db.Booking,
+      as: 'booking',
+      required: false
+    }],
+    order: [['queueNumber', 'ASC']]
+  });
+
+  // ✅ SAME LOGIC as salon detail
+  const waitingMinutes = aheadQueues.reduce((sum, q) => {
+    const services = q.booking?.services || [];
+    return sum + services.reduce(
+      (s, svc) => s + Number(svc.durationMinutes || 0),
+      0
+    );
+  }, 0);
+
+  return waitingMinutes;
+};
+
 
 
 const getBookingById = async (salonId, bookingId) => {
@@ -828,5 +865,6 @@ module.exports = {
   adminListAllBookings,
   salonOwnerCompletedBookings,
   getBookingById,
-  addWalkInCustomer
+  addWalkInCustomer,
+  getUserWaitingTime
 };
