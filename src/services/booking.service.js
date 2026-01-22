@@ -755,14 +755,18 @@ const getBookingById = async (salonId, bookingId) => {
 
 const addWalkInCustomer = async ({ salonId, customerName, serviceDuration, barberId }) => {
 
+  let barber = null;
   // ✅ Check barber belongs to same salon
-  const barber = await db.Barber.findOne({
+if (barberId) {
+  barber = await db.Barber.findOne({
     where: { barberId, salonId, isActive: true }
   });
+
 
   if (!barber) {
     throw new Error('Invalid barber selected');
   }
+}
 
   const today = new Date();
   // const walkInUser = await db.User.findOne({
@@ -785,8 +789,8 @@ const addWalkInCustomer = async ({ salonId, customerName, serviceDuration, barbe
     queueNumber: nextQueueNumber,
     status: 'waiting',
     userId: null,
-     barberId: barber.barberId,
-    barberName: barber.fullName
+     barberId: barber?.barberId || null,
+    barberName: barber?.fullName || null
   });
 
   // 3️⃣ Create booking entry
@@ -798,7 +802,7 @@ const addWalkInCustomer = async ({ salonId, customerName, serviceDuration, barbe
     bookingStatus: 'pending',
     bookingType: 'WALK_IN',
     walkinName: customerName,
-      barberId: barber.barberId,
+      barberId: barber?.barberId || null,
 
     services: [
       {
@@ -832,10 +836,10 @@ const addWalkInCustomer = async ({ salonId, customerName, serviceDuration, barbe
     message: `Customer added to queue`,
     queue: {
       queueId: queue.queueId,
-      bookingId: booking.bookingId,
+      bookingId: booking?.bookingId,
       customerName,
       queueNumber: nextQueueNumber,
-       barberName: barber.fullName,
+       barberName: barber?.fullName || null,
       status: 'waiting',
       serviceDuration
     },
