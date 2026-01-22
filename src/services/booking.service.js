@@ -481,7 +481,8 @@ const salonOwnerCompletedBookings = async (
       const like = `%${searchString.trim()}%`;
       where[Op.or] = [
         { '$user.fullName$': { [Op.iLike]: like } },
-        { '$user.phoneNumber$': { [Op.iLike]: like } }
+        { '$user.phoneNumber$': { [Op.iLike]: like } },
+        { walkinName: { [Op.iLike]: like } }
       ];
     }
 
@@ -498,7 +499,9 @@ const salonOwnerCompletedBookings = async (
         'bookingId',
         'bookingDate',
         'bookingTime',
-        'services'
+        'services',
+        'walkinName',
+        'walkinPhone'
       ],
       include: [
         { model: User, as: 'user', attributes: ['fullName', 'phoneNumber'] },
@@ -519,12 +522,13 @@ const salonOwnerCompletedBookings = async (
         0
       );
 
+
       return {
         bookingId: b.bookingId,
         bookingDate: b.bookingDate,
         bookingTime: b.bookingTime,
-        userName: b.user?.fullName,
-        userPhone: b.user?.phoneNumber,
+        userName: b.user ? b.user.fullName : b.walkinName,
+        userPhone: b.user ? b.user.phoneNumber : b.walkinPhone || '0000000000',
         barberName: b.barber?.fullName,
         queueNumber: b.queue?.queueNumber,
         services: serviceNames,
@@ -681,7 +685,7 @@ const userListBookings = async (userId, {
     // Fetch bookings
     const bookings = await Booking.findAll({
       where,
-      attributes: ['bookingId','salonId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services'],
+      attributes: ['bookingId', 'salonId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services'],
       include: [
         { model: Queue, as: 'queue', attributes: ['queueNumber', 'status'] },
         // { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
@@ -757,16 +761,16 @@ const addWalkInCustomer = async ({ salonId, customerName, serviceDuration, barbe
 
   let barber = null;
   // ✅ Check barber belongs to same salon
-if (barberId) {
-  barber = await db.Barber.findOne({
-    where: { barberId, salonId, isActive: true }
-  });
+  if (barberId) {
+    barber = await db.Barber.findOne({
+      where: { barberId, salonId, isActive: true }
+    });
 
 
-  if (!barber) {
-    throw new Error('Invalid barber selected');
+    if (!barber) {
+      throw new Error('Invalid barber selected');
+    }
   }
-}
 
   const today = new Date();
   // const walkInUser = await db.User.findOne({
@@ -789,7 +793,7 @@ if (barberId) {
     queueNumber: nextQueueNumber,
     status: 'waiting',
     userId: null,
-     barberId: barber?.barberId || null,
+    barberId: barber?.barberId || null,
     barberName: barber?.fullName || null
   });
 
@@ -802,7 +806,7 @@ if (barberId) {
     bookingStatus: 'pending',
     bookingType: 'WALK_IN',
     walkinName: customerName,
-      barberId: barber?.barberId || null,
+    barberId: barber?.barberId || null,
 
     services: [
       {
@@ -839,7 +843,7 @@ if (barberId) {
       bookingId: booking?.bookingId,
       customerName,
       queueNumber: nextQueueNumber,
-       barberName: barber?.fullName || null,
+      barberName: barber?.fullName || null,
       status: 'waiting',
       serviceDuration
     },
