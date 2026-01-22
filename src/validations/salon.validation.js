@@ -84,7 +84,7 @@ const createSalonValidationSchema = Joi.object({
             breakEndTime: Joi.string().allow(null),
             holidayDays: Joi.array().items(Joi.number().min(0).max(6)).default([])
         })
-    ).optional(),
+    ).required(),
 });
 
 /**
