@@ -7,7 +7,7 @@ const createSalon = async (request, response) => {
     const t = await db.sequelize.transaction();
     try {
         // Extract data from request body
-        const { services = [], businessHours = [], ...salonData } = request.body || {};
+        const { services = [], businessHours, ...salonData } = request.body || {};
 
 
         // Validate input
