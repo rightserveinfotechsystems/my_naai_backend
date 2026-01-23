@@ -209,7 +209,8 @@ const adminListBookings = async ({
     const bookings = await Booking.findAll({
       where,
       attributes: [
-        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'createdAt',
+        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'createdAt','walkinName',  
+  'walkinPhone',
         [Sequelize.col('salon.salon_name'), 'salonName'],
         [Sequelize.col('user.full_name'), 'userName'],
         [Sequelize.col('user.phone_number'), 'userPhone'],
@@ -229,8 +230,14 @@ const adminListBookings = async ({
     // Format response to include service names and total price
     const formattedBookings = bookings.map(b => {
       const services = b.services;
+
+      // Use user info if exists, else fallback to walk-in user info
+      const userName = b.userName || b.walkinName;
+      const userPhone = b.userPhone || b.walkinPhone || '';
       return {
         ...b.dataValues,
+        userName,
+        userPhone,
         serviceNames: services.map(s => s.serviceName).join(', '), // e.g., "Haircut, Shave"
         servicePrice: services.reduce((sum, s) => sum + parseFloat(s.price || 0), 0)
       };
