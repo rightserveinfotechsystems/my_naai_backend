@@ -72,7 +72,8 @@ const loginAdmin = async (request, response) => {
                     adminId: admin.id,
                     name: admin.name,
                     email: admin.email,
-                    mobile: admin.mobile
+                    mobile: admin.mobile,
+                    accessTab: admin.accessTab,
                 },
                 token
             }

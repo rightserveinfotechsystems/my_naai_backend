@@ -50,10 +50,10 @@ const verifyOtpValidationSchema = Joi.object({
 
 // user id validation
 const userIdValidationSchema = Joi.object({
-  userId: Joi.string().uuid().required()
+  userId: Joi.string().required()
     .messages({
       'any.required': 'userId is required',
-      'string.guid': 'userId must be a valid UUID'
+      
     }),
 });
 

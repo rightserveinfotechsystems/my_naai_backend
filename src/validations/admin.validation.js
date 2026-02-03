@@ -19,6 +19,34 @@ const createAdminValidationSchema = Joi.object({
         'string.empty': 'Password is required',
         'string.min': 'Password must be at least 6 characters'
     }),
+    // accessTab: Joi.array().optional().allow("", [], null)
+    accessTab: Joi.array().default([])
+    
+
+});
+// update validation schema
+const updateAdminUserValidationSchema = Joi.object({
+    userId: Joi.string().required()
+        .messages({
+          'any.required': 'userId is required',
+        }),
+    name: Joi.string().min(2).max(100).required().messages({
+        'string.empty': 'Name is required',
+        'string.min': 'Name must be at least 2 characters',
+        'string.max': 'Name cannot exceed 100 characters'
+    }),
+    email: Joi.string().email().required().messages({
+        'string.empty': 'Email is required',
+        'string.email': 'Please provide a valid email'
+    }),
+    mobile: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
+        'string.empty': 'Mobile number is required',
+        'string.pattern.base': 'Mobile number must be 10 digits'
+    }),
+    // accessTab: Joi.array().optional().allow("", [], null)
+    accessTab: Joi.array().default([])
+    
+
 });
 
 // Login validation schema
@@ -50,16 +78,35 @@ const changePasswordValidationSchema = Joi.object({
         'string.empty': 'Current password is required'
     }),
     newPassword: Joi.string().min(6).required()
-     .invalid(Joi.ref('currentPassword')).messages({
-         'any.invalid': 'New password cannot be same as current password',
-        'string.empty': 'New password is required',
-        'string.min': 'New password must be at least 6 characters'
+        .invalid(Joi.ref('currentPassword')).messages({
+            'any.invalid': 'New password cannot be same as current password',
+            'string.empty': 'New password is required',
+            'string.min': 'New password must be at least 6 characters'
+        }),
+});
+
+const userIdValidationSchema = Joi.object({
+  userId: Joi.string().required()
+    .messages({
+      'any.required': 'userId is required',
+      
     }),
+});
+
+/**
+ * Toggle status validation schema
+ */
+const toggleStatusValidationSchema = Joi.object({
+    userId: Joi.string().required(),
+    isActive: Joi.boolean().required()
 });
 
 module.exports = {
     createAdminValidationSchema,
     loginValidationSchema,
     updateAdminValidationSchema,
-    changePasswordValidationSchema
+    changePasswordValidationSchema,
+    updateAdminUserValidationSchema,
+   userIdValidationSchema,
+   toggleStatusValidationSchema,
 };

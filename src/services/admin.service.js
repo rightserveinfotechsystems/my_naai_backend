@@ -30,6 +30,22 @@ const getAdminById = async (adminId) => {
 };
 
 /**
+ * Update user
+ */
+const updateAdminPanelUser = async (userId, updateData) => {
+    try {
+        const user = await db.Admin.findByPk(userId);
+        if (!user) {
+            return null;
+        }
+        await user.update(updateData);
+        return user;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
  * Get admin by username or email
  */
 const getAdminByUsernameOrEmail = async (identifier) => {
@@ -43,6 +59,37 @@ const getAdminByUsernameOrEmail = async (identifier) => {
             }
         });
         return admin;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+
+/**
+ * Get user by phone number
+ */
+const getAdminUserByPhone = async (phoneNumber) => {
+    try {
+        const user = await db.User.findOne({
+            where: { phoneNumber }
+        });
+        return user;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+/**
+ * Get user by email
+ */
+const getAdminUserByEmail = async (email) => {
+    try {
+        const user = await db.User.findOne({
+            where: { email: email?.toLowerCase() }
+        });
+        return user;
     } catch (error) {
         throw error;
     }
@@ -95,47 +142,62 @@ const deleteAdmin = async (adminId) => {
 /**
  * List admins with pagination
  */
+
 const listAdmins = async (filters = {}) => {
-    try {
-        const { page = 1, limit = 10, search, role, isActive } = filters;
-        const offset = (page - 1) * limit;
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      searchString, 
+      role,
+      isActive,
+    } = filters;
 
-        const whereClause = {};
+    const offset = (page - 1) * limit;
+    const keyword = search || searchString; 
 
-        if (search) {
-            whereClause[Op.or] = [
-                { name: { [Op.iLike]: `%${search}%` } },
-                { email: { [Op.iLike]: `%${search}%` } },
-            ];
-        }
+    const whereClause = {};
 
-        if (role) {
-            whereClause.role = role;
-        }
-
-        if (isActive !== undefined) {
-            whereClause.isActive = isActive;
-        }
-
-        const { count, rows } = await db.Admin.findAndCountAll({
-            where: whereClause,
-            attributes: { exclude: ['password'] },
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            order: [['createdAt', 'DESC']]
-        });
-
-        return {
-            admins: rows,
-            total: count,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            totalPages: Math.ceil(count / limit)
-        };
-    } catch (error) {
-        throw error;
+    /* 🔍 SEARCH */
+    if (keyword && keyword.trim()) {
+      whereClause[Op.or] = [
+        { name: { [Op.iLike]: `%${keyword}%` } },
+        { email: { [Op.iLike]: `%${keyword}%` } },
+        { mobile: { [Op.iLike]: `%${keyword}%` } }, // 👈 added
+      ];
     }
+
+    /* 🎭 ROLE FILTER */
+    if (role) {
+      whereClause.role = role;
+    }
+
+    /* ✅ ACTIVE FILTER */
+    if (typeof isActive === "boolean") {
+      whereClause.isActive = isActive;
+    }
+
+    const { count, rows } = await db.Admin.findAndCountAll({
+      where: whereClause,
+      attributes: { exclude: ["password"] },
+      limit: Number(limit),
+      offset: Number(offset),
+      order: [["createdAt", "DESC"]],
+    });
+
+    return {
+      admins: rows,
+      total: count,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(count / limit),
+    };
+  } catch (error) {
+    throw error;
+  }
 };
+
 
 module.exports = {
     getAdminByEmail,
@@ -144,5 +206,8 @@ module.exports = {
     createAdmin,
     updateAdmin,
     deleteAdmin,
-    listAdmins
+    listAdmins,
+    getAdminUserByPhone,
+    getAdminUserByEmail,
+    updateAdminPanelUser
 };

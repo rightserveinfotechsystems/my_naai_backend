@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const { types } = require('pg');
 
 module.exports = (sequelize) => {
     const Admin = sequelize.define('Admin', {
@@ -57,6 +58,16 @@ module.exports = (sequelize) => {
             type: DataTypes.DATE,
             allowNull: true,
         },
+        // accessTab: {
+        //     types: DataTypes.ARRAY,
+        //     allowNull: true
+        // }
+
+  accessTab: {
+      type: DataTypes.ARRAY(DataTypes.STRING), // ✅ Postgres only
+      allowNull: true,
+      defaultValue: [],
+    },
     }, {
         sequelize,
         modelName: 'Admin',
