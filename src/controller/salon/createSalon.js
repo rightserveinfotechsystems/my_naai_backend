@@ -6,6 +6,7 @@ const db = require('../../database/models');
 const createSalon = async (request, response) => {
     const t = await db.sequelize.transaction();
     try {
+        const admin = request.admin
         // Extract data from request body
         const { services = [], businessHours, ...salonData } = request.body || {};
 
@@ -66,7 +67,8 @@ const createSalon = async (request, response) => {
             imageUrl: salonData.imagesArray[0],
             imagesArray: salonData?.imagesArray,
             isActive: true,
-            isOpen: false
+            isOpen: false,
+            createdBy: admin?.id || null
         };
 
         // Create salon

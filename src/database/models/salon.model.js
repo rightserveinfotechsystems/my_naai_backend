@@ -176,7 +176,12 @@ module.exports = (sequelize) => {
             type: DataTypes.DATE,
             allowNull: true,
             field: 'deleted_at'
+        },
+        createdBy: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
         }
+
     }, {
         sequelize,
         modelName: 'Salon',
@@ -206,6 +211,11 @@ module.exports = (sequelize) => {
 
     // Define associations
     Salon.associate = (models) => {
+        Salon.belongsTo(models.Admin, {
+            foreignKey: 'createdBy',
+            as: 'creatorAdmin',
+            onDelete: 'SET NULL'
+        });
         Salon.hasMany(models.Barber, {
             foreignKey: 'salonId',
             as: 'barbers',

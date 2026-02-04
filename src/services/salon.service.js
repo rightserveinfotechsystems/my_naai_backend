@@ -88,6 +88,11 @@ const getSalonWithDetails = async (salonId) => {
           required: false,
           attributes: ['scheduleId', 'openingTime', 'closingTime', 'breakStartTime', 'breakEndTime', 'holidayDays'
           ],
+        },
+        {
+          model: db.Admin,
+          as: 'creatorAdmin',
+          attributes: ['id', 'name', 'mobile']
         }
 
         // {
@@ -417,7 +422,13 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
         }],
         attributes: ['queueNumber'],
         order: [['queueNumber', 'ASC']]
-      }],
+      },
+      {
+        model: db.Admin,
+        as: 'creatorAdmin',
+        attributes: ['id', 'name', 'mobile']
+      }
+      ],
       limit,
       offset,
       order: [['createdAt', 'DESC']]

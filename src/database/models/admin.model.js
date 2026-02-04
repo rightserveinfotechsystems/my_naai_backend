@@ -63,11 +63,11 @@ module.exports = (sequelize) => {
         //     allowNull: true
         // }
 
-  accessTab: {
-      type: DataTypes.ARRAY(DataTypes.STRING), // ✅ Postgres only
-      allowNull: true,
-      defaultValue: [],
-    },
+        accessTab: {
+            type: DataTypes.ARRAY(DataTypes.STRING), // ✅ Postgres only
+            allowNull: true,
+            defaultValue: [],
+        },
     }, {
         sequelize,
         modelName: 'Admin',
@@ -104,6 +104,12 @@ module.exports = (sequelize) => {
             }
         }
     });
+    Admin.associate = (models) => {
+        Admin.hasMany(models.Salon, {
+            foreignKey: 'createdBy',
+            as: 'createdSalons'
+        });
+    };
 
     return Admin;
 };
