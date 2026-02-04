@@ -2,13 +2,14 @@ const salonService = require('../../services/salon.service');
 
 const listSalons = async (request, response) => {
     try {
+        const admin = request?.admin
         // Extract query parameters
         const filters = request.query;
-        
-        // Get salons list
-        const result = await salonService.listSalons(filters);
 
-      
+        // Get salons list
+        const result = await salonService.listSalons({ ...filters, isAdmin: admin?.isAdmin, adminId: admin?.id });
+
+
         if (result.totalSalons > 0 || result.salons.length > 0) {
             return response.status(200).json({
                 status: 'SUCCESS',

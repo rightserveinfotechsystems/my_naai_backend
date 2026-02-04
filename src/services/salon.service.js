@@ -374,11 +374,13 @@ const deleteSalon = async (salonId) => {
 /**
  * List salons with pagination and search
  */
-const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL', statusFilter = 'all' }) => {
+const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL', statusFilter = 'all', isAdmin, adminId }) => {
   try {
     const offset = (page - 1) * limit;
     const where = {};
-
+    if (!isAdmin) {
+      where.createdBy = adminId
+    }
     if (searchString?.trim()) {
       const like = `%${searchString.trim()}%`;
       where[Op.or] = [

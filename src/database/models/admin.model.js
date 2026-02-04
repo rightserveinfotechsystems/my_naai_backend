@@ -58,10 +58,11 @@ module.exports = (sequelize) => {
             type: DataTypes.DATE,
             allowNull: true,
         },
-        // accessTab: {
-        //     types: DataTypes.ARRAY,
-        //     allowNull: true
-        // }
+        isAdmin: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            allowNull: true,
+        },
 
         accessTab: {
             type: DataTypes.ARRAY(DataTypes.STRING), // ✅ Postgres only
