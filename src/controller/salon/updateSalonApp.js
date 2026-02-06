@@ -46,7 +46,7 @@ const updateSalonApp = async (request, response) => {
             salonName: salonData.salonName,
             ownerName: salonData.ownerName,
             // phoneNumber: salonData.phoneNumber,
-            email: salonData.email?.toLowerCase(),
+            email: salonData.email?.trim() ? salonData.email.toLowerCase() : null,
             addressLine1: salonData.addressLine1,
             addressLine2: salonData.addressLine2,
             city: salonData.city,
@@ -57,8 +57,10 @@ const updateSalonApp = async (request, response) => {
             ratingAverage: parseFloat(salonData.ratingAverage) || 0.00,
             totalReviews: Number(salonData.totalReviews) || 0,
             longitude: salonData.longitude,
-            imageUrl: salonData.imagesArray[0],
-            imagesArray: salonData?.imagesArray,
+            imageUrl: Array.isArray(salonData.imagesArray) && salonData.imagesArray.length > 0
+                ? salonData.imagesArray[0]
+                : '', 
+            imagesArray: Array.isArray(salonData.imagesArray) ? salonData.imagesArray : [],
             isActive: salonData.isActive
         };
 
