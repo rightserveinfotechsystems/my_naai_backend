@@ -57,7 +57,7 @@ const createSalonValidationSchema = Joi.object({
         Joi.string()
             .pattern(/\.jpe?g$|\.png$|\.webp$/i)  // jpg, jpeg, png, webp only
             .max(500)
-            .required()
+            .optional()
     ).min(1).max(20).required().messages({
         'array.min': 'At least 1 image required',
         'array.max': 'Maximum 20 images allowed',
