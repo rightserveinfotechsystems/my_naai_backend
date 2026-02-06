@@ -46,7 +46,7 @@ const updateSalonAdmin = async (request, response) => {
             salonName: salonData.salonName,
             ownerName: salonData.ownerName,
             phoneNumber: salonData.phoneNumber,
-            email: salonData.email?.toLowerCase(),
+            email: salonData.email?.trim() ? salonData.email.toLowerCase() : null,
             addressLine1: salonData.addressLine1,
             addressLine2: salonData.addressLine2,
             city: salonData.city,
