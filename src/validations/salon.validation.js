@@ -24,22 +24,24 @@ const createSalonValidationSchema = Joi.object({
         'string.max': 'Salon name cannot exceed 150 characters'
     }),
     ownerName: Joi.string().min(2).max(100).allow(null, ''),
-    phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
-        'string.empty': 'Phone number is required',
-        'string.pattern.base': 'Phone number must be 10 digits'
-    }),
+    phoneNumber: Joi.string()
+        .pattern(/^[0-9]{10}$/)
+        .allow(null, '')
+        .required()
+        .messages({
+            'string.empty': 'Phone number cannot be empty',
+            'string.pattern.base': 'Phone number must be 10 digits'
+        }),
     email: Joi.string().email().allow(null, ''),
-    addressLine1: Joi.string().min(5).max(255).required().messages({
-        'string.empty': 'Address is required'
-    }),
-    addressLine2: Joi.string().max(255).allow(null, ''),
+    addressLine1: Joi.string().min(5).max(255).optional().allow(null, ''),
+    addressLine2: Joi.string().max(255).optional().allow(null, ''),
     city: Joi.string().min(2).max(100).required().messages({
         'string.empty': 'City is required'
     }),
     state: Joi.string().min(2).max(100).required().messages({
         'string.empty': 'State is required'
     }),
-    pincode: Joi.string().pattern(/^[0-9]{6}$/).required().messages({
+    pincode: Joi.string().pattern(/^[0-9]{6}$/).allow(null, '').optional().messages({
         'string.empty': 'Pincode is required',
         'string.pattern.base': 'Pincode must be 6 digits'
     }),
@@ -57,9 +59,8 @@ const createSalonValidationSchema = Joi.object({
         Joi.string()
             .pattern(/\.jpe?g$|\.png$|\.webp$/i)  // jpg, jpeg, png, webp only
             .max(500)
-            .required()
-    ).min(1).max(20).required().messages({
-        'array.min': 'At least 1 image required',
+            .optional()
+    ).max(20).optional().messages({
         'array.max': 'Maximum 20 images allowed',
         'array.includes': 'All images must be valid URLs'
     }),
@@ -93,15 +94,22 @@ const createSalonValidationSchema = Joi.object({
 
 const updateSalonValidationSchema = Joi.object({
     salonId: Joi.string().uuid().required(),
-    salonName: Joi.string().min(2).max(150),
+    salonName: Joi.string().min(2).max(150).optional(),
     ownerName: Joi.string().min(2).max(100).allow(null, ''),
-    phoneNumber: Joi.string().pattern(/^[0-9]{10}$/),
+    phoneNumber: Joi.string()
+        .pattern(/^[0-9]{10}$/)
+        .allow(null, '')
+        .required()
+        .messages({
+            'string.empty': 'Phone number cannot be empty',
+            'string.pattern.base': 'Phone number must be 10 digits'
+        }),
     email: Joi.string().email().allow(null, ''),
-    addressLine1: Joi.string().min(5).max(255),
+    addressLine1: Joi.string().min(5).max(255).optional().allow(null, ''),
     addressLine2: Joi.string().max(255).allow(null, ''),
     city: Joi.string().min(2).max(100),
     state: Joi.string().min(2).max(100),
-    pincode: Joi.string().pattern(/^[0-9]{6}$/),
+    pincode: Joi.string().pattern(/^[0-9]{6}$/).optional().allow(null, ''),
     latitude: Joi.number().allow(null),
     longitude: Joi.number().allow(null),
     imageUrl: Joi.string().allow(null, ''),
@@ -209,7 +217,7 @@ const updateSalonValidationSchemaApp = Joi.object({
             fullName: Joi.string().optional(),
             profileImageUrl: Joi.string().allow(null, ''),
             ratingAverage: Joi.number().precision(1).min(0).max(5).optional(),
-            isAvailable: Joi.boolean().optional() 
+            isAvailable: Joi.boolean().optional()
         })
     ).optional(),
 

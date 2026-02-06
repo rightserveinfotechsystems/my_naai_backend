@@ -33,7 +33,7 @@ module.exports = (sequelize) => {
             allowNull: false,
             unique: true,
             validate: {
-                notEmpty: true,
+                notEmpty: false,
                 isNumeric: true
             },
             field: 'phone_number'
@@ -42,19 +42,16 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING(100),
             allowNull: true,
             unique: true,
-            validate: {
-                isEmail: {
-                    msg: 'Must be a valid email address'
-                }
-            },
+            // validate: {
+            //     isEmail: {
+            //         msg: 'Must be a valid email address'
+            //     }
+            // },
             field: 'email'
         },
         addressLine1: {
             type: DataTypes.STRING(255),
-            allowNull: false,
-            validate: {
-                notEmpty: true
-            },
+            allowNull: true,
             field: 'address_line1'
         },
         addressLine2: {
@@ -92,15 +89,7 @@ module.exports = (sequelize) => {
         },
         pincode: {
             type: DataTypes.STRING(10),
-            allowNull: false,
-            validate: {
-                notEmpty: true,
-                isNumeric: true,
-                len: {
-                    args: [6, 6],
-                    msg: 'Pincode must be 6 digits'
-                }
-            },
+            allowNull: true,
             field: 'pincode'
         },
         latitude: {
