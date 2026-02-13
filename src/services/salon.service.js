@@ -504,25 +504,25 @@ const getActiveSalonsListForUsers = async ({
         { addressLine1: { [Op.iLike]: like } }
       ];
     }
-let savedSalons = [];
-if (userId) {
-  const bookmarks = await db.Bookmark.findAll({
-    where: { userId },
-    include: [{
-      model: db.Salon,
-      as: 'salon',
-      where: { isActive: true },
-      required: true,
-      attributes: { exclude: ['deletedAt'] }
-    }],
-    order: [['createdAt', 'DESC']] // recent saved first
-  });
+    let savedSalons = [];
+    if (userId) {
+      const bookmarks = await db.Bookmark.findAll({
+        where: { userId },
+        include: [{
+          model: db.Salon,
+          as: 'salon',
+          where: { isActive: true },
+          required: true,
+          attributes: { exclude: ['deletedAt'] }
+        }],
+        order: [['createdAt', 'DESC']] // recent saved first
+      });
 
-  savedSalons = bookmarks.map(b => b.salon);
-}
+      savedSalons = bookmarks.map(b => b.salon);
+    }
 
-// Exclude saved salons from remaining
-const savedSalonIds = savedSalons.map(s => s.salonId);
+    // Exclude saved salons from remaining
+    const savedSalonIds = savedSalons.map(s => s.salonId);
 
 
 
@@ -575,7 +575,7 @@ const savedSalonIds = savedSalons.map(s => s.salonId);
       ...(nearbySalonIds.length && {
         salonId: { [Op.notIn]: nearbySalonIds }
       }),
-       ...(savedSalonIds.length && { salonId: { [Op.notIn]: savedSalonIds } })
+      ...(savedSalonIds.length && { salonId: { [Op.notIn]: savedSalonIds } })
     };
 
     console.log('🔍 Total salons matching filters (before pagination):', remainingWhere, where);
