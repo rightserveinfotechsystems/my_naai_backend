@@ -9,7 +9,7 @@ const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
  */
 const createUser = async (userData) => {
     try {
-        const user = await     db.User.create(userData);
+        const user = await db.User.create(userData);
         return user;
     } catch (error) {
         throw error;
@@ -73,8 +73,8 @@ const updateUser = async (userId, updateData) => {
         if (!user) {
             return null;
         }
-        await user.update(updateData);
-        return user;
+        const updatedUser = await user.update(updateData);  // Update in DB
+        return updatedUser;  // ✅ Return updated user
     } catch (error) {
         throw error;
     }
@@ -85,56 +85,56 @@ const updateUser = async (userId, updateData) => {
  */
 
 const getUserList = async ({ page = 1, searchString = '' }) => {
-  try {
-    const limit = DEFAULT_LIMIT;
-    const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
-    const offset = (safePage - 1) * limit;
+    try {
+        const limit = DEFAULT_LIMIT;
+        const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+        const offset = (safePage - 1) * limit;
 
-    const where = {};
+        const where = {};
 
-    if (searchString=(searchString?.trim())) {
-      const like = `%${searchString}%`;
-      where[Op.or] = [
-        { fullName:    { [Op.iLike]: like } },
-        { phoneNumber: { [Op.iLike]: like } },
-        { email:       { [Op.iLike]: like } },
-      ];
+        if (searchString = (searchString?.trim())) {
+            const like = `%${searchString}%`;
+            where[Op.or] = [
+                { fullName: { [Op.iLike]: like } },
+                { phoneNumber: { [Op.iLike]: like } },
+                { email: { [Op.iLike]: like } },
+            ];
+        }
+
+        const { count: totalUsers, rows: users } = await db.User.findAndCountAll({
+            where,
+            attributes: [
+                'userId',
+                'fullName',
+                'phoneNumber',
+                'email',
+                'profileImageUrl',
+                'isActive',
+                'isVerified',
+                'createdAt',
+                'lastLogin'
+            ],
+            order: [['createdAt', 'DESC']],
+            limit,
+            offset,
+        });
+
+        const totalPages = Math.ceil(totalUsers / limit) || 1;
+
+        const result = {
+            users,
+            pagination: {
+                page: safePage,
+                limit,
+                totalUsers,
+                totalPages,
+            },
+        };
+        return result;
+    } catch (error) {
+        console.error(error);
+        throw error;
     }
-
-    const { count: totalUsers, rows: users } = await db.User.findAndCountAll({
-      where,
-      attributes: [
-        'userId',
-        'fullName',
-        'phoneNumber',
-        'email',
-        'profileImageUrl',
-        'isActive',
-        'isVerified',
-        'createdAt',
-        'lastLogin'
-      ],
-      order: [['createdAt', 'DESC']],
-      limit,
-      offset,
-    });
-
-    const totalPages = Math.ceil(totalUsers / limit) || 1;
-
-    const result = {
-      users,
-      pagination: {
-        page: safePage,
-        limit,
-        totalUsers,
-        totalPages,
-      },
-    };
-    return result;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
 };
 
 // Hard delete
@@ -160,15 +160,15 @@ const deleteUsersBulk = async (userIds) => {
         const existingUsers = await db.User.findAll({
             where: { userId: userIds }  // ✅ userId use karo
         });
-        
+
         if (existingUsers.length === 0) {
             return 0;
         }
-        
+
         const deletedCount = await db.User.destroy({
             where: { userId: userIds }  // ✅ userId use karo
         });
-        
+
         return deletedCount;
     } catch (error) {
         throw error;
@@ -177,10 +177,74 @@ const deleteUsersBulk = async (userIds) => {
 
 const getUsersByIds = async (userIds) => {
     return await db.User.findAll({
-        where: { userId: userIds }, 
+        where: { userId: userIds },
         attributes: ['userId']
     });
 };
+
+
+const getUserByIdSavedSalon = (userId) => {
+    return db.User.findByPk(userId);
+};
+
+
+// const updateUserSavedSalon = async (userId, data) => {
+//     const user = await db.User.findByPk(userId);
+//     if (!user) return null;
+
+//     return await user.update(data); 
+// };
+
+
+const updateUserSavedSalon = async (userId, salonId) => {
+
+    const user = await db.User.findByPk(userId);
+    
+    if (!user) {
+        return false;
+    }
+    
+    if (user.savedSalonId && user.savedSalonId !== salonId) {
+        return false; // User already has another salon saved
+    }
+    
+    // Only update if no salon saved OR same salon (avoid duplicate calls)
+    if (!user.savedSalonId || user.savedSalonId === salonId) {
+        user.savedSalonId = salonId;
+        await user.save();
+    
+        
+        //  Verify from DB
+        const freshUser = await db.User.findByPk(userId);
+        return true;
+    }
+    
+    return false;
+};
+
+const removeUserSavedSalon = async (userId) => {
+    // Verify user exists
+    const user = await db.User.findByPk(userId);
+    if (!user) {
+        return false;
+    }
+    
+    //  Check if user has salon saved
+    if (!user.savedSalonId) {
+        return false;
+    }
+    
+    //  INSTANCE UPDATE - Set to NULL
+    user.savedSalonId = null;
+    await user.save();
+ 
+    
+    //  Verify from DB
+    const freshUser = await db.User.findByPk(userId);
+    return true;
+};
+
+
 
 
 module.exports = {
@@ -192,5 +256,9 @@ module.exports = {
     getUserList,
     deleteUser,
     getUsersByIds,
-    deleteUsersBulk
+    deleteUsersBulk,
+    updateUserSavedSalon,
+    getUserByIdSavedSalon,
+    removeUserSavedSalon,
+    
 };

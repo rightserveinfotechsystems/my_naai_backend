@@ -12,6 +12,9 @@ const {authenticateAdmin } = require('../utils/middleware/auth.middleware');
 const changeUserStatus = require('../controller/user/disableUser');
 const sendOtpRegister = require('../controller/user/send-otp-register');
 const deleteUser = require('../controller/user/deleteUser');
+const saveSalon = require('../controller/user/saveSalon');
+const removeSavedSalon = require('../controller/user/removeSaveSalon');
+
 
 
 // Define your user routes here
@@ -23,6 +26,10 @@ userRouter.post('/send-otp', sendOtp);
 userRouter.post('/verify-otp', verifyOtpLogin);
 userRouter.get('/profile', authenticateUser, getUserById);
 userRouter.post('/update', authenticateUser, updateUser);
+userRouter.post('/save-salon', authenticateUser, saveSalon);
+userRouter.post('/remove-salon', authenticateUser, removeSavedSalon);
+
+
 
 
 userRouter.post('/get-user-list', authenticateAdmin, getUserList);
