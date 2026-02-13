@@ -2,13 +2,15 @@ const salonService = require('../../services/salon.service');
 
 const listSalonsByUser = async (request, response) => {
     try {
+         const userId = request.user?.id; 
         const page = parseInt(request.body.page) || 1;
-        const searchString = request.body.searchString || '';
-        const cityFilter = request.body.cityFilter || 'ALL';
-        const latitude = request.body.latitude;
-        const longitude = request.body.longitude;
+        const searchString = request?.body?.searchString || '';
+        const cityFilter = request?.body?.cityFilter || 'ALL';
+        const latitude = request?.body?.latitude;
+        const longitude = request?.body?.longitude;
+        const genderType = request?.body?.genderType;
 
-        const result = await salonService.getActiveSalonsListForUsers({ page, searchString, cityFilter, latitude, longitude });
+        const result = await salonService.getActiveSalonsListForUsers({ page, searchString, cityFilter, latitude, longitude, userId, genderType });
          const message = result.totalSalons > 0 
             ? 'Salons fetched successfully'
             : 'No matching salons found';

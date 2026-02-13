@@ -478,9 +478,12 @@ const getActiveSalonsListForUsers = async ({
   cityFilter = 'ALL',
   latitude,
   longitude,
-  radius = RADIUS
+  radius = RADIUS,
+  userId,
+  genderType
 }) => {
   try {
+
     // Today's date in Asia/Kolkata timezone
     const today = new Date(
       new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
@@ -501,9 +504,31 @@ const getActiveSalonsListForUsers = async ({
         { addressLine1: { [Op.iLike]: like } }
       ];
     }
+    let savedSalon = null;
+    if (userId) {
+      const user = await db.User.findByPk(userId, {
+        include: [{
+          model: db.Salon,
+          as: 'savedSalon',
+          where: { isActive: true },
+          required: false,
+          attributes: { exclude: ['deletedAt'] }
+        }]
+      });
+      if (user?.savedSalon?.length) {
+        savedSalon = user.savedSalon[0].toJSON(); // first saved salon
+      }
+    }
+
 
     if (cityFilter !== 'ALL') {
       where.city = { [Op.iLike]: `%${cityFilter}%` };
+    }
+
+    if (genderType === 'male' || genderType === 'female') {
+      where.genderType = {
+        [Op.in]: [genderType.toUpperCase(), 'UNISEX']
+      };
     }
 
     let nearbySalons = [];
@@ -544,9 +569,11 @@ const getActiveSalonsListForUsers = async ({
       ...where,
       ...(nearbySalonIds.length && {
         salonId: { [Op.notIn]: nearbySalonIds }
-      })
+      }),
+      ...(savedSalon ? { salonId: { [Op.notIn]: [savedSalon.salonId] } } : {})
     };
 
+    console.log('🔍 Total salons matching filters (before pagination):', remainingWhere, where);
     totalSalons = await db.Salon.count({ where });
 
     const remainingSalons = await db.Salon.findAll({
@@ -573,7 +600,7 @@ const getActiveSalonsListForUsers = async ({
     });
 
     // Merge: nearby first
-    salons = [...nearbySalons, ...remainingSalons];
+    salons = [...(savedSalon ? [savedSalon] : []), ...nearbySalons, ...remainingSalons];
 
     // ================= CALCULATE WAIT TIME =================
     const salonsWithWaitTime = salons.map(salon => {

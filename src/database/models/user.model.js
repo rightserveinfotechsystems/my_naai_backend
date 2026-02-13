@@ -97,6 +97,16 @@ const User = (sequelize) => {
             type: DataTypes.DATE,
             allowNull: true,
             field: 'deleted_at'
+        },
+        savedSalonId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            field: 'saved_salon_id',
+            references: {
+                model: 'salons', 
+                key: 'salon_id'
+            },
+            onDelete: 'SET NULL'
         }
     }, {
         sequelize,
@@ -104,7 +114,7 @@ const User = (sequelize) => {
         tableName: 'users',
         timestamps: true,
         // paranoid: true,
-        
+
         indexes: [
             {
                 unique: true,
@@ -142,6 +152,11 @@ const User = (sequelize) => {
 
     // Define associations
     User.associate = (models) => {
+        User.belongsTo(models.Salon, {   
+            foreignKey: 'savedSalonId',
+            as: 'savedSalon'
+        }); 
+
         User.hasMany(models.Queue, {
             foreignKey: 'userId',
             as: 'queues',
