@@ -29,19 +29,33 @@ const saveSalon = async (request, response) => {
         }
 
         //  Save salon for user
-        const updateUser = await userService.updateUserSavedSalon(userId, salonId);
-        if (updateUser) {
+        // const updateUser = await userService.updateUserSavedSalon(userId, salonId);
+        // if (updateUser) {
+        //     return response.status(200).json({
+        //         status: 'SUCCESS',
+        //         message: 'Salon saved successfully'
+        //     });
+        // }
+        // else {
+        //     return response.status(200).json({ 
+        //         status: 'FAILED',
+        //         message: 'You can only save one salon. Please remove the previously saved salon first!'
+        //     });
+        // }
+
+        // Save salon
+        const saved = await userService.saveUserBookmark(userId, salonId);
+        if (!saved) {
             return response.status(200).json({
-                status: 'SUCCESS',
-                message: 'Salon saved successfully'
-            });
-        }
-        else {
-            return response.status(200).json({ 
                 status: 'FAILED',
-                message: 'You can only save one salon. Please remove the previously saved salon first!'
+                message: 'Salon already saved'
             });
         }
+
+        return response.status(200).json({
+            status: 'SUCCESS',
+            message: 'Salon saved successfully'
+        });
 
     } catch (error) {
         return response.status(500).json({
