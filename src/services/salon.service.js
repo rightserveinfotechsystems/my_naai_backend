@@ -518,7 +518,7 @@ if (userId) {
     order: [['createdAt', 'DESC']] // recent saved first
   });
 
-  savedSalons = bookmarks.map(b => b.salon.toJSON());
+  savedSalons = bookmarks.map(b => b.salon);
 }
 
 // Exclude saved salons from remaining
