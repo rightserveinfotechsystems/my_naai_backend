@@ -98,16 +98,16 @@ const User = (sequelize) => {
             allowNull: true,
             field: 'deleted_at'
         },
-        savedSalonId: {
-            type: DataTypes.UUID,
-            allowNull: true,
-            field: 'saved_salon_id',
-            references: {
-                model: 'salons', 
-                key: 'salon_id'
-            },
-            onDelete: 'SET NULL'
-        }
+        // savedSalonId: {
+        //     type: DataTypes.UUID,
+        //     allowNull: true,
+        //     field: 'saved_salon_id',
+        //     references: {
+        //         model: 'salons', 
+        //         key: 'salon_id'
+        //     },
+        //     onDelete: 'SET NULL'
+        // }
     }, {
         sequelize,
         modelName: 'User',
@@ -152,10 +152,10 @@ const User = (sequelize) => {
 
     // Define associations
     User.associate = (models) => {
-        User.belongsTo(models.Salon, {   
-            foreignKey: 'savedSalonId',
-            as: 'savedSalon'
-        }); 
+        // User.belongsTo(models.Salon, {   
+        //     foreignKey: 'savedSalonId',
+        //     as: 'savedSalon'
+        // }); 
 
         User.hasMany(models.Queue, {
             foreignKey: 'userId',

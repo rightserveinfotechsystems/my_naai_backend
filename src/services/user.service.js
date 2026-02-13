@@ -199,27 +199,50 @@ const getUserByIdSavedSalon = (userId) => {
 const updateUserSavedSalon = async (userId, salonId) => {
 
     const user = await db.User.findByPk(userId);
-    
+
     if (!user) {
         return false;
     }
-    
+
     if (user.savedSalonId && user.savedSalonId !== salonId) {
         return false; // User already has another salon saved
     }
-    
+
     // Only update if no salon saved OR same salon (avoid duplicate calls)
     if (!user.savedSalonId || user.savedSalonId === salonId) {
         user.savedSalonId = salonId;
         await user.save();
-    
-        
+
+
         //  Verify from DB
         const freshUser = await db.User.findByPk(userId);
         return true;
     }
-    
+
     return false;
+};
+
+const saveUserBookmark = async (userId, salonId) => {
+    // 1️⃣ Check if user exists
+    const user = await db.User.findByPk(userId);
+    if (!user) return false;
+
+    // 2️⃣ Check if bookmark already exists
+    const existingBookmark = await db.Bookmark.findOne({
+        where: { userId, salonId }
+    });
+
+    if (existingBookmark) {
+        return false; // Already saved
+    }
+
+    // 3️⃣ Create new bookmark
+    await db.Bookmark.create({
+        userId,
+        salonId
+    });
+
+    return true;
 };
 
 const removeUserSavedSalon = async (userId) => {
@@ -228,22 +251,32 @@ const removeUserSavedSalon = async (userId) => {
     if (!user) {
         return false;
     }
-    
+
     //  Check if user has salon saved
     if (!user.savedSalonId) {
         return false;
     }
-    
+
     //  INSTANCE UPDATE - Set to NULL
     user.savedSalonId = null;
     await user.save();
- 
-    
+
+
     //  Verify from DB
     const freshUser = await db.User.findByPk(userId);
     return true;
 };
 
+const removeUserBookmark = async (userId, salonId) => {
+    const bookmark = await db.Bookmark.findOne({
+        where: { userId, salonId }
+    });
+
+    if (!bookmark) return false;
+
+    await bookmark.destroy();
+    return true;
+};
 
 
 
@@ -260,5 +293,6 @@ module.exports = {
     updateUserSavedSalon,
     getUserByIdSavedSalon,
     removeUserSavedSalon,
-    
+    saveUserBookmark,
+    removeUserBookmark
 };

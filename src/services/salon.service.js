@@ -504,21 +504,26 @@ const getActiveSalonsListForUsers = async ({
         { addressLine1: { [Op.iLike]: like } }
       ];
     }
-    let savedSalon = null;
-    if (userId) {
-      const user = await db.User.findByPk(userId, {
-        include: [{
-          model: db.Salon,
-          as: 'savedSalon',
-          where: { isActive: true },
-          required: false,
-          attributes: { exclude: ['deletedAt'] }
-        }]
-      });
-      if (user?.savedSalon?.length) {
-        savedSalon = user.savedSalon[0].toJSON(); // first saved salon
-      }
-    }
+let savedSalons = [];
+if (userId) {
+  const bookmarks = await db.Bookmark.findAll({
+    where: { userId },
+    include: [{
+      model: db.Salon,
+      as: 'salon',
+      where: { isActive: true },
+      required: true,
+      attributes: { exclude: ['deletedAt'] }
+    }],
+    order: [['createdAt', 'DESC']] // recent saved first
+  });
+
+  savedSalons = bookmarks.map(b => b.salon.toJSON());
+}
+
+// Exclude saved salons from remaining
+const savedSalonIds = savedSalons.map(s => s.salonId);
+
 
 
     if (cityFilter !== 'ALL') {
@@ -570,7 +575,7 @@ const getActiveSalonsListForUsers = async ({
       ...(nearbySalonIds.length && {
         salonId: { [Op.notIn]: nearbySalonIds }
       }),
-      ...(savedSalon ? { salonId: { [Op.notIn]: [savedSalon.salonId] } } : {})
+       ...(savedSalonIds.length && { salonId: { [Op.notIn]: savedSalonIds } })
     };
 
     console.log('🔍 Total salons matching filters (before pagination):', remainingWhere, where);
@@ -600,7 +605,7 @@ const getActiveSalonsListForUsers = async ({
     });
 
     // Merge: nearby first
-    salons = [...(savedSalon ? [savedSalon] : []), ...nearbySalons, ...remainingSalons];
+    salons = [...savedSalons, ...nearbySalons, ...remainingSalons];
 
     // ================= CALCULATE WAIT TIME =================
     const salonsWithWaitTime = salons.map(salon => {
