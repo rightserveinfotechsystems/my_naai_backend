@@ -594,7 +594,8 @@ const getActiveSalonsListForUsers = async ({
         required: false,
         include: [{
           model: db.Booking,
-          as: 'booking'
+          as: 'booking',
+          where: { bookingStatus: 'confirmed' }
         }],
         attributes: ['queueNumber'],
         order: [['queueNumber', 'ASC']]

@@ -54,7 +54,6 @@ const sendSalonOtp = async (request, response) => {
       return response.status(200).json({
         status: 'SUCCESS',
         message: 'OTP sent successfully',
-        otp
       });
     } else {
       return response.status(200).json({

@@ -64,7 +64,9 @@ module.exports = (sequelize) => {
         },
 
         bookingStatus: {
-            type: DataTypes.ENUM('completed', 'pending'),
+            // type: DataTypes.ENUM('requested', 'delay_requested', 'confirmed', 'cancelled', 'completed', 'pending'),
+
+            type: DataTypes.ENUM( 'pending', 'confirmed', 'cancelled'),
             allowNull: false,
             field: 'booking_status'
         },
@@ -131,7 +133,51 @@ module.exports = (sequelize) => {
             type: DataTypes.DATE,
             allowNull: false,
             field: 'updated_at'
+        },
+        ownerAction: {
+            type: DataTypes.ENUM('accepted', 'rejected', 'delayed'),
+            allowNull: true
+        },
+        requestedDelayMinutes: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        customerResponse: {
+            type: DataTypes.ENUM('accepted', 'rejected'),
+            allowNull: true
         }
+        // expiresAt: {
+        //     type: DataTypes.DATE,
+        //     allowNull: true,
+        //     field: 'expires_at'
+        // },
+        // originalBookingTime: {
+        //     type: DataTypes.TIME,
+        //     allowNull: true,
+        //     field: 'original_booking_time'
+        // },
+
+        // proposedBookingTime: {
+        //     type: DataTypes.TIME,
+        //     allowNull: true,
+        //     field: 'proposed_booking_time'
+        // },
+        // delayMinutes: {
+        //     type: DataTypes.INTEGER,
+        //     allowNull: true,
+        //     field: 'delay_minutes'
+        // },
+        // cancelledBy: {
+        //     type: DataTypes.ENUM('OWNER', 'CUSTOMER', 'SYSTEM'),
+        //     allowNull: true,
+        //     field: 'cancelled_by'
+        // },
+
+        // cancelReason: {
+        //     type: DataTypes.STRING(255),
+        //     allowNull: true,
+        //     field: 'cancel_reason'
+        // }
     }, {
         sequelize,
         modelName: 'Booking',

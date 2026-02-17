@@ -29,7 +29,7 @@ userRouter.post('/update', authenticateUser, updateUser);
 userRouter.post('/save-salon', authenticateUser, saveSalon);
 userRouter.post('/remove-salon', authenticateUser, removeSavedSalon);
 
-
+   
 
 
 userRouter.post('/get-user-list', authenticateAdmin, getUserList);
