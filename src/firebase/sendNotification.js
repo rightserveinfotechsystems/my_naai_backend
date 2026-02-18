@@ -1,5 +1,5 @@
 const firebaseAdmin = require("./firebase");
-async function sendNotificationToDevice(deviceToken = null, title, body) {
+async function sendNotificationToDevice(deviceToken = null, title, body, data = {}) {
     try {
         if (!deviceToken) {
             return false
@@ -9,9 +9,12 @@ async function sendNotificationToDevice(deviceToken = null, title, body) {
                 title: title,
                 body: body,
             },
-            data: { name: "MyNaai" },
+            data: { name: "MyNaai"},
             token: deviceToken, // FCM device token
         };
+
+         //🔍 LOG EXACT PAYLOAD
+    // console.log("🚀 FCM PAYLOAD SENT:", JSON.stringify(message, null, 2));
 
         const response = await firebaseAdmin.messaging().send(message);
         console.log("Push Notification sent successfully:", response);
