@@ -8,7 +8,7 @@ const { customerActionBooking } = require('../controller/bookingRequest/customer
 
 const bookingRequestRouter = express.Router();
 
-bookingRequestRouter.post('/create-appointment',authenticateUser, createBookingRequest)
+bookingRequestRouter.post('/create-booking-request',authenticateUser, createBookingRequest)
 bookingRequestRouter.post('/owner-action/:bookingRequestId',authenticateSalon, ownerActionBooking);
 bookingRequestRouter.post('/customer-delay-response/:bookingRequestId',authenticateUser, customerActionBooking);
 
