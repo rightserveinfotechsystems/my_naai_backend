@@ -42,7 +42,8 @@ const customerActionBooking = async (req, res) => {
         await sendNotificationToDevice(
           dt.deviceToken,
           'Customer Rejected Delay',
-          `Customer rejected the proposed delay for booking at ${bookingRequest.startTime}`
+          `Customer rejected the proposed delay for booking at ${bookingRequest.startTime}`,
+          { bookingRequestId: bookingRequest.bookingRequestId, type: 'DELAY_RESPONSE' }
         );
       }
 
@@ -125,7 +126,8 @@ const customerActionBooking = async (req, res) => {
         await sendNotificationToDevice(
           dt.deviceToken,
           "Booking Update",
-          `Customer ${customerName} has accepted the delay for booking at ${formattedTime}`
+          `Customer ${customerName} has accepted the delay for booking at ${formattedTime}`,
+          { bookingRequestId: bookingRequest.bookingRequestId, type: 'DELAY_RESPONSE'}
         );
       }
 

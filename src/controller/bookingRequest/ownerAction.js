@@ -29,7 +29,12 @@ const ownerActionBooking = async (req, res) => {
 
             // Notify customer
             for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Rejected', `Your booking request has been rejected by the salon.`);
+                await sendNotificationToDevice(dt, 'Booking Rejected', `Your booking request has been rejected by the salon.`,
+                    {
+                        bookingRequestId: bookingRequest.bookingRequestId,
+                        type: 'DELAY_REQUEST'
+                    },
+                );
             }
 
             await db.Notification.create({
@@ -51,14 +56,30 @@ const ownerActionBooking = async (req, res) => {
                 await t.rollback();
                 return res.status(400).json({ status: 'FAILED', message: 'Delay minutes required' });
             }
+
+            const originalTime = new Date(`${bookingRequest.bookingDate}T${bookingRequest.startTime}`);
+            const proposedTime = new Date(originalTime.getTime() + delayMinutes * 60 * 1000);
+
+            // Format HH:MM
+            const hours = proposedTime.getHours().toString().padStart(2, '0');
+            const minutes = proposedTime.getMinutes().toString().padStart(2, '0');
+            const proposedTimeStr = `${hours}:${minutes}`;
+
             bookingRequest.status = 'DELAY_PROPOSED';
             bookingRequest.delayMinutes = delayMinutes;
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
             for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Delay Proposed', 
-                    `Salon proposed to delay your booking by ${delayMinutes} minutes. Accept or Reject?`
+                await sendNotificationToDevice(dt, 'Booking Delay Proposed',
+                    `Salon proposed to delay your booking to ${proposedTimeStr}. Accept or Reject?`,
+                    {
+                        bookingRequestId: bookingRequest.bookingRequestId,
+                        type: 'DELAY_TIME_PROPOSAL',
+                        delayMinutes: delayMinutes,
+                        proposedTime: proposedTimeStr
+                    },
+
                 );
             }
 
@@ -66,7 +87,7 @@ const ownerActionBooking = async (req, res) => {
                 receiverType: 'USER',
                 receiverId: bookingRequest.customerId,
                 title: 'Booking Delay Proposed',
-                message: `Salon proposed to delay your booking by ${delayMinutes} minutes. Accept or Reject?`
+                message: `Salon proposed to delay your booking to ${proposedTimeStr}. Accept or Reject?`
             }, { transaction: t });
 
             await t.commit();
@@ -115,9 +136,30 @@ const ownerActionBooking = async (req, res) => {
                 serviceDuration: totalDuration
             }, { transaction: t });
 
+
+            // bookingDate + bookingTime ko ek datetime me convert karo
+            const bookingDateTime = new Date(
+                `${booking.bookingDate}T${booking.bookingTime}`
+            );
+
+            // 1 minute pehle reminder
+            booking.reminderTime = new Date(
+                bookingDateTime.getTime() - 1 * 60 * 1000
+            );
+
+            booking.reminderSent = false;
+            await booking.save();
+
+
             // Notify customer
             for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingRequest.startTime}`);
+                await sendNotificationToDevice(dt, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingRequest.startTime}`,
+                    {
+                        bookingRequestId: bookingRequest.bookingRequestId,
+                        type: 'DELAY_REQUEST'
+                    },
+
+                );
             }
 
             await db.Notification.create({
@@ -128,6 +170,8 @@ const ownerActionBooking = async (req, res) => {
             }, { transaction: t });
 
             await t.commit();
+
+            await createBookingReminderTask(booking);
             return res.status(200).json({ status: 'SUCCESS', message: 'Booking request accepted and confirmed', data: booking });
         }
 

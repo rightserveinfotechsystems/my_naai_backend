@@ -3,6 +3,7 @@ const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 
+
 // 24-hour time (HH:mm) to 12-hour format with AM/PM
 function formatTimeToAMPM(time24) {
     let [hours, minutes] = time24.split(':').map(Number);
@@ -80,7 +81,7 @@ const createBookingRequest = async (req, res) => {
         }
 
         // ----------------------------
-        // 3️⃣ Slot availability check (Postgres-friendly)
+        // 3️⃣ Slot availability check
         // ----------------------------
         // Calculate end time in HH:MM
         const [hours, minutes] = bookingTime.split(':').map(Number);
@@ -144,13 +145,17 @@ const createBookingRequest = async (req, res) => {
         const formattedTime = formatTimeToAMPM(bookingTime);
         const formattedDate = formatDateDMY(bookingDate);
 
-              // 🔔 SEND PUSH NOTIFICATION
+        // 🔔 SEND PUSH NOTIFICATION
         for (const dt of deviceTokens) {
 
             await sendNotificationToDevice(
                 dt.deviceToken,
                 "New Booking",
                 `${userName} requested a booking at ${formattedTime} on ${formattedDate} for ${serviceNames}`,
+                {
+                    bookingRequestId: bookingRequest.bookingRequestId,
+                    type : 'BOOKING_REQUEST'
+                }
             );
         }
 
@@ -158,7 +163,8 @@ const createBookingRequest = async (req, res) => {
             receiverType: 'SALON',
             receiverId: salonId,
             title: 'New Booking',
-            message: `You have received a new booking request from ${userName}`
+            message: `You have received a new booking request from ${userName} on ${formattedDate} for ${serviceNames}`,
+            data: { bookingRequestId: bookingRequest.bookingRequestId }
         }, { transaction: t });
 
         req.io.to(`salon_${salonId}`).emit("new_notification", {

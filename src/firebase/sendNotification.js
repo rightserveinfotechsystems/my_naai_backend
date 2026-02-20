@@ -9,12 +9,15 @@ async function sendNotificationToDevice(deviceToken = null, title, body, data = 
                 title: title,
                 body: body,
             },
-            data: { name: "MyNaai"},
+            data: {
+                ...data,
+                name: "MyNaai"
+            },
             token: deviceToken, // FCM device token
         };
 
-         //🔍 LOG EXACT PAYLOAD
-    // console.log("🚀 FCM PAYLOAD SENT:", JSON.stringify(message, null, 2));
+        //🔍 LOG EXACT PAYLOAD
+        // console.log("🚀 FCM PAYLOAD SENT:", JSON.stringify(message, null, 2));
 
         const response = await firebaseAdmin.messaging().send(message);
         console.log("Push Notification sent successfully:", response);

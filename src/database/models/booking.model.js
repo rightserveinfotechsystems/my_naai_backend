@@ -66,7 +66,7 @@ module.exports = (sequelize) => {
         bookingStatus: {
             // type: DataTypes.ENUM('requested', 'delay_requested', 'confirmed', 'cancelled', 'completed', 'pending'),
 
-            type: DataTypes.ENUM( 'pending', 'confirmed', 'cancelled'),
+            type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'completed'),
             allowNull: false,
             field: 'booking_status'
         },
@@ -145,7 +145,19 @@ module.exports = (sequelize) => {
         customerResponse: {
             type: DataTypes.ENUM('accepted', 'rejected'),
             allowNull: true
-        }
+        },
+        reminderSent: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            field: 'reminder_sent'
+        },
+        reminderTime: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            comment: 'Exact timestamp when reminder should be sent',
+            field: 'reminder_time'
+        }, 
         // expiresAt: {
         //     type: DataTypes.DATE,
         //     allowNull: true,

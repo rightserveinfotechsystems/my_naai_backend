@@ -569,12 +569,15 @@ const getActiveSalonsListForUsers = async ({
       include: [{
         model: db.Queue,
         as: 'queues',
-        required: false, // optional so salon shows even if no queue
-        include: [{
-          model: db.Booking,
-          as: 'booking',
-          required: false // optional
-        }]
+        required: false,
+        where: {
+          status: 'waiting'   // 👈 confirmed bookings ka queue
+        }
+        // include: [{
+        //   model: db.Booking,
+        //   as: 'booking',
+        //   required: false 
+        // }]
       }],
       order: [['createdAt', 'DESC']],
       distinct: true
@@ -589,14 +592,18 @@ const getActiveSalonsListForUsers = async ({
 
     // ==================== CALCULATE WAIT TIME ====================
     const salonsWithWaitTime = paginatedSalons.map(salon => {
-      const queues = salon.queues || [];
-      const totalMinutes = queues.reduce((sum, queue) => {
-        const booking = queue.booking;
-        if (booking && booking.services?.length) {
-          return sum + booking.services.reduce((s, svc) => s + Number(svc.durationMinutes || 0), 0);
-        }
-        return sum;
-      }, 0);
+      const queues = (salon.queues || []);
+      // const totalMinutes = queues.reduce((sum, queue) => {
+      //   const booking = queue.booking;
+      //   if (booking && booking.services?.length) {
+      //     return sum + booking.services.reduce((s, svc) => s + Number(svc.durationMinutes || 0), 0);
+      //   }
+      //   return sum;
+      // }, 0);
+      const totalMinutes = queues.reduce(
+        (sum, q) => sum + Number(q.estimatedWaitTime || 0),
+        0
+      );
 
       const salonData = salon.toJSON();
       delete salonData.queues;
