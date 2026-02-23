@@ -43,7 +43,8 @@ const customerActionBooking = async (req, res) => {
           dt.deviceToken,
           'Customer Rejected Delay',
           `Customer rejected the proposed delay for booking at ${bookingRequest.startTime}`,
-          { bookingRequestId: bookingRequest.bookingRequestId, type: 'DELAY_RESPONSE' }
+          { bookingRequestId: bookingRequest.bookingRequestId,
+             type: 'DELAY_RESPONSE' }
         );
       }
 
@@ -108,9 +109,11 @@ const customerActionBooking = async (req, res) => {
         barberId: bookingRequest.barberId || null,
         bookingDate: bookingRequest.bookingDate,
         bookingTime: bookingRequest.startTime,
+        bookingEndTime: bookingEndTime.toTimeString().slice(0, 8),
         bookingStatus: 'confirmed',
         services: bookingRequest.serviceIds,
-        serviceDuration: totalDuration
+        serviceDuration: totalDuration,
+        bookingRequestId: bookingRequest.bookingRequestId
       }, { transaction: t });
 
       // Notify salon owner
@@ -127,7 +130,8 @@ const customerActionBooking = async (req, res) => {
           dt.deviceToken,
           "Booking Update",
           `Customer ${customerName} has accepted the delay for booking at ${formattedTime}`,
-          { bookingRequestId: bookingRequest.bookingRequestId, type: 'DELAY_RESPONSE'}
+          { bookingRequestId: bookingRequest.bookingRequestId, 
+            type: 'DELAY_RESPONSE'}
         );
       }
 

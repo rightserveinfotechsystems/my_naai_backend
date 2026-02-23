@@ -42,10 +42,10 @@ const userGetBookingList = async (request, response) => {
           salonCity: booking.salon?.city || '',
           salonImage: booking.salon?.imageUrl,
           // ✅ Correct key from JSON
-          serviceName: services.map(s => s.serviceName).join(', '),
+          serviceName: services.map(s => s.name).join(', '),
           queueNumber: booking.queue?.queueNumber || null,
           queueStatus: booking.queue?.status || '',
-          serviceDuration: services.reduce((sum, s) => sum + (s.durationMinutes || 0), 0),
+          serviceDuration: services.reduce((sum, s) => sum + (s.duration || 0), 0),
           //waiting time
           waitingTimeInMinutes: waitingTime,
           waitingTimeDisplay: `${Math.floor(waitingTime / 60)}h ${waitingTime % 60}m`,
@@ -55,7 +55,8 @@ const userGetBookingList = async (request, response) => {
           bookingDate: booking.bookingDate,
           bookingTime: booking.bookingTime,
           barberName: booking.barber?.fullName || '',
-          status: booking.bookingStatus
+          status: booking.bookingStatus,
+          bookingRequestId: booking.bookingRequestId 
         };
       }));
 

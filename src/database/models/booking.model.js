@@ -18,6 +18,16 @@ module.exports = (sequelize) => {
             },
             field: 'queue_id'
         },
+        bookingRequestId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            references: {
+                model: 'booking_requests',
+                key: 'booking_request_id'
+            },
+            field: 'booking_request_id',
+            comment: 'Reference to the original booking request'
+        },
         salonId: {
             type: DataTypes.UUID,
             allowNull: false,
@@ -65,8 +75,7 @@ module.exports = (sequelize) => {
 
         bookingStatus: {
             // type: DataTypes.ENUM('requested', 'delay_requested', 'confirmed', 'cancelled', 'completed', 'pending'),
-
-            type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'completed'),
+            type: DataTypes.ENUM( 'confirmed', 'cancelled', 'completed'),
             allowNull: false,
             field: 'booking_status'
         },
@@ -94,6 +103,12 @@ module.exports = (sequelize) => {
             type: DataTypes.TIME,
             allowNull: true,
             field: 'booking_time'
+        },
+        bookingEndTime: {
+            type: DataTypes.TIME, // or TIME
+            allowNull: true,
+            comment: 'Booking end time, calculated from start time + services duration',
+            field: 'booking_end_time'
         },
         walkinName: {
             type: DataTypes.STRING,
@@ -157,7 +172,7 @@ module.exports = (sequelize) => {
             allowNull: true,
             comment: 'Exact timestamp when reminder should be sent',
             field: 'reminder_time'
-        }, 
+        },
         // expiresAt: {
         //     type: DataTypes.DATE,
         //     allowNull: true,
@@ -238,6 +253,10 @@ module.exports = (sequelize) => {
         Booking.belongsTo(models.Barber, {
             foreignKey: 'barberId',
             as: 'barber'
+        });
+        Booking.belongsTo(models.BookingRequest, {
+            foreignKey: 'bookingRequestId',
+            as: 'bookingRequest'
         });
 
         // Booking.belongsTo(models.Service, {

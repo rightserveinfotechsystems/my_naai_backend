@@ -16,7 +16,10 @@ const ownerActionBooking = async (req, res) => {
             return res.status(404).json({ status: 'FAILED', message: 'Booking request not found or cancelled' });
         }
 
-        const user = await db.User.findByPk(bookingRequest.customerId);
+        const user = await db.User.findByPk(bookingRequest.customerId, { attributes: ['userId', 'fullName', 'deviceToken'] });
+        if (!user?.deviceToken) {
+            console.log('❌ No device token found for customer');
+        }
         const userName = user ? user.fullName : 'Customer';
         const deviceTokens = user && user.deviceToken ? [user.deviceToken] : [];
 
@@ -32,7 +35,7 @@ const ownerActionBooking = async (req, res) => {
                 await sendNotificationToDevice(dt, 'Booking Rejected', `Your booking request has been rejected by the salon.`,
                     {
                         bookingRequestId: bookingRequest.bookingRequestId,
-                        type: 'DELAY_REQUEST'
+                        type: 'BOOKING_REJECTED'
                     },
                 );
             }
@@ -105,6 +108,9 @@ const ownerActionBooking = async (req, res) => {
             const services = await db.Service.findAll({ where: { serviceId: { [Op.in]: bookingRequest.serviceIds.map(s => s.serviceId) } } });
             const totalDuration = services.reduce((sum, s) => sum + s.durationMinutes, 0);
 
+            const bookingStartTime = new Date(`${bookingRequest.bookingDate}T${bookingRequest.startTime}`);
+            const bookingEndTime = new Date(bookingStartTime.getTime() + totalDuration * 60 * 1000);
+
             // Queue number
             const lastQueue = await db.Queue.findOne({
                 where: { salonId: bookingRequest.salonId, bookingDate: bookingRequest.bookingDate },
@@ -131,23 +137,27 @@ const ownerActionBooking = async (req, res) => {
                 barberId: bookingRequest.barberId,
                 bookingDate: bookingRequest.bookingDate,
                 bookingTime: bookingRequest.startTime,
+                bookingEndTime: bookingEndTime.toTimeString().slice(0, 8),
                 bookingStatus: 'confirmed',
                 services: bookingRequest.serviceIds,
-                serviceDuration: totalDuration
+                serviceDuration: totalDuration,
+                bookingRequestId: bookingRequest.bookingRequestId
             }, { transaction: t });
 
 
-            // bookingDate + bookingTime ko ek datetime me convert karo
+            // Set reminder time for booking
             const bookingDateTime = new Date(
                 `${booking.bookingDate}T${booking.bookingTime}`
             );
 
-            // 1 minute pehle reminder
+            // Set reminder 1 minute before booking time
             booking.reminderTime = new Date(
                 bookingDateTime.getTime() - 1 * 60 * 1000
             );
 
             booking.reminderSent = false;
+
+
             await booking.save();
 
 
@@ -156,7 +166,7 @@ const ownerActionBooking = async (req, res) => {
                 await sendNotificationToDevice(dt, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingRequest.startTime}`,
                     {
                         bookingRequestId: bookingRequest.bookingRequestId,
-                        type: 'DELAY_REQUEST'
+                        type: 'BOOKING_CONFIRMED'
                     },
 
                 );
@@ -170,9 +180,16 @@ const ownerActionBooking = async (req, res) => {
             }, { transaction: t });
 
             await t.commit();
-
-            await createBookingReminderTask(booking);
-            return res.status(200).json({ status: 'SUCCESS', message: 'Booking request accepted and confirmed', data: booking });
+            try {
+                await createBookingReminderTask(booking);
+            } catch (reminderError) {
+                console.error('Error creating booking reminder task:', reminderError);
+            }
+            return res.status(200).json({ 
+                status: 'SUCCESS', 
+                message: 'Booking request accepted and confirmed', 
+                data: booking 
+            });
         }
 
         await t.rollback();

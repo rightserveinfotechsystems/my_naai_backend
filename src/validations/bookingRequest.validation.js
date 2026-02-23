@@ -19,4 +19,26 @@ const createBookingRequestSchema = Joi.object({
   amount: Joi.number().min(0).allow(null),
    serviceIds: Joi.array().items(Joi.string().uuid()).min(1).required()
 });
-module.exposrt = {createBookingRequestSchema}
+
+const Joi = require('joi');
+
+// -----------------------------
+// Cancel BookingRequest Validation
+// -----------------------------
+const cancelBookingRequestSchema = Joi.object({
+  bookingRequestId: Joi.string()
+    .uuid.required().messages({
+      'string.base': 'Booking Request ID must be a string',
+      'string.guid': 'Booking Request ID must be a valid UUID',
+      'any.required': 'Booking Request ID is required',
+    }),
+  
+  userId: Joi.string()
+    .uuid .required().messages({
+      'string.base': 'User ID must be a string',
+      'string.guid': 'User ID must be a valid UUID',
+      'any.required': 'User ID is required',
+    }),
+});
+
+module.exposrt = {createBookingRequestSchema, cancelBookingRequestSchema }
