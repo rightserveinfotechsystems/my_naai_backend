@@ -359,6 +359,9 @@ const salonOwnerListBookings = async (salonId, {
     // Status filter
     if (statusFilter?.trim()) {
       where.bookingStatus = statusFilter.trim();
+    } else {
+      // Default for owner dashboard
+      where.bookingStatus = 'confirmed';
     }
 
     // Search filter
@@ -590,7 +593,7 @@ const completeService = async (salonId, bookingId) => {
 
   // Find pending booking with queue
   const booking = await Booking.findOne({
-    where: { bookingId, salonId, bookingStatus: 'pending' },
+    where: { bookingId, salonId, bookingStatus: 'confirmed' },
     include: [{ model: Queue, as: 'queue', attributes: ['queueId', 'queueNumber', 'status'] }]
   });
 
@@ -698,7 +701,7 @@ const userListBookings = async (userId, {
           attributes: ['salonName', 'city', 'imageUrl']
         }
       ],
-      order : [['createdAt', 'DESC']] 
+      order: [['createdAt', 'DESC']]
     });
   }
 
@@ -741,7 +744,7 @@ const userListBookings = async (userId, {
 
 const getUserWaitingTime = async (booking) => {
   // agar queue hi nahi ya waiting me nahi
-  if (!booking.queue || booking.queue.status !== 'waiting') return 0;
+ if (!booking.queue || !booking.queue.queueNumber) return 0;
 
   const userQueueNumber = booking.queue.queueNumber;
   const bookingDate = booking.bookingDate;
@@ -750,9 +753,12 @@ const getUserWaitingTime = async (booking) => {
     where: {
       salonId: booking.salonId,
       bookingDate: bookingDate,
-      status: 'waiting',
+     
       queueNumber: {
         [Op.lt]: userQueueNumber
+      },
+       status: {
+        [Op.notIn]: ['completed', 'cancelled', 'no_show']
       }
     },
     include: [{
@@ -767,7 +773,7 @@ const getUserWaitingTime = async (booking) => {
   const waitingMinutes = aheadQueues.reduce((sum, q) => {
     const services = q.booking?.services || [];
     return sum + services.reduce(
-      (s, svc) => s + Number(svc.durationMinutes || 0),
+      (s, svc) => s + Number(svc.duration || 0),
       0
     );
   }, 0);

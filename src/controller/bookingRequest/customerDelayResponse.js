@@ -2,6 +2,7 @@
 const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
+const { formatTo12Hour } = require('../../utils/timeFormat');
 
 const customerActionBooking = async (req, res) => {
   const t = await db.sequelize.transaction();
@@ -38,13 +39,16 @@ const customerActionBooking = async (req, res) => {
         where: { salonId, isActive: true }
       });
 
+      const formattedTime = formatTo12Hour(bookingRequest.startTime);
       for (const dt of deviceTokens) {
         await sendNotificationToDevice(
           dt.deviceToken,
           'Customer Rejected Delay',
-          `Customer rejected the proposed delay for booking at ${bookingRequest.startTime}`,
-          { bookingRequestId: bookingRequest.bookingRequestId,
-             type: 'DELAY_RESPONSE' }
+          `Customer rejected the proposed delay for booking at ${formattedTime}`,
+          {
+            bookingRequestId: bookingRequest.bookingRequestId,
+            type: 'DELAY_RESPONSE'
+          }
         );
       }
 
@@ -53,7 +57,7 @@ const customerActionBooking = async (req, res) => {
         receiverType: 'SALON',
         receiverId: salonId, // ✅ use salonId
         title: 'Customer Rejected Delay',
-        message: `Customer rejected the proposed delay for booking at ${bookingRequest.startTime}`
+        message: `Customer rejected the proposed delay for booking at ${formattedTime}`
       }, { transaction: t });
 
       // Emit via socket
@@ -101,6 +105,11 @@ const customerActionBooking = async (req, res) => {
         estimatedWaitTime: totalDuration
       }, { transaction: t });
 
+
+      // Calculate booking end time
+      const bookingStartTime = new Date(`${bookingRequest.bookingDate}T${bookingRequest.startTime}`);
+      const bookingEndTime = new Date(bookingStartTime.getTime() + totalDuration * 60 * 1000);
+
       // Create Booking
       const booking = await db.Booking.create({
         queueId: queue.queueId,
@@ -121,6 +130,10 @@ const customerActionBooking = async (req, res) => {
         where: { salonId, isActive: true }
       });
 
+      const startTime12hr = formatTo12Hour(bookingRequest.startTime);
+      const endTime12hr = formatTo12Hour(bookingEndTime.toTimeString().slice(0, 5));
+
+
       const customer = await db.User.findByPk(customerId, { attributes: ['fullName'] });
       const customerName = customer ? customer.fullName : 'Customer';
       const formattedTime = bookingRequest.startTime;
@@ -129,9 +142,11 @@ const customerActionBooking = async (req, res) => {
         await sendNotificationToDevice(
           dt.deviceToken,
           "Booking Update",
-          `Customer ${customerName} has accepted the delay for booking at ${formattedTime}`,
-          { bookingRequestId: bookingRequest.bookingRequestId, 
-            type: 'DELAY_RESPONSE'}
+          `Customer ${customerName} has accepted the delay for booking from ${startTime12hr} to ${endTime12hr}`,
+          {
+            bookingRequestId: bookingRequest.bookingRequestId,
+            type: 'DELAY_RESPONSE'
+          }
         );
       }
 
@@ -140,7 +155,7 @@ const customerActionBooking = async (req, res) => {
         receiverType: 'SALON',
         receiverId: salonId, // ✅ salonId used here
         title: 'Booking Update',
-        message: `Customer ${customerName} has accepted the delay for booking at ${formattedTime}`
+        message: `Customer ${customerName} has accepted the delay for booking from ${startTime12hr} to ${endTime12hr}`
       }, { transaction: t });
 
       // Emit via socket

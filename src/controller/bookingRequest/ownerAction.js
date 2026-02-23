@@ -2,6 +2,7 @@
 const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
+const { formatTo12Hour } = require('../../utils/timeFormat');
 
 const ownerActionBooking = async (req, res) => {
     const t = await db.sequelize.transaction();
@@ -66,7 +67,7 @@ const ownerActionBooking = async (req, res) => {
             // Format HH:MM
             const hours = proposedTime.getHours().toString().padStart(2, '0');
             const minutes = proposedTime.getMinutes().toString().padStart(2, '0');
-            const proposedTimeStr = `${hours}:${minutes}`;
+            const proposedTimeStr = formatTo12Hour(proposedTime.toTimeString().slice(0,5));
 
             bookingRequest.status = 'DELAY_PROPOSED';
             bookingRequest.delayMinutes = delayMinutes;
@@ -111,6 +112,8 @@ const ownerActionBooking = async (req, res) => {
             const bookingStartTime = new Date(`${bookingRequest.bookingDate}T${bookingRequest.startTime}`);
             const bookingEndTime = new Date(bookingStartTime.getTime() + totalDuration * 60 * 1000);
 
+
+            const bookingTime12hr = formatTo12Hour(bookingRequest.startTime);
             // Queue number
             const lastQueue = await db.Queue.findOne({
                 where: { salonId: bookingRequest.salonId, bookingDate: bookingRequest.bookingDate },
@@ -163,7 +166,7 @@ const ownerActionBooking = async (req, res) => {
 
             // Notify customer
             for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingRequest.startTime}`,
+                await sendNotificationToDevice(dt, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingTime12hr}`,
                     {
                         bookingRequestId: bookingRequest.bookingRequestId,
                         type: 'BOOKING_CONFIRMED'
@@ -176,7 +179,7 @@ const ownerActionBooking = async (req, res) => {
                 receiverType: 'USER',
                 receiverId: bookingRequest.customerId,
                 title: 'Booking Confirmed',
-                message: `Your booking at salon is confirmed for ${bookingRequest.startTime}`
+                message: `Your booking at salon is confirmed for ${bookingTime12hr}`
             }, { transaction: t });
 
             await t.commit();

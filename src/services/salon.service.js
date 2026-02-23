@@ -263,11 +263,30 @@ const getSalonBasicWithQueue = async (salonId) => {
       attributes: ['queueNumber', 'estimatedWaitTime'],
       order: [['queueNumber', 'ASC']]
     });
+
+    // ---------------------
+    // Step 2: Fetch salon-level booked slots
+    // ---------------------
+    const salonBookings = await db.Booking.findAll({
+      where: {
+        salonId: salonId,
+        bookingStatus: 'confirmed',
+        bookingDate: today
+      },
+      attributes: ['bookingTime', 'bookingEndTime']
+    });
+
+    // Map them to a simple array
+    const bookedSlots = salonBookings.map(b => ({
+      start: b.bookingTime,
+      end: b.bookingEndTime
+    }));
+
     const totalMinutes = queues.reduce((sum, queue) => {
       const booking = queue.booking;
       if (booking?.services?.length) {
         return sum + booking.services.reduce(
-          (s, svc) => s + Number(svc.durationMinutes || 0),
+          (s, svc) => s + Number(svc.duration || 0),
           0
         );
       }
@@ -282,6 +301,11 @@ const getSalonBasicWithQueue = async (salonId) => {
         holidayDays: (bh.holidayDays || []).map(i => dayNames[i])
       }));
     }
+    // ✅ Replace barbers with enriched data
+    salonJson.barbers = barbersWithDuration;
+
+    // ✅ Add salon-level booked slots here
+    salonJson.bookedSlots = bookedSlots;
 
     salonJson.queueLength = queues.length;
     salonJson.totalWaitTime = {
@@ -571,7 +595,8 @@ const getActiveSalonsListForUsers = async ({
         as: 'queues',
         required: false,
         where: {
-          status: 'waiting'   // 👈 confirmed bookings ka queue
+          status: 'waiting'  , // 👈 confirmed bookings ka queue
+           bookingDate: today
         }
         // include: [{
         //   model: db.Booking,

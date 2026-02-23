@@ -1,23 +1,15 @@
 // controllers/booking.controller.js
 const BookingService = require('../../services/booking.service');
-const { userBookingListSchema } = require('../../validations/booking.validation');
 
 const userGetBookingList = async (request, response) => {
   try {
 
-    const { userId } = request.body || {};
-    const { error, value } = userBookingListSchema.validate(request.body);
-    if (error) {
-      return response.status(400).json({
-        status: "FAILED",
-        message: error.details[0].message
-      });
-    }
+    const userId  = request.user?.id;
 
     if (!userId) {
       return response.status(400).json({
         status: "FAILED",
-        message: "userId not found."
+        message: "userId not found in token."
       });
     }
 
@@ -33,7 +25,7 @@ const userGetBookingList = async (request, response) => {
         const services = booking.services || [];
 
         const waitingTime =
-          booking.queue?.status === 'waiting'
+          booking.queue?.queueNumber
             ? await BookingService.getUserWaitingTime(booking)
             : 0;
         return {
