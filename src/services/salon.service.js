@@ -136,57 +136,39 @@ const getSalonWithDetails = async (salonId) => {
 /**
  * Get salon basic info + queue + barbers (SIMPLE VERSION)
  */
-
 const getSalonBasicWithQueue = async (salonId) => {
   try {
-    const today = new Date(
-      new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
-    ).toISOString().split('T')[0];
+    // ✅ Get today in IST
+    const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+
+    // ✅ Next 3 days: today, tomorrow, day after tomorrow
+    const day1 = today.toISOString().split('T')[0]; // today
+    const day2 = new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // tomorrow
+    const day3 = new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // day after tomorrow
+
+    const bookingDates = [day1, day2, day3];
 
     const salon = await db.Salon.findByPk(salonId, {
       include: [
         {
           model: db.Barber,
           as: 'barbers',
-          where: {
-            isActive: true,
-            isAvailable: true
-          },
+          where: { isActive: true, isAvailable: true },
           required: false,
-          attributes: [
-            'barberId',
-            'fullName',
-            'profileImageUrl',
-            'specialization',
-            'isAvailable',
-            'ratingAverage'
-          ],
+          attributes: ['barberId', 'fullName', 'profileImageUrl', 'specialization', 'isAvailable', 'ratingAverage'],
         },
         {
           model: db.Service,
           as: 'services',
           where: { isActive: true },
           required: false,
-          attributes: [
-            'serviceId',
-            'serviceName',
-            'durationMinutes',
-            'price',
-            'description'
-          ],
+          attributes: ['serviceId', 'serviceName', 'durationMinutes', 'price', 'description'],
         },
         {
           model: db.BusinessHours,
           as: 'businessHours',
           required: false,
-          attributes: [
-            'scheduleId',
-            'openingTime',
-            'closingTime',
-            'breakStartTime',
-            'breakEndTime',
-            'holidayDays'
-          ],
+          attributes: ['scheduleId', 'openingTime', 'closingTime', 'breakStartTime', 'breakEndTime', 'holidayDays'],
         },
         {
           model: db.Product,
@@ -200,37 +182,27 @@ const getSalonBasicWithQueue = async (salonId) => {
 
     if (!salon) return null;
 
-    // ✅ BARBER-WISE DURATION TIME
+    // ------------------------
+    // BARBER-WISE DURATION TIME
+    // ------------------------
     const barbersWithDuration = await Promise.all(
       salon.barbers.map(async (barber) => {
-
         const barberQueues = await db.Queue.findAll({
           where: {
             salonId: salonId,
             barberId: barber.barberId,
-            status: {
-              [Op.in]: ['waiting']
-            },
-            bookingDate: today
+            status: { [Op.in]: ['waiting'] },
+            bookingDate: { [Op.in]: bookingDates }
           },
-          include: [{
-            model: db.Booking,
-            as: 'booking',
-            // attributes: ['durationMinutes'],
-            required: false
-          }],
+          include: [{ model: db.Booking, as: 'booking', required: false }],
           attributes: ['queueId']
         });
 
         const durationMinutes = barberQueues.reduce((sum, q) => {
           const services = q.booking?.services || [];
-          return sum + services.reduce(
-            (s, serviceItem) => s + Number(serviceItem.durationMinutes || 0),
-            0
-          );
+          return sum + services.reduce((s, serviceItem) => s + Number(serviceItem.durationMinutes || 0), 0);
         }, 0);
 
-        // Convert minutes to hours + minutes
         const hours = Math.floor(durationMinutes / 60);
         const minutes = durationMinutes % 60;
 
@@ -241,71 +213,64 @@ const getSalonBasicWithQueue = async (salonId) => {
       })
     );
 
-    // ✅ Convert salon to JSON ONCE
     const salonJson = salon.toJSON();
-
-    // ✅ Replace barbers with enriched data
     salonJson.barbers = barbersWithDuration;
 
-    // ✅ SALON-LEVEL TOTAL WAIT TIME 
+    // ------------------------
+    // SALON-LEVEL QUEUES
+    // ------------------------
     const queues = await db.Queue.findAll({
       where: {
         salonId: salonId,
         status: 'waiting',
-        bookingDate: today
+        bookingDate: { [Op.in]: bookingDates }
       },
-      include: [{
-        model: db.Booking,
-        as: 'booking',
-        required: false,
-        // attributes: ['durationMinutes']
-      }],
-      attributes: ['queueNumber', 'estimatedWaitTime'],
-      order: [['queueNumber', 'ASC']]
+      include: [{ model: db.Booking, as: 'booking', required: false }],
+      attributes: ['queueNumber', 'estimatedWaitTime', 'bookingDate'],
+      order: [['bookingDate', 'ASC'], ['queueNumber', 'ASC']]
     });
 
-    // ---------------------
-    // Step 2: Fetch salon-level booked slots
-    // ---------------------
+    // ------------------------
+    // FETCH SALON BOOKINGS
+    // ------------------------
     const salonBookings = await db.Booking.findAll({
       where: {
         salonId: salonId,
         bookingStatus: 'confirmed',
-        bookingDate: today
+        bookingDate: { [Op.in]: bookingDates }
       },
-      attributes: ['bookingTime', 'bookingEndTime']
+      attributes: ['bookingDate', 'bookingTime', 'bookingEndTime']
     });
 
-    // Map them to a simple array
-    const bookedSlots = salonBookings.map(b => ({
-      start: b.bookingTime,
-      end: b.bookingEndTime
+    // ------------------------
+    // GROUP BOOKINGS BY DATE
+    // ------------------------
+    const bookedSlots = salonBookings.reduce((acc, b) => {
+      if (!acc[b.bookingDate]) acc[b.bookingDate] = [];
+      acc[b.bookingDate].push({
+        start: b.bookingTime,
+        end: b.bookingEndTime
+      });
+      return acc;
+    }, {});
+
+    const bookedSlotsArray = Object.keys(bookedSlots).map(date => ({
+      date,
+      slots: bookedSlots[date]
     }));
 
+    salonJson.bookedSlots = bookedSlotsArray;
+
+    // ------------------------
+    // TOTAL WAIT TIME
+    // ------------------------
     const totalMinutes = queues.reduce((sum, queue) => {
       const booking = queue.booking;
       if (booking?.services?.length) {
-        return sum + booking.services.reduce(
-          (s, svc) => s + Number(svc.duration || 0),
-          0
-        );
+        return sum + booking.services.reduce((s, svc) => s + Number(svc.duration || 0), 0);
       }
       return sum;
     }, 0);
-
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-    if (Array.isArray(salonJson.businessHours)) {
-      salonJson.businessHours = salonJson.businessHours.map(bh => ({
-        ...bh,
-        holidayDays: (bh.holidayDays || []).map(i => dayNames[i])
-      }));
-    }
-    // ✅ Replace barbers with enriched data
-    salonJson.barbers = barbersWithDuration;
-
-    // ✅ Add salon-level booked slots here
-    salonJson.bookedSlots = bookedSlots;
 
     salonJson.queueLength = queues.length;
     salonJson.totalWaitTime = {
@@ -313,12 +278,26 @@ const getSalonBasicWithQueue = async (salonId) => {
       display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
     };
 
+    // ------------------------
+    // CONVERT HOLIDAY INDEX TO DAY NAMES
+    // ------------------------
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    if (Array.isArray(salonJson.businessHours)) {
+      salonJson.businessHours = salonJson.businessHours.map(bh => ({
+        ...bh,
+        holidayDays: (bh.holidayDays || []).map(i => dayNames[i])
+      }));
+    }
+
     return salonJson;
 
   } catch (error) {
+    console.error('Error in getSalonBasicWithQueue:', error);
     throw error;
   }
 };
+
+
 
 
 
@@ -595,8 +574,8 @@ const getActiveSalonsListForUsers = async ({
         as: 'queues',
         required: false,
         where: {
-          status: 'waiting'  , // 👈 confirmed bookings ka queue
-           bookingDate: today
+          status: 'waiting', // 👈 confirmed bookings ka queue
+          bookingDate: today
         }
         // include: [{
         //   model: db.Booking,

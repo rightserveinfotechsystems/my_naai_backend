@@ -7,6 +7,13 @@ const userCancelBooking = async (req, res) => {
         const { bookingRequestId } = req.params;
         const userId = req.user.id;
 
+
+        if (!bookingRequestId || bookingRequestId === "null") {
+            return res.status(400).json({
+                status: "FAIL",
+                message: "Invalid booking request id",
+            });
+        }
         // 1️⃣ BookingRequest fetch
         const bookingRequest = await db.BookingRequest.findOne({
             where: {
@@ -36,7 +43,7 @@ const userCancelBooking = async (req, res) => {
         bookingRequest.status = 'CANCELLED';
         await bookingRequest.save({ transaction: t });
 
-        // 3️⃣ Booking check (agar confirmed booking bani ho)
+        // 3️⃣ Booking check 
         const booking = await db.Booking.findOne({
             where: { bookingRequestId },
             transaction: t
@@ -80,12 +87,12 @@ const userCancelBooking = async (req, res) => {
 
         if (booking) {
             // Confirmed booking exists
-            bookingTimeToShow = booking?.bookingTime; 
+            bookingTimeToShow = booking?.bookingTime;
             bookingStatusToShow = booking?.bookingStatus;
         } else {
             // Booking request only
             bookingTimeToShow = bookingRequest?.startTime;
-            bookingStatusToShow = bookingRequest?.status;  
+            bookingStatusToShow = bookingRequest?.status;
         }
 
         const bookingDate = bookingRequest?.bookingDate;
