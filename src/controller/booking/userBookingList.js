@@ -1,23 +1,15 @@
 // controllers/booking.controller.js
 const BookingService = require('../../services/booking.service');
-const { userBookingListSchema } = require('../../validations/booking.validation');
 
 const userGetBookingList = async (request, response) => {
   try {
 
-    const { userId } = request.body || {};
-    const { error, value } = userBookingListSchema.validate(request.body);
-    if (error) {
-      return response.status(400).json({
-        status: "FAILED",
-        message: error.details[0].message
-      });
-    }
+    const userId  = request.user?.id;
 
     if (!userId) {
       return response.status(400).json({
         status: "FAILED",
-        message: "userId not found."
+        message: "userId not found in token."
       });
     }
 
@@ -33,7 +25,7 @@ const userGetBookingList = async (request, response) => {
         const services = booking.services || [];
 
         const waitingTime =
-          booking.queue?.status === 'waiting'
+          booking.queue?.queueNumber
             ? await BookingService.getUserWaitingTime(booking)
             : 0;
         return {
@@ -42,10 +34,10 @@ const userGetBookingList = async (request, response) => {
           salonCity: booking.salon?.city || '',
           salonImage: booking.salon?.imageUrl,
           // ✅ Correct key from JSON
-          serviceName: services.map(s => s.serviceName).join(', '),
+          serviceName: services.map(s => s.name).join(', '),
           queueNumber: booking.queue?.queueNumber || null,
           queueStatus: booking.queue?.status || '',
-          serviceDuration: services.reduce((sum, s) => sum + (s.durationMinutes || 0), 0),
+          serviceDuration: services.reduce((sum, s) => sum + (s.duration || 0), 0),
           //waiting time
           waitingTimeInMinutes: waitingTime,
           waitingTimeDisplay: `${Math.floor(waitingTime / 60)}h ${waitingTime % 60}m`,
@@ -55,7 +47,8 @@ const userGetBookingList = async (request, response) => {
           bookingDate: booking.bookingDate,
           bookingTime: booking.bookingTime,
           barberName: booking.barber?.fullName || '',
-          status: booking.bookingStatus
+          status: booking.bookingStatus,
+          bookingRequestId: booking.bookingRequestId 
         };
       }));
 

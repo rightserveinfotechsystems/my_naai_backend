@@ -13,6 +13,10 @@ const markBookingDone = require('../controller/booking/markComplete');
 const getCompletedBookings = require('../controller/booking/completedBookingList');
 const addWalkInCustomers = require('../controller/booking/createWalkInBooking');
 
+const salonOwnerActionBooking = require('../controller/booking/salonOwnerActionBooking');
+const customerDelayAction = require('../controller/booking/customerDelayAction');
+const userCancelBooking = require('../controller/booking/cancelUserBooking');
+
 const bookingRouter = express.Router();
 
 bookingRouter.post('/book',authenticateUser, createBooking);
@@ -28,6 +32,15 @@ bookingRouter.post('/get-booking-list', authenticateSalon, salonGetBookingList);
 bookingRouter.post('/booking-complete', authenticateSalon, markBookingDone);
 bookingRouter.get('/get-completed-bookings', authenticateSalon, getCompletedBookings);
 bookingRouter.post('/create-walk-in', authenticateSalon, addWalkInCustomers);
+bookingRouter.post('/booking-request-cancel/:bookingRequestId', authenticateUser, userCancelBooking);
+
+
+// Owner actions: ACCEPT / REJECT / DELAY
+bookingRouter.post('/:bookingId/owner-action', authenticateSalon, salonOwnerActionBooking);
+
+// Customer responds to delay request
+bookingRouter.post('/:bookingId/customer-delay-action', authenticateUser, customerDelayAction);
+
 
 
 

@@ -260,10 +260,6 @@ const removeUserSavedSalon = async (userId) => {
     //  INSTANCE UPDATE - Set to NULL
     user.savedSalonId = null;
     await user.save();
-
-
-    //  Verify from DB
-    const freshUser = await db.User.findByPk(userId);
     return true;
 };
 
@@ -276,6 +272,24 @@ const removeUserBookmark = async (userId, salonId) => {
 
     await bookmark.destroy();
     return true;
+};
+
+
+const toggleUserBookmark = async (userId, salonId) => {
+    // Check if bookmark exists
+    const existingBookmark = await db.Bookmark.findOne({
+        where: { userId, salonId }
+    });
+
+    if (existingBookmark) {
+        // If exists, remove it → unsave
+        await existingBookmark.destroy();
+        return false; // unsaved
+    } else {
+        // If not exists, create → save
+        await db.Bookmark.create({ userId, salonId });
+        return true; // saved
+    }
 };
 
 
@@ -294,5 +308,6 @@ module.exports = {
     getUserByIdSavedSalon,
     removeUserSavedSalon,
     saveUserBookmark,
-    removeUserBookmark
+    removeUserBookmark,
+    toggleUserBookmark
 };

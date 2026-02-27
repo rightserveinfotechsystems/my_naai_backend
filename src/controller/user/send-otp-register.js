@@ -9,7 +9,7 @@ const sendOtpRegister = async (request, response) => {
     try {
         const { phoneNumber } = request.body || {};
 
-        // Validate (same)
+        // Validate
         const validationResult = sendOtpValidationSchema.validate({ phoneNumber });
         if (validationResult.error) {
             return response.status(400).json({

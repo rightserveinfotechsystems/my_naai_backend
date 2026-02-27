@@ -1,5 +1,5 @@
 const db = require('../database/models');
-const { Booking, Queue, Service, Salon, User, Barber } = db;
+const { Booking, Queue, Service, Salon, User, Barber, BookingRequest } = db;
 const { Op, Sequelize } = require('sequelize');
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
 
@@ -209,8 +209,8 @@ const adminListBookings = async ({
     const bookings = await Booking.findAll({
       where,
       attributes: [
-        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'createdAt','walkinName',  
-  'walkinPhone',
+        'bookingId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'createdAt', 'walkinName',
+        'walkinPhone',
         [Sequelize.col('salon.salon_name'), 'salonName'],
         [Sequelize.col('user.full_name'), 'userName'],
         [Sequelize.col('user.phone_number'), 'userPhone'],
@@ -346,8 +346,7 @@ const salonOwnerListBookings = async (salonId, {
 
 
     const where = {
-      salonId,
-      bookingStatus: 'pending'
+      salonId
     };
 
     // Date filter
@@ -360,6 +359,9 @@ const salonOwnerListBookings = async (salonId, {
     // Status filter
     if (statusFilter?.trim()) {
       where.bookingStatus = statusFilter.trim();
+    } else {
+      // Default for owner dashboard
+      where.bookingStatus = 'confirmed';
     }
 
     // Search filter
@@ -433,7 +435,7 @@ const salonOwnerListBookings = async (salonId, {
           : b.walkinPhone || '0000000000',
 
         barberName: b.barber?.fullName,
-        serviceNames: services.map(s => s.serviceName).join(', '),
+        serviceNames: services.map(s => s.name).join(', '),
         servicePrice: services.reduce((sum, s) => sum + Number(s.price || 0), 0)
       };
     });
@@ -591,7 +593,7 @@ const completeService = async (salonId, bookingId) => {
 
   // Find pending booking with queue
   const booking = await Booking.findOne({
-    where: { bookingId, salonId, bookingStatus: 'pending' },
+    where: { bookingId, salonId, bookingStatus: 'confirmed' },
     include: [{ model: Queue, as: 'queue', attributes: ['queueId', 'queueNumber', 'status'] }]
   });
 
@@ -659,68 +661,90 @@ const userListBookings = async (userId, {
   date = '',
   limit
 } = {}) => {
-  try {
-    const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
-    const safeLimit = parseInt(limit, 10) || DEFAULT_LIMIT;
-    const offset = (page - 1) * safeLimit;
 
-    const where = { userId };
+  const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
+  const safeLimit = parseInt(limit, 10) || DEFAULT_LIMIT;
+  const offset = (page - 1) * safeLimit;
 
-    // Date filter
-    if (date) {
-      const startOfDay = new Date(date + 'T00:00:00.000Z');
-      const endOfDay = new Date(date + 'T23:59:59.999Z');
-      where.bookingDate = { [Op.between]: [startOfDay, endOfDay] };
-    }
+  /* ---------------- CONFIRMED BOOKINGS ---------------- */
+  const bookingWhere = { userId };
 
-    // Status filter
-    if (statusFilter?.trim()) {
-      where.bookingStatus = statusFilter.trim();
-    }
-
-    // Count
-    const totalBookings = await Booking.count({
-      where,
-      include: [
-        { model: Queue, as: 'queue', attributes: [] },
-        // { model: Service, as: 'service', attributes: [] },
-        { model: Salon, as: 'salon', attributes: [] },
-        { model: Barber, as: 'barber', attributes: ['fullName'] }
-      ]
-    });
-
-    // Fetch bookings
-    const bookings = await Booking.findAll({
-      where,
-      attributes: ['bookingId', 'salonId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services'],
-      include: [
-        { model: Queue, as: 'queue', attributes: ['queueNumber', 'status'] },
-        // { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
-        { model: Salon, as: 'salon', attributes: ['salonName', 'city', 'phoneNumber', 'imageUrl'] },
-
-        { model: Barber, as: 'barber', attributes: ['fullName'] }
-      ],
-      order: [['bookingDate', 'DESC'], ['createdAt', 'DESC']],
-      limit: safeLimit,
-      offset
-    });
-
-    return {
-      bookings,
-      totalBookings,
-      page,
-      limit: safeLimit,
-      totalPages: Math.ceil(totalBookings / safeLimit)
-    };
-  } catch (error) {
-    throw error;
+  if (statusFilter && statusFilter !== 'pending') {
+    bookingWhere.bookingStatus = statusFilter;
   }
+
+  if (date) {
+    bookingWhere.bookingDate = date;
+  }
+
+  const confirmedBookings = await Booking.findAll({
+    where: bookingWhere,
+    include: [
+      { model: Queue, as: 'queue' },
+      { model: Salon, as: 'salon' },
+      { model: Barber, as: 'barber' }
+    ]
+  });
+
+  /* ---------------- PENDING REQUESTS ---------------- */
+  let pendingRequests = [];
+
+  if (!statusFilter || statusFilter === 'pending') {
+    pendingRequests = await BookingRequest.findAll({
+      where: {
+        customerId: userId,
+        status: { [Op.in]: ['PENDING'] }
+      },
+      include: [
+        {
+          model: Salon, as: 'salon',
+          attributes: ['salonName', 'city', 'imageUrl']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+  }
+
+  /* ---------------- NORMALIZE DATA ---------------- */
+  const normalizedPending = pendingRequests.map(req => ({
+    bookingId: null,
+    bookingRequestId: req.bookingRequestId,
+    salon: req.salon,
+    bookingDate: req.bookingDate,
+    bookingTime: req.startTime,
+    bookingStatus: 'pending',
+    services: req.services,
+    amount: req.amount,
+    queue: null,
+    barber: null,
+    createdAt: req.createdAt
+  }));
+
+  const normalizedConfirmed = confirmedBookings.map(b => ({
+    ...b.toJSON(),
+    createdAt: b.createdAt
+  }));
+
+  /* ---------------- MERGE & SORT ---------------- */
+  const merged = [...normalizedPending, ...normalizedConfirmed]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  /* ---------------- PAGINATION ---------------- */
+  const paginated = merged.slice(offset, offset + safeLimit);
+
+  return {
+    bookings: paginated,
+    totalBookings: merged.length,
+    page,
+    limit: safeLimit,
+    totalPages: Math.ceil(merged.length / safeLimit)
+  };
 };
 
 
 const getUserWaitingTime = async (booking) => {
   // agar queue hi nahi ya waiting me nahi
-  if (!booking.queue || booking.queue.status !== 'waiting') return 0;
+ if (!booking.queue || !booking.queue.queueNumber) return 0;
 
   const userQueueNumber = booking.queue.queueNumber;
   const bookingDate = booking.bookingDate;
@@ -729,9 +753,12 @@ const getUserWaitingTime = async (booking) => {
     where: {
       salonId: booking.salonId,
       bookingDate: bookingDate,
-      status: 'waiting',
+     
       queueNumber: {
         [Op.lt]: userQueueNumber
+      },
+       status: {
+        [Op.notIn]: ['completed', 'cancelled', 'no_show']
       }
     },
     include: [{
@@ -746,7 +773,7 @@ const getUserWaitingTime = async (booking) => {
   const waitingMinutes = aheadQueues.reduce((sum, q) => {
     const services = q.booking?.services || [];
     return sum + services.reduce(
-      (s, svc) => s + Number(svc.durationMinutes || 0),
+      (s, svc) => s + Number(svc.duration || 0),
       0
     );
   }, 0);
