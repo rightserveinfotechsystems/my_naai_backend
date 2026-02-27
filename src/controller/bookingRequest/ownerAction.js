@@ -3,6 +3,7 @@ const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 const { formatTo12Hour } = require('../../utils/timeFormat');
+const { scheduleAutoCancelTask } = require('../../tasks/autoCancelTask');
 
 const ownerActionBooking = async (req, res) => {
     const t = await db.sequelize.transaction();
@@ -67,7 +68,7 @@ const ownerActionBooking = async (req, res) => {
             // Format HH:MM
             const hours = proposedTime.getHours().toString().padStart(2, '0');
             const minutes = proposedTime.getMinutes().toString().padStart(2, '0');
-            const proposedTimeStr = formatTo12Hour(proposedTime.toTimeString().slice(0,5));
+            const proposedTimeStr = formatTo12Hour(proposedTime.toTimeString().slice(0, 5));
 
             bookingRequest.status = 'DELAY_PROPOSED';
             bookingRequest.delayMinutes = delayMinutes;
@@ -95,8 +96,19 @@ const ownerActionBooking = async (req, res) => {
             }, { transaction: t });
 
             await t.commit();
+
+            // ⏱️ CUSTOMER RESPONSE → 1 MIN AUTO-CANCEL
+            // try {
+            //     await scheduleAutoCancelTask({
+            //         bookingRequestId: bookingRequest.bookingRequestId,
+            //         delayInSeconds: 60, // 1 minute
+            //     });
+            // } catch (err) {
+            //     console.error('Error scheduling auto-cancel for delayed booking:', err);
+            // }
             return res.status(200).json({ status: 'SUCCESS', message: 'Delay proposed to customer' });
         }
+
 
         // --------------------------
         // 3️⃣ ACCEPT
@@ -188,10 +200,10 @@ const ownerActionBooking = async (req, res) => {
             } catch (reminderError) {
                 console.error('Error creating booking reminder task:', reminderError);
             }
-            return res.status(200).json({ 
-                status: 'SUCCESS', 
-                message: 'Booking request accepted and confirmed', 
-                data: booking 
+            return res.status(200).json({
+                status: 'SUCCESS',
+                message: 'Booking request accepted and confirmed',
+                data: booking
             });
         }
 

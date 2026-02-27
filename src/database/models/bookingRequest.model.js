@@ -61,7 +61,8 @@ module.exports = (sequelize) => {
           'ACCEPTED',         // owner accepted → Booking table entry will be created
           'REJECTED',         // owner rejected → notify customer
           'DELAY_PROPOSED',   // owner proposed delay → customer will accept/reject
-          'CANCELLED'       // customer rejected delay
+          'CANCELLED',
+          'AUTO_CANCELLED'     // customer rejected delay
         ),
         defaultValue: 'PENDING',
         allowNull: false,
