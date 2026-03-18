@@ -81,7 +81,7 @@ module.exports = (sequelize) => {
 
         state: {
             type: DataTypes.STRING(100),
-            allowNull: false,
+            allowNull: true,
             validate: {
                 notEmpty: true
             },
@@ -148,6 +148,28 @@ module.exports = (sequelize) => {
             type: DataTypes.JSONB,
             allowNull: true,
             default: []
+        },
+        planType: {
+            type: DataTypes.STRING,
+             allowNull: true,
+                field: 'plan_type'
+        },
+
+        planStartDate: {
+            type: DataTypes.DATE,
+             allowNull: true,
+                field: 'plan_start_date'
+        },
+
+        planEndDate: {
+            type: DataTypes.DATE,
+             allowNull: true,
+                field: 'plan_end_date'
+        },
+        isPlanActive: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+               field: 'is_plan_active'
         },
         createdAt: {
             type: DataTypes.DATE,

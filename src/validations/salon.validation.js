@@ -10,6 +10,11 @@ const verifySalonOtpValidationSchema = Joi.object({
     deviceToken: Joi.string().max(255).required()
 });
 
+const verifySalonRegOtpValidationSchema = Joi.object({
+    phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required(),
+    otp: Joi.string().pattern(/^[0-9]{6}$/).required()
+});
+
 const salonIdValidationSchema = Joi.object({
     salonId: Joi.string().uuid().required(),
 });
@@ -297,6 +302,26 @@ const salonServiceIdValidationSchema = Joi.object({
     serviceId: Joi.string().uuid().required()
 });
 
+const salonCreateValidationSchema = Joi.object({
+    ownerName: Joi.string().trim().required(),
+    salonName: Joi.string().trim().required(),
+    phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required(),
+    addressLine1: Joi.string().trim().required(),
+    city: Joi.string().trim().required(),
+    // .valid('Katol', 'Warud', 'Karanja', 'Nagpur', 'Wardha', 'Kalmeshwar'),
+    agentCode: Joi.string().trim().optional().allow(''),
+    latitude: Joi.number().allow(null),
+    longitude: Joi.number().allow(null),
+    genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').required().messages({
+        'any.only': 'Gender must be one of MALE, FEMALE, or UNISEX',
+        'string.empty': 'Gender is required'
+    }),
+    planType: Joi.string().valid("trial_2_months", "monthly", "quarterly").required(),
+    paymentId: Joi.string().required(),
+    orderId: Joi.string().required(),
+    totalAmount: Joi.number().positive().required(),
+    grandTotal: Joi.number().positive().required(),
+});
 
 module.exports = {
     createSalonValidationSchema,
@@ -308,5 +333,7 @@ module.exports = {
     salonIdValidationSchema,
     updateSalonWithDetailsAppSchema,
     updateSalonValidationSchemaApp,
-    salonServiceIdValidationSchema
+    salonServiceIdValidationSchema,
+    verifySalonRegOtpValidationSchema,
+    salonCreateValidationSchema
 };
