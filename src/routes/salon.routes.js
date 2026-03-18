@@ -20,16 +20,23 @@ const { getListFilter } = require('../controller/salon/getList');
 const { getCityFilterUser } = require('../controller/salon/getFilterListUser');
 const deleteService = require('../controller/salon/deleteServiceBySalon');
 const { getNearbySalons } = require('../controller/salon/nearbySalons');
+const verifySalonOtpRegister = require('../controller/salon/verifyOtpRegister');
+const createPaymentOrder = require('../controller/razorpay/createPaymentOrder');
+const createSalonWithPlan = require('../controller/razorpay/createSalonWithPlan');
 
 
 
 const salonRouter = express.Router();
 
+salonRouter.post('/create-payment-order', createPaymentOrder);
+salonRouter.post('/create-salon-with-plan', createSalonWithPlan);
 
 
 
 //Salon login
 salonRouter.post('/send-otp', sendSalonOtp);
+salonRouter.post('/verify-otp-register', verifySalonOtpRegister);
+
 salonRouter.post('/login', verifySalonOtpLogin);
 salonRouter.post('/nearby', getNearbySalons);
 salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
