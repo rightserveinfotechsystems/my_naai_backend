@@ -23,14 +23,16 @@ const { getNearbySalons } = require('../controller/salon/nearbySalons');
 const verifySalonOtpRegister = require('../controller/salon/verifyOtpRegister');
 const createPaymentOrder = require('../controller/razorpay/createPaymentOrder');
 const createSalonWithPlan = require('../controller/razorpay/createSalonWithPlan');
+const sendRegisterSalonOtp = require('../controller/salon/sendOtpRegister');
 
 
 
 const salonRouter = express.Router();
 
+
+salonRouter.post('/send-register-otp', sendRegisterSalonOtp);
 salonRouter.post('/create-payment-order', createPaymentOrder);
 salonRouter.post('/create-salon-with-plan', createSalonWithPlan);
-
 
 
 //Salon login

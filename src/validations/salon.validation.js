@@ -3,6 +3,9 @@ const Joi = require('joi');
 const sendSalonOtpValidationSchema = Joi.object({
     phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required()
 });
+const sendRegSalonOtpValidationSchema = Joi.object({
+    phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required()
+});
 
 const verifySalonOtpValidationSchema = Joi.object({
     phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required(),
@@ -335,5 +338,6 @@ module.exports = {
     updateSalonValidationSchemaApp,
     salonServiceIdValidationSchema,
     verifySalonRegOtpValidationSchema,
-    salonCreateValidationSchema
+    salonCreateValidationSchema,
+    sendRegSalonOtpValidationSchema
 };
