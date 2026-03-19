@@ -1,10 +1,14 @@
-const { v4: uuidv4 } = require('uuid');  // Add at top
 const { salonCreateValidationSchema } = require('../../validations/salon.validation');
 const salonService = require('../../services/salon.service')
-const transactionService = require('../../services/transaction.service')
+const transactionService = require('../../services/transaction.service');
+const { sequelize } = require('../../database/config/db');
+const razorpay = require("../../services/razorpay.service");
+const { getAdminUserByPhone } = require('../../services/admin.service');
+const jwt = require("jsonwebtoken")
 
 
 const createSalonWithPlan = async (request, response) => {
+    const t = await sequelize.transaction();
     try {
         const {
             salonName,
@@ -19,7 +23,7 @@ const createSalonWithPlan = async (request, response) => {
             planType,
             paymentId,
             orderId,
-            totalAmount,      
+            totalAmount,
             grandTotal,
         } = request.body;
 
@@ -51,22 +55,40 @@ const createSalonWithPlan = async (request, response) => {
         }
 
         /* ---------------- CALCULATE PLAN DATES ---------------- */
-        const now = new Date();
-        const startDate = now;
-        const endDate = new Date(now);
+        const planStartDate = new Date();
+        const plans = {
+            trial_2_months: 60,
+            monthly: 30,
+            quarterly: 90,
+            yearly: 365
+        }
+        // const planEndDate = new Date(plans[planType] ?? 30);
+        const daysToAdd = plans[planType] ?? 30;
 
-        switch (planType) {
-            case "trial_2_months":
-                endDate.setDate(endDate.getDate() + 60);
-                break;
-            case "monthly":
-                endDate.setDate(endDate.getDate() + 30);
-                break;
-            case "quarterly":
-                endDate.setDate(endDate.getDate() + 90);
-                break;
-            default:
-                endDate.setDate(endDate.getDate() + 30);
+        const planEndDate = new Date(planStartDate);
+        planEndDate.setDate(planStartDate.getDate() + daysToAdd);
+
+
+
+        let createdBy = null;
+        //check the agent is present by agent code
+        // if (agentCode) {
+        //     const isAgentExist = await getAdminUserByPhone(agentCode);
+        //     createdBy = isAgentExist.id;
+        // }
+
+        if (agentCode) {
+            const isAgentExist = await getAdminUserByPhone(agentCode);
+            if (isAgentExist) {
+                createdBy = isAgentExist.id;
+            } else {
+                // if user not found
+                await t.rollback();
+                return response.status(200).json({
+                    status: "FAILED",
+                    message: "Invalid agent code",
+                });
+            }
         }
 
         /* ---------------- CREATE Salon ---------------- */
@@ -80,49 +102,65 @@ const createSalonWithPlan = async (request, response) => {
             latitude,
             longitude,
             planType,
-            planStartDate: startDate,
-            planEndDate: endDate,
+            planStartDate,
+            planEndDate,
             isPlanActive: true,
-        });
+            createdBy,
+            isActive: true
+        }, t);
 
-        if (!salon?.id) {
+
+        if (!salon?.salonId) {
+            t.rollback()
             return response.status(200).json({
                 status: "FAILED",
                 message: "Salon creation failed",
             });
         }
 
-        /* ---------------- TRANSACTION ---------------- */
 
-        await transactionService.addTransaction({
-            salonId: salon.id, 
-            paymentId: paymentId,   // from Razorpay (from frontend)
-            razorpayOrderId: orderId, // order id
-            amount: totalAmount,
-            grandTotal: grandTotal,
-            planType: planType,
-        });
+        // add payment logs in transaction , also capture the payment automatically
+        const value = await razorpay.payments.fetch(paymentId);
+        const amount = (value?.amount / 100).toFixed(2);
+        const TransactionData = {
+            salonId: salon?.salonId ?? null,
+            transactionId: value?.id,
+            razorpayOrderId: orderId,
+            amount,
+            description: `${salonName} Register salon`,
+            paymentType: value?.method,
+            acquirer_data:
+                value?.method === "card" ? value?.card : value?.acquirer_data,
+        };
 
 
+
+        await transactionService.addTransaction(TransactionData, t);
+        // await razorpay.payments.capture(
+        //     value?.id,
+        //     value?.amount,
+        //     value?.currency
+        // );
+
+        await t.commit()
 
         //  token generate
         const token = jwt.sign(
             { salonId: salon.id },
-            process.env.JWT_SECRET
+            process.env.JWT_SECRET ?? "secretkey"
         );
 
         /* ---------------- RESPONSE ---------------- */
         return response.status(200).json({
             status: "SUCCESS",
             message: "Salon created successfully",
-            salonId: salon.id,
-            orderId: orderId,
-            paymentId: paymentId,
+            salonId: salon?.salonId,
             token
         });
 
     } catch (error) {
-        console.error(error);
+        console.log("error=>>>", error);
+        await t.rollback()
         return response.status(500).json({
             status: "FAILED",
             message: error.message,
