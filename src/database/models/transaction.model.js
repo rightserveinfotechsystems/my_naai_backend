@@ -3,20 +3,20 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const Transaction = sequelize.define('Transaction', {
-    transactionId: {
+    id: {
       type: DataTypes.UUID,
       autoIncrement: true,
-      primaryKey: true,
-      field: 'transaction_id'
+      primaryKey: true
     },
 
     salonId: {
-        type: DataTypes.UUID,
+      type: DataTypes.UUID,
       allowNull: false,
       references: {
         model: 'salons',
         key: 'salon_id'
-      }
+      },
+      field: 'salon_id'
     },
 
     amount: {
@@ -24,12 +24,13 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
 
-    // paymentType: {
-    //   type: DataTypes.STRING, 
-    // },
+    paymentType: {
+      type: DataTypes.STRING,
+      field: 'payment_type'
+    },
 
     transactionId: {
-      type: DataTypes.STRING, // ya "paymentId"
+      type: DataTypes.STRING, // or "paymentId"
       allowNull: false,
       field: 'payment_id'
     },
@@ -37,11 +38,13 @@ module.exports = (sequelize) => {
     razorpayOrderId: {
       type: DataTypes.STRING,
       allowNull: true,
+      field: 'razorpay_order_id'
     },
 
     planType: {
       type: DataTypes.STRING,
       allowNull: true,
+      field: 'plan_type'
     },
 
     // status: {
