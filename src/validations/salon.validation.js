@@ -322,8 +322,8 @@ const salonCreateValidationSchema = Joi.object({
     planType: Joi.string().valid("trial_2_months", "monthly", "quarterly").required(),
     paymentId: Joi.string().required(),
     orderId: Joi.string().optional(),
-    totalAmount: Joi.number().positive().required(),
-    grandTotal: Joi.number().positive().required(),
+    totalAmount: Joi.number().positive().optional(),
+    grandTotal: Joi.number().positive().optional(),
 });
 
 module.exports = {

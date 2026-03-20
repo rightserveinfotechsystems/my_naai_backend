@@ -39,11 +39,12 @@ const authenticateSalon = async (request, response, next) => {
       });
     }
 
-    request.salon = {
-      salonId: salon.salonId,
-      salonName: salon.salonName,
-      phoneNumber: salon.phoneNumber
-    };
+    // request.salon = {
+    //   salonId: salon.salonId,
+    //   salonName: salon.salonName,
+    //   phoneNumber: salon.phoneNumber
+    // };
+    request.salon = salon;
 
     next();
   } catch (error) {

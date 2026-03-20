@@ -24,6 +24,7 @@ const verifySalonOtpRegister = require('../controller/salon/verifyOtpRegister');
 const createPaymentOrder = require('../controller/razorpay/createPaymentOrder');
 const createSalonWithPlan = require('../controller/razorpay/createSalonWithPlan');
 const sendRegisterSalonOtp = require('../controller/salon/sendOtpRegister');
+const checkPlanActive = require('../utils/middleware/checkPlanActive');
 
 
 
@@ -31,26 +32,22 @@ const salonRouter = express.Router();
 
 
 salonRouter.post('/send-register-otp', sendRegisterSalonOtp);
+salonRouter.post('/verify-otp-register', verifySalonOtpRegister);
 salonRouter.post('/create-payment-order', createPaymentOrder);
 salonRouter.post('/create-salon-with-plan', createSalonWithPlan);
 
-
 //Salon login
 salonRouter.post('/send-otp', sendSalonOtp);
-salonRouter.post('/verify-otp-register', verifySalonOtpRegister);
-
 salonRouter.post('/login', verifySalonOtpLogin);
 salonRouter.post('/nearby', getNearbySalons);
-salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
-salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
-salonRouter.post('/delete-salon-service', authenticateSalon, deleteService);
-
-
+salonRouter.post('/get-salon', authenticateSalon, checkPlanActive, getSalonByIdApp);
+salonRouter.post('/update-salon', authenticateSalon, checkPlanActive, updateSalonApp);
+salonRouter.post('/delete-salon-service', authenticateSalon, checkPlanActive, deleteService);
 
 //user login   
-salonRouter.post('/salon-list',authenticateUser, listSalonsApp);
-salonRouter.post('/get-salon-by-id',authenticateUser, getSalonByIdUser);
-salonRouter.get('/get-city-list', authenticateUser, getCityFilterUser )
+salonRouter.post('/salon-list', authenticateUser, listSalonsApp);
+salonRouter.post('/get-salon-by-id', authenticateUser, getSalonByIdUser);
+salonRouter.get('/get-city-list', authenticateUser, getCityFilterUser)
 
 
 // Salon operations
@@ -68,7 +65,7 @@ salonRouter.get('/get-filter-list', getListFilter);
 salonRouter.get('/get-salon-by-id/:salonId', getSalonById);
 salonRouter.post('/admin-update-salon', updateSalon);
 salonRouter.delete('/delete-salon/:salonId', deleteSalon);
-salonRouter.post('/delete-service',deleteSalonService );
+salonRouter.post('/delete-service', deleteSalonService);
 salonRouter.post('/status', toggleStatus);
 
 

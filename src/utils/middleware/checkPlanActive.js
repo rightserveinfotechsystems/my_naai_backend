@@ -1,45 +1,35 @@
-const db = require("../../database/models");
+const { isPlanActive } = require("../plan.util");
 
-const checkPlanActive = async (req, res, next) => {
+const checkPlanActive = async (request, response, next) => {
   try {
-    const salonId = req.salon?.salonId;
-
-    if (!salonId) {
-      return res.status(401).json({
-        status: "FAILED",
-        message: "Unauthorized"
-      });
-    }
-
-    const salon = await db.Salon.findByPk(salonId);
+    const salon = request.salon;
 
     if (!salon) {
-      return res.status(404).json({
+      return response.status(401).json({
         status: "FAILED",
-        message: "Salon not found"
+        message: "Unauthorized or not loaded"
       });
     }
 
-    const today = new Date();
+    // if (!isPlanActive(salon.planEndDate)) {
+    //   return response.status(403).json({
+    //     status: "FAILED",
+    //     message: "Your plan has expired. Please renew."
+    //   });
+    // }
 
-    const isPlanActive =
-      salon.planEndDate && new Date(salon.planEndDate) >= today;
-
-    if (!isPlanActive) {
-      return res.status(403).json({
-        status: "FAILED",
-        message: "Your plan has expired. Please renew."
+    if (!salon.isPlanActive) {
+      return response.status(403).json({
+        message: "Your plan is finished, please renew"
       });
     }
 
     next();
-
   } catch (error) {
-    return res.status(500).json({
+    return response.status(500).json({
       status: "FAILED",
       message: error.message
     });
   }
 };
-
-module.exports = { checkPlanActive };
+module.exports = checkPlanActive;

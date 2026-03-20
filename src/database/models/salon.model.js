@@ -151,25 +151,25 @@ module.exports = (sequelize) => {
         },
         planType: {
             type: DataTypes.STRING,
-             allowNull: true,
-                field: 'plan_type'
+            allowNull: true,
+            field: 'plan_type'
         },
 
         planStartDate: {
             type: DataTypes.DATE,
-             allowNull: true,
-                field: 'plan_start_date'
+            allowNull: true,
+            field: 'plan_start_date'
         },
 
         planEndDate: {
             type: DataTypes.DATE,
-             allowNull: true,
-                field: 'plan_end_date'
+            allowNull: true,
+            field: 'plan_end_date'
         },
         isPlanActive: {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
-               field: 'is_plan_active'
+            field: 'is_plan_active'
         },
         createdAt: {
             type: DataTypes.DATE,

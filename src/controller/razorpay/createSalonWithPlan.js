@@ -4,7 +4,8 @@ const transactionService = require('../../services/transaction.service');
 const { sequelize } = require('../../database/config/db');
 const razorpay = require("../../services/razorpay.service");
 const { getAdminUserByPhone } = require('../../services/admin.service');
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const { isPlanActive, getPlanEndDate } = require('../../utils/plan.util');
 
 
 const createSalonWithPlan = async (request, response) => {
@@ -24,7 +25,7 @@ const createSalonWithPlan = async (request, response) => {
             paymentId,
             orderId,
             totalAmount,
-            grandTotal,
+            // grandTotal,
         } = request.body;
 
         /* ---------------- VALIDATION ---------------- */
@@ -43,7 +44,7 @@ const createSalonWithPlan = async (request, response) => {
                 paymentId,
                 orderId,
                 totalAmount,
-                grandTotal,
+                // grandTotal,
             },
             { abortEarly: true }
         );
@@ -55,27 +56,22 @@ const createSalonWithPlan = async (request, response) => {
         }
 
         /* ---------------- CALCULATE PLAN DATES ---------------- */
+        // const planStartDate = new Date();
+        // const plans = {
+        //     trial_2_months: 60,
+        //     monthly: 30,
+        //     quarterly: 90,
+        //     yearly: 365
+        // }
+        // const daysToAdd = plans[planType] ?? 30;
+        // const planEndDate = new Date(planStartDate);
+        // planEndDate.setDate(planStartDate.getDate() + daysToAdd);
         const planStartDate = new Date();
-        const plans = {
-            trial_2_months: 60,
-            monthly: 30,
-            quarterly: 90,
-            yearly: 365
-        }
-        // const planEndDate = new Date(plans[planType] ?? 30);
-        const daysToAdd = plans[planType] ?? 30;
-
-        const planEndDate = new Date(planStartDate);
-        planEndDate.setDate(planStartDate.getDate() + daysToAdd);
+        const planEndDate = getPlanEndDate(planStartDate, planType);
 
 
 
         let createdBy = null;
-        //check the agent is present by agent code
-        // if (agentCode) {
-        //     const isAgentExist = await getAdminUserByPhone(agentCode);
-        //     createdBy = isAgentExist.id;
-        // }
 
         if (agentCode) {
             const isAgentExist = await getAdminUserByPhone(agentCode);
@@ -111,7 +107,7 @@ const createSalonWithPlan = async (request, response) => {
 
 
         if (!salon?.salonId) {
-            t.rollback()
+            await t.rollback()
             return response.status(200).json({
                 status: "FAILED",
                 message: "Salon creation failed",
@@ -136,17 +132,17 @@ const createSalonWithPlan = async (request, response) => {
 
 
         await transactionService.addTransaction(TransactionData, t);
-        await razorpay.payments.capture(
-            value?.id,
-            value?.amount,
-            value?.currency
-        );
+        // await razorpay.payments.capture(
+        //     value?.id,
+        //     value?.amount,
+        //     value?.currency
+        // );
 
         await t.commit()
 
         //  token generate
         const token = jwt.sign(
-            { salonId: salon.id },
+            { salonId: salon?.salonId },
             process.env.JWT_SECRET ?? "secretkey"
         );
 
