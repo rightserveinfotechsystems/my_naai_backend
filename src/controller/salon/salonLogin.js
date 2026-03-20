@@ -80,27 +80,67 @@ const verifySalonOtpLogin = async (request, response) => {
         // ✅ NEW DEVICE TOKEN FLOW (MULTIPLE DEVICES SAFE)
 
 
+        // if (deviceToken) {
+        //     const devices = await DeviceToken.findAll({
+        //         where: { salonId: salon.salonId }
+        //     });
+
+        //     const alreadyExists = devices.some(
+        //         device => device.deviceToken === deviceToken
+        //     );
+
+        //     if (!alreadyExists && devices.length >= 10) {
+        //         return response.status(403).json({
+        //             status: 'FAILED',
+        //             message: 'Already logged in on 10 devices'
+        //         });
+        //     }
+
+        //     if (!alreadyExists) {
+        //         await DeviceToken.create({
+        //             salonId: salon.salonId,
+        //             deviceToken
+        //         });
+        //     }
+        // }
+
         if (deviceToken) {
-            const devices = await DeviceToken.findAll({
-                where: { salonId: salon.salonId }
+
+            //  Check if device already exists
+            const existingDevice = await DeviceToken.findOne({
+                where: {
+                    salonId: salon.salonId,
+                    deviceToken
+                }
             });
 
-            const alreadyExists = devices.some(
-                device => device.deviceToken === deviceToken
-            );
+            if (existingDevice) {
+               
+            } else {
 
-            if (!alreadyExists && devices.length >= 10) {
-                return response.status(403).json({
-                    status: 'FAILED',
-                    message: 'Already logged in on 10 devices'
+                //  Count total devices
+                const deviceCount = await DeviceToken.count({
+                    where: { salonId: salon.salonId }
                 });
-            }
 
-            if (!alreadyExists) {
+                // If limit reached → delete oldest
+                if (deviceCount >= 10) {
+                    const oldestDevice = await DeviceToken.findOne({
+                        where: { salonId: salon.salonId },
+                        order: [['createdAt', 'ASC']]
+                    });
+                    if (oldestDevice) {
+                        await oldestDevice.destroy();
+                    }
+                }
+
+                // Insert new device
                 await DeviceToken.create({
                     salonId: salon.salonId,
                     deviceToken
                 });
+
+                console.log(`📱 New device added: ${deviceToken}`);
             }
         }
 
