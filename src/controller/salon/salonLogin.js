@@ -105,7 +105,6 @@ const verifySalonOtpLogin = async (request, response) => {
         // }
 
         if (deviceToken) {
-
             //  Check if device already exists
             const existingDevice = await DeviceToken.findOne({
                 where: {
@@ -113,16 +112,12 @@ const verifySalonOtpLogin = async (request, response) => {
                     deviceToken
                 }
             });
-
             if (existingDevice) {
-               
             } else {
-
                 //  Count total devices
                 const deviceCount = await DeviceToken.count({
                     where: { salonId: salon.salonId }
                 });
-
                 // If limit reached → delete oldest
                 if (deviceCount >= 10) {
                     const oldestDevice = await DeviceToken.findOne({
@@ -133,19 +128,14 @@ const verifySalonOtpLogin = async (request, response) => {
                         await oldestDevice.destroy();
                     }
                 }
-
                 // Insert new device
                 await DeviceToken.create({
                     salonId: salon.salonId,
                     deviceToken
                 });
-
                 console.log(`📱 New device added: ${deviceToken}`);
             }
         }
-
-
-
         // Generate JWT token
         const token = generateToken({
             salonId: salon.salonId,
