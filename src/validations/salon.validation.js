@@ -46,9 +46,7 @@ const createSalonValidationSchema = Joi.object({
     city: Joi.string().min(2).max(100).required().messages({
         'string.empty': 'City is required'
     }),
-    state: Joi.string().min(2).max(100).required().messages({
-        'string.empty': 'State is required'
-    }),
+   state: Joi.string().min(2).max(100).optional().allow(null, ''),
     pincode: Joi.string().pattern(/^[0-9]{6}$/).allow(null, '').optional().messages({
         'string.empty': 'Pincode is required',
         'string.pattern.base': 'Pincode must be 6 digits'
@@ -173,7 +171,7 @@ const updateSalonValidationSchemaApp = Joi.object({
     addressLine1: Joi.string().min(5).max(255).allow(null, '').optional(),
     addressLine2: Joi.string().max(255).allow(null, '').optional(),
     city: Joi.string().min(2).max(100).optional(),
-    state: Joi.string().min(2).max(100),
+    state: Joi.string().min(2).max(100).optional().allow(null, ''),
     pincode: Joi.string().pattern(/^[0-9]{6}$/).optional().allow(null, ''),
     latitude: Joi.number().allow(null),
     longitude: Joi.number().allow(null),
@@ -324,6 +322,14 @@ const salonCreateValidationSchema = Joi.object({
     orderId: Joi.string().optional(),
     totalAmount: Joi.number().positive().optional(),
     grandTotal: Joi.number().positive().optional(),
+    // businessHours
+    businessHours: Joi.object({
+        openingTime: Joi.string().required(),
+        closingTime: Joi.string().required(),
+        breakStartTime: Joi.string().allow(null),
+        breakEndTime: Joi.string().allow(null),
+        holidayDays: Joi.array().items(Joi.number().min(0).max(6)).default([]).optional()
+    }).required(),
 });
 
 module.exports = {

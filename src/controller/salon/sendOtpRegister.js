@@ -25,7 +25,7 @@ const sendRegisterSalonOtp = async (request, response) => {
     if (salon) {
       return response.status(400).json({
         status: 'FAILED',
-        message: 'Salon Already exists. Please contact admin.'
+        message: 'Salon Already exists.'
       });
     }
 
