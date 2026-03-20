@@ -9,5 +9,8 @@ cron.schedule("0 1 * * *", async () => {
     } catch (err) {
         console.error('❌ Error during plan expiry check:', err);
     }
-});
+},
+    {
+        timezone: "Asia/Kolkata"
+    });
 

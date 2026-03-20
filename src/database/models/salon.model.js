@@ -198,7 +198,7 @@ module.exports = (sequelize) => {
         modelName: 'Salon',
         tableName: 'salons',
         timestamps: true,
-        // paranoid: true,
+        paranoid: true,
 
         indexes: [
             {

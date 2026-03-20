@@ -380,7 +380,10 @@ const deleteSalon = async (salonId) => {
 const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter = 'ALL', statusFilter = 'all', isAdmin, adminId }) => {
   try {
     const offset = (page - 1) * limit;
-    const where = {};
+    const where = {
+       deletedAt: null
+    };
+ 
     if (!isAdmin) {
       where.createdBy = adminId
     }
@@ -552,9 +555,27 @@ const getActiveSalonsListForUsers = async ({
         order: literal(`${distanceFormula} ASC`)
       });
 
-      nearbySalons = allSalonsWithDistance.filter(
-        s => parseFloat(s.get('distance')) <= maxDistance && !savedSalonIds.includes(s.salonId)
-      );
+      // console.log('=== DISTANCE DEBUG ===');
+      // allSalonsWithDistance.forEach((salon, index) => {
+      //   const distance = parseFloat(salon.get('distance'));
+      //   console.log(`${index + 1}. ${salon.salonName}: ${distance.toFixed(2)} km`);
+      // });
+      // nearbySalons = allSalonsWithDistance.filter();
+      // console.log('=== FILTERED NEARBY (sorted) ===');
+      // nearbySalons.forEach((salon, index) => {
+      //   const distance = parseFloat(salon.get('distance'));
+      //   console.log(`${index + 1}. ${salon.salonName}: ${distance.toFixed(2)} km`);
+      // });
+      nearbySalons = allSalonsWithDistance
+        .filter(s => {
+          const distance = parseFloat(s.get('distance'));
+          return distance <= maxDistance && !savedSalonIds.includes(s.salonId);
+        })
+        .sort((a, b) => {
+          const distA = parseFloat(a.get('distance'));
+          const distB = parseFloat(b.get('distance'));
+          return distA - distB;  // ✅ 2km < 5km < 43km
+        });
     }
     const nearbySalonIds = nearbySalons.map(s => s.salonId);
 
@@ -618,7 +639,8 @@ const getActiveSalonsListForUsers = async ({
         totalWaitTime: {
           minutes: totalMinutes,
           display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
-        }
+        },
+        // distance: salon.getDataValue ? parseFloat(salon.getDataValue('distance') || 0).toFixed(2) : 'N/A'  
       };
     });
 
@@ -762,6 +784,26 @@ const deleteSalonService = async (serviceId) => {
   }
 };
 
+/**
+ * Delete salon by admin
+ */
+const deleteSalonByAdmin = async (salonId) => {
+  try {
+    const salon = await db.Salon.findByPk(salonId);
+    // phone modify 
+    const updatedPhone = `${salon.phoneNumber}${Date.now().toString().slice(-4)}`;
+    await salon.update(
+      {
+        phoneNumber: updatedPhone
+      });
+    // soft delete (paranoid)
+    await salon.destroy();
+    return true;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   createSalon,
   getSalonById,
@@ -780,7 +822,8 @@ module.exports = {
   getServiceById,
   getCitySalonsService,
   hasActiveQueueForService,
-  getActiveSalonsListForUsers
+  getActiveSalonsListForUsers,
+  deleteSalonByAdmin
 
 
 };

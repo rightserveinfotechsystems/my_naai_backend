@@ -6,6 +6,7 @@ const razorpay = require("../../services/razorpay.service");
 const { getAdminUserByPhone } = require('../../services/admin.service');
 const jwt = require("jsonwebtoken");
 const { isPlanActive, getPlanEndDate } = require('../../utils/plan.util');
+const db = require('../../database/models');
 
 
 const createSalonWithPlan = async (request, response) => {
@@ -26,6 +27,7 @@ const createSalonWithPlan = async (request, response) => {
             orderId,
             totalAmount,
             // grandTotal,
+            businessHours
         } = request.body;
 
         /* ---------------- VALIDATION ---------------- */
@@ -44,6 +46,7 @@ const createSalonWithPlan = async (request, response) => {
                 paymentId,
                 orderId,
                 totalAmount,
+                businessHours
                 // grandTotal,
             },
             { abortEarly: true }
@@ -106,6 +109,8 @@ const createSalonWithPlan = async (request, response) => {
         }, t);
 
 
+
+
         if (!salon?.salonId) {
             await t.rollback()
             return response.status(200).json({
@@ -113,7 +118,16 @@ const createSalonWithPlan = async (request, response) => {
                 message: "Salon creation failed",
             });
         }
-
+        
+        await db.BusinessHours.create({
+            salonId: salon.salonId,
+            openingTime: businessHours.openingTime,
+            closingTime: businessHours.closingTime,
+            breakStartTime: businessHours.breakStartTime || null,
+            breakEndTime: businessHours.breakEndTime || null,
+            holidayDays: businessHours.holidayDays || [],
+            isOpen: true
+        }, { transaction: t });
 
         // add payment logs in transaction , also capture the payment automatically
         const value = await razorpay.payments.fetch(paymentId);
