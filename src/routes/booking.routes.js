@@ -16,6 +16,7 @@ const addWalkInCustomers = require('../controller/booking/createWalkInBooking');
 const salonOwnerActionBooking = require('../controller/booking/salonOwnerActionBooking');
 const customerDelayAction = require('../controller/booking/customerDelayAction');
 const userCancelBooking = require('../controller/booking/cancelUserBooking');
+const checkPlanActive = require('../utils/middleware/checkPlanActive');
 
 const bookingRouter = express.Router();
 
@@ -28,9 +29,9 @@ bookingRouter.get('/get-all-list', authenticateAdmin, adminGetAllBookings);
 
 
 
-bookingRouter.post('/get-booking-list', authenticateSalon, salonGetBookingList);
-bookingRouter.post('/booking-complete', authenticateSalon, markBookingDone);
-bookingRouter.get('/get-completed-bookings', authenticateSalon, getCompletedBookings);
+bookingRouter.post('/get-booking-list',  authenticateSalon,checkPlanActive,salonGetBookingList);
+bookingRouter.post('/booking-complete', authenticateSalon,checkPlanActive, markBookingDone);
+bookingRouter.get('/get-completed-bookings', authenticateSalon,checkPlanActive, getCompletedBookings);
 bookingRouter.post('/create-walk-in', authenticateSalon, addWalkInCustomers);
 bookingRouter.post('/booking-request-cancel/:bookingRequestId', authenticateUser, userCancelBooking);
 

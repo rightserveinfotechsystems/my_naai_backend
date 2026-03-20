@@ -138,6 +138,7 @@ process.on('SIGTERM', async () => {
 });
 // 🔥 CRON REGISTER
 require('./cron/notification.cron');
+require('./cron/plan-check.cron'); 
 
 //connect db
 connectDb();
