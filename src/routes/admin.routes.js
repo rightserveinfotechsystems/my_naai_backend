@@ -12,6 +12,7 @@ const deleteAdminPanelUser = require('../controller/admin/admin-panel-user-delet
 const updateAdminPanelUser = require('../controller/admin/update-admin-panel-user');
 const getAdminById = require('../controller/admin/getAdminById');
 const toggleAdminStatus = require('../controller/admin/toggleAdminStatus');
+const NotificationSendByAdmin = require('../controller/admin/sendNotificationToUserAndSalons');
 
 const adminRouter = express.Router();
 
@@ -30,6 +31,11 @@ adminRouter.post('/admin-panel-user-delete', authenticateAdmin, deleteAdminPanel
 adminRouter.post('/update-admin-panel-user', authenticateAdmin, updateAdminPanelUser);
 adminRouter.get('/get-admin-by-id/:userId', authenticateAdmin, getAdminById);
 adminRouter.post('/status', authenticateAdmin, toggleAdminStatus);
+
+adminRouter.post('/send-notifications', authenticateAdmin, NotificationSendByAdmin);
+
+
+
 
 
 module.exports = adminRouter;
