@@ -801,8 +801,54 @@ const deleteSalonByAdmin = async (salonId) => {
     return true;
   } catch (error) {
     throw error;
-  }
+  } 
 };
+
+/**
+ * fetch salon by
+ */
+const getSalonsByAgent = async ({ agentId, page = 1, searchString = '' }) => {
+    try {
+        const limit = DEFAULT_LIMIT;
+        const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+        const offset = (safePage - 1) * limit;
+
+        const where = { createdBy: agentId };
+
+        if (searchString?.trim()) {
+            const like = `%${searchString.trim()}%`;
+            where[Op.or] = [
+                { salonName: { [Op.iLike]: like } },
+                { ownerName: { [Op.iLike]: like } },
+            ];
+        }
+
+        const { count: totalSalons, rows: salons } = await db.Salon.findAndCountAll({
+            where,
+            attributes: [ 'salonId','salonName','ownerName','planType','planEndDate','isActive', 'createdAt'
+            ],
+            order: [['createdAt', 'DESC']],
+            limit,
+            offset,
+        });
+
+        const totalPages = Math.ceil(totalSalons / limit) || 1;
+
+        return {
+            salons,
+            pagination: {
+                page: safePage,
+                limit,
+                totalSalons,
+                totalPages
+            }
+        };
+    } catch (error) {
+        console.error("Error in getSalonsByAgent service:", error);
+        throw error;
+    }
+};
+
 
 module.exports = {
   createSalon,
@@ -823,7 +869,6 @@ module.exports = {
   getCitySalonsService,
   hasActiveQueueForService,
   getActiveSalonsListForUsers,
-  deleteSalonByAdmin
-
-
+  deleteSalonByAdmin,
+  getSalonsByAgent
 };
