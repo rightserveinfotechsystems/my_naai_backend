@@ -381,9 +381,9 @@ const listSalons = async ({ page = 1, searchString = '', limit = 20, cityFilter 
   try {
     const offset = (page - 1) * limit;
     const where = {
-       deletedAt: null
+      deletedAt: null
     };
- 
+
     if (!isAdmin) {
       where.createdBy = adminId
     }
@@ -489,14 +489,31 @@ const getActiveSalonsListForUsers = async ({
   genderType
 }) => {
   try {
-    // Today's date in Asia/Kolkata
+    // ==================== DATE ====================
     const today = new Date(
       new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
     ).toISOString().split('T')[0];
 
     const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
 
-    // Base filters
+    // ==================== COMMON INCLUDE ====================
+    const salonIncludes = [
+      {
+        model: db.BusinessHours,
+        as: 'businessHours',
+        required: false,
+        attributes: [
+          'scheduleId',
+          'openingTime',
+          'closingTime',
+          'breakStartTime',
+          'breakEndTime',
+          'holidayDays'
+        ]
+      }
+    ];
+
+    // ==================== BASE FILTER ====================
     const where = { isActive: true };
 
     if (searchString?.trim()) {
@@ -519,6 +536,7 @@ const getActiveSalonsListForUsers = async ({
 
     // ==================== SAVED SALONS ====================
     let savedSalons = [];
+
     if (userId) {
       const bookmarks = await db.Bookmark.findAll({
         where: { userId },
@@ -527,16 +545,20 @@ const getActiveSalonsListForUsers = async ({
           as: 'salon',
           where: { isActive: true },
           required: true,
-          attributes: { exclude: ['deletedAt'] }
+          attributes: { exclude: ['deletedAt'] },
+          include: salonIncludes   // ✅ FIX
         }],
         order: [['createdAt', 'DESC']]
       });
+
       savedSalons = bookmarks.map(b => b.salon);
     }
+
     const savedSalonIds = savedSalons.map(s => s.salonId);
 
     // ==================== NEARBY SALONS ====================
     let nearbySalons = [];
+
     if (latitude && longitude) {
       const userLat = parseFloat(latitude);
       const userLng = parseFloat(longitude);
@@ -551,32 +573,31 @@ const getActiveSalonsListForUsers = async ({
         attributes: {
           include: [[literal(distanceFormula), 'distance']]
         },
-        where,
-        order: literal(`${distanceFormula} ASC`)
+        where: {
+          ...where,
+          latitude: { [Op.ne]: null },
+          longitude: { [Op.ne]: null }
+        },
+        include: salonIncludes,   // ✅ FIX
+        order: literal(`${distanceFormula} ASC`),
+        subQuery: false,
+        distinct: true
       });
 
-      // console.log('=== DISTANCE DEBUG ===');
-      // allSalonsWithDistance.forEach((salon, index) => {
-      //   const distance = parseFloat(salon.get('distance'));
-      //   console.log(`${index + 1}. ${salon.salonName}: ${distance.toFixed(2)} km`);
-      // });
-      // nearbySalons = allSalonsWithDistance.filter();
-      // console.log('=== FILTERED NEARBY (sorted) ===');
-      // nearbySalons.forEach((salon, index) => {
-      //   const distance = parseFloat(salon.get('distance'));
-      //   console.log(`${index + 1}. ${salon.salonName}: ${distance.toFixed(2)} km`);
-      // });
       nearbySalons = allSalonsWithDistance
         .filter(s => {
-          const distance = parseFloat(s.get('distance'));
-          return distance <= maxDistance && !savedSalonIds.includes(s.salonId);
+          const d = parseFloat(s.get('distance'));
+          return (
+            !isNaN(d) &&
+            d <= maxDistance &&
+            !savedSalonIds.includes(s.salonId)
+          );
         })
         .sort((a, b) => {
-          const distA = parseFloat(a.get('distance'));
-          const distB = parseFloat(b.get('distance'));
-          return distA - distB;  // ✅ 2km < 5km < 43km
+          return parseFloat(a.get('distance')) - parseFloat(b.get('distance'));
         });
     }
+
     const nearbySalonIds = nearbySalons.map(s => s.salonId);
 
     // ==================== REMAINING SALONS ====================
@@ -584,67 +605,71 @@ const getActiveSalonsListForUsers = async ({
 
     const remainingWhere = {
       ...where,
-      ...(excludedSalonIds.length && { salonId: { [Op.notIn]: excludedSalonIds } })
+      ...(excludedSalonIds.length && {
+        salonId: { [Op.notIn]: excludedSalonIds }
+      })
     };
 
     const remainingSalons = await db.Salon.findAll({
       where: remainingWhere,
       attributes: { exclude: ['deletedAt'] },
-      include: [{
-        model: db.Queue,
-        as: 'queues',
-        required: false,
-        where: {
-          status: 'waiting', // 👈 confirmed bookings ka queue
-          bookingDate: today
-        }
-        // include: [{
-        //   model: db.Booking,
-        //   as: 'booking',
-        //   required: false 
-        // }]
-      }],
+      include: salonIncludes,   // ✅ FIX
       order: [['createdAt', 'DESC']],
+      subQuery: false,
       distinct: true
     });
 
-    // ==================== MERGE AND PAGINATE ====================
-    const allSalons = [...savedSalons, ...nearbySalons, ...remainingSalons];
+    // ==================== MERGE ====================
+    let allSalons = [...savedSalons, ...nearbySalons, ...remainingSalons];
 
+    // ==================== GLOBAL SORT ====================
+    const getDistance = (salon) => {
+      const d = salon.getDataValue?.('distance');
+      return !isNaN(parseFloat(d)) ? parseFloat(d) : 9999;
+    };
+
+    allSalons = allSalons.sort((a, b) => getDistance(a) - getDistance(b));
+
+    // ==================== PAGINATION ====================
     const start = (safePage - 1) * limit;
     const end = start + limit;
     const paginatedSalons = allSalons.slice(start, end);
 
-    // ==================== CALCULATE WAIT TIME ====================
+    // ==================== WAIT TIME ====================
     const salonsWithWaitTime = paginatedSalons.map(salon => {
-      const queues = (salon.queues || []);
-      // const totalMinutes = queues.reduce((sum, queue) => {
-      //   const booking = queue.booking;
-      //   if (booking && booking.services?.length) {
-      //     return sum + booking.services.reduce((s, svc) => s + Number(svc.durationMinutes || 0), 0);
-      //   }
-      //   return sum;
-      // }, 0);
+      const queues = salon.queues || [];
+
       const totalMinutes = queues.reduce(
         (sum, q) => sum + Number(q.estimatedWaitTime || 0),
         0
       );
 
       const salonData = salon.toJSON();
-      delete salonData.queues;
+
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+      if (Array.isArray(salonData.businessHours)) {
+        salonData.businessHours = salonData.businessHours.map(bh => ({
+          ...bh,
+          holidayDays: (bh.holidayDays || []).map(i => dayNames[i])
+        }));
+      }
+      // delete salonData.queues;
 
       return {
         ...salonData,
-        queueLength: queues.length,
-        totalWaitTime: {
-          minutes: totalMinutes,
-          display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
-        },
-        // distance: salon.getDataValue ? parseFloat(salon.getDataValue('distance') || 0).toFixed(2) : 'N/A'  
+        // queueLength: queues.length,
+        // totalWaitTime: {
+        //   minutes: totalMinutes,
+        //   display: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+        // },
+        distance: salon.getDataValue
+          ? parseFloat(salon.getDataValue('distance') || 0).toFixed(2)
+          : null
       };
     });
 
-    // ==================== RETURN ====================
+    // ==================== RESPONSE ====================
     return {
       salons: salonsWithWaitTime,
       totalSalons: allSalons.length,
@@ -654,6 +679,7 @@ const getActiveSalonsListForUsers = async ({
     };
 
   } catch (error) {
+    console.error("Error in getActiveSalonsListForUsers:", error);
     throw error;
   }
 };
@@ -801,52 +827,52 @@ const deleteSalonByAdmin = async (salonId) => {
     return true;
   } catch (error) {
     throw error;
-  } 
+  }
 };
 
 /**
  * fetch salon by
  */
 const getSalonsByAgent = async ({ agentId, page = 1, searchString = '' }) => {
-    try {
-        const limit = DEFAULT_LIMIT;
-        const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
-        const offset = (safePage - 1) * limit;
+  try {
+    const limit = DEFAULT_LIMIT;
+    const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+    const offset = (safePage - 1) * limit;
 
-        const where = { createdBy: agentId };
+    const where = { createdBy: agentId };
 
-        if (searchString?.trim()) {
-            const like = `%${searchString.trim()}%`;
-            where[Op.or] = [
-                { salonName: { [Op.iLike]: like } },
-                { ownerName: { [Op.iLike]: like } },
-            ];
-        }
-
-        const { count: totalSalons, rows: salons } = await db.Salon.findAndCountAll({
-            where,
-            attributes: [ 'salonId','salonName','ownerName','planType','planEndDate','isActive', 'createdAt'
-            ],
-            order: [['createdAt', 'DESC']],
-            limit,
-            offset,
-        });
-
-        const totalPages = Math.ceil(totalSalons / limit) || 1;
-
-        return {
-            salons,
-            pagination: {
-                page: safePage,
-                limit,
-                totalSalons,
-                totalPages
-            }
-        };
-    } catch (error) {
-        console.error("Error in getSalonsByAgent service:", error);
-        throw error;
+    if (searchString?.trim()) {
+      const like = `%${searchString.trim()}%`;
+      where[Op.or] = [
+        { salonName: { [Op.iLike]: like } },
+        { ownerName: { [Op.iLike]: like } },
+      ];
     }
+
+    const { count: totalSalons, rows: salons } = await db.Salon.findAndCountAll({
+      where,
+      attributes: ['salonId', 'salonName', 'ownerName', 'planType', 'planEndDate', 'isActive', 'createdAt'
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+    });
+
+    const totalPages = Math.ceil(totalSalons / limit) || 1;
+
+    return {
+      salons,
+      pagination: {
+        page: safePage,
+        limit,
+        totalSalons,
+        totalPages
+      }
+    };
+  } catch (error) {
+    console.error("Error in getSalonsByAgent service:", error);
+    throw error;
+  }
 };
 
 
