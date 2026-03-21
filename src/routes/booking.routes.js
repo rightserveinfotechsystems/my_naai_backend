@@ -20,7 +20,7 @@ const checkPlanActive = require('../utils/middleware/checkPlanActive');
 
 const bookingRouter = express.Router();
 
-bookingRouter.post('/book',authenticateUser, createBooking);
+bookingRouter.post('/book', authenticateUser, createBooking);
 bookingRouter.post('/get-list', authenticateUser, userGetBookingList);
 
 bookingRouter.post('/list', authenticateAdmin, adminGetBookingList);
@@ -29,9 +29,13 @@ bookingRouter.get('/get-all-list', authenticateAdmin, adminGetAllBookings);
 
 
 
-bookingRouter.post('/get-booking-list',  authenticateSalon,checkPlanActive,salonGetBookingList);
-bookingRouter.post('/booking-complete', authenticateSalon,checkPlanActive, markBookingDone);
-bookingRouter.get('/get-completed-bookings', authenticateSalon,checkPlanActive, getCompletedBookings);
+bookingRouter.post('/get-booking-list', authenticateSalon, salonGetBookingList);
+// bookingRouter.post('/get-booking-list', authenticateSalon, checkPlanActive, salonGetBookingList);
+
+// bookingRouter.post('/booking-complete', authenticateSalon,checkPlanActive, markBookingDone);
+// bookingRouter.get('/get-completed-bookings', authenticateSalon,checkPlanActive, getCompletedBookings);
+bookingRouter.post('/booking-complete', authenticateSalon, markBookingDone);
+bookingRouter.get('/get-completed-bookings', authenticateSalon, getCompletedBookings);
 bookingRouter.post('/create-walk-in', authenticateSalon, addWalkInCustomers);
 bookingRouter.post('/booking-request-cancel/:bookingRequestId', authenticateUser, userCancelBooking);
 
