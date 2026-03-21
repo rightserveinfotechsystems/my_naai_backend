@@ -581,6 +581,17 @@ const getActiveSalonsListForUsers = async ({
         distinct: true
       });
 
+      // console.log('=== DISTANCE DEBUG ===');
+      // allSalonsWithDistance.forEach((salon, index) => {
+      //   const distance = parseFloat(salon.get('distance'));
+      //   console.log(`${index + 1}. ${salon.salonName}: ${distance.toFixed(2)} km`);
+      // });
+      // nearbySalons = allSalonsWithDistance.filter();
+      // console.log('=== FILTERED NEARBY (sorted) ===');
+      // nearbySalons.forEach((salon, index) => {
+      //   const distance = parseFloat(salon.get('distance'));
+      //   console.log(`${index + 1}. ${salon.salonName}: ${distance.toFixed(2)} km`);
+      // });
       nearbySalons = allSalonsWithDistance
         .filter(s => {
           const distance = parseFloat(s.get('distance'));
