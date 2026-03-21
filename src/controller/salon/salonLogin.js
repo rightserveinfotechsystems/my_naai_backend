@@ -154,12 +154,12 @@ const verifySalonOtpLogin = async (request, response) => {
             status: 'SUCCESS',
             message: 'Salon login successful',
             data: {
-                // salon,
-                salon: {
-                    salonId: salon.salonId,
-                    salonName: salon.salonName,
-                    phoneNumber: salon.phoneNumber,
-                },
+                salon,
+                // salon: {
+                //     salonId: salon.salonId,
+                //     salonName: salon.salonName,
+                //     phoneNumber: salon.phoneNumber,
+                // },
                 token
             }
         });
