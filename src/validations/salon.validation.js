@@ -332,6 +332,19 @@ const salonCreateValidationSchema = Joi.object({
     }).required(),
 });
 
+const renewPlanValidationSchema = Joi.object({
+    planType: Joi.string()
+        .valid("trial_2_months", "monthly", "quarterly", "yearly")
+        .required(),
+
+    paymentId: Joi.string().required(),
+
+    orderId: Joi.string().optional(),
+
+    totalAmount: Joi.number().positive().optional()
+});
+
+
 module.exports = {
     createSalonValidationSchema,
     updateSalonValidationSchema,
@@ -345,5 +358,6 @@ module.exports = {
     salonServiceIdValidationSchema,
     verifySalonRegOtpValidationSchema,
     salonCreateValidationSchema,
-    sendRegSalonOtpValidationSchema
+    sendRegSalonOtpValidationSchema,
+    renewPlanValidationSchema
 };
