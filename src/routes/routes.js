@@ -10,6 +10,7 @@ const advertisementRouter = require('./advertisement.routes');
 const productRouter = require('./product.routes');
 const notificationRouter = require('./notification.routes');
 const bookingRequestRouter = require('./bookingRequest.routes');
+const adminNotificationRouter = require('./adminNotification.routes');
 
 
 const routes = express.Router();
@@ -28,6 +29,9 @@ routes.use('/advertisement', advertisementRouter);
 routes.use('/products', productRouter);
 routes.use('/notifications',notificationRouter);
 routes.use('/bookingRequest',bookingRequestRouter);
+routes.use('/adminNotification',adminNotificationRouter);
+
+
 
 routes.use('/upload', ImageRoutes);
 
