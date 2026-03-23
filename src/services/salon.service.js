@@ -828,7 +828,7 @@ const getSalonsByAgent = async ({ agentId, page = 1, searchString = '' }) => {
 
     const { count: totalSalons, rows: salons } = await db.Salon.findAndCountAll({
       where,
-      attributes: ['salonId', 'salonName', 'ownerName', 'planType', 'planEndDate', 'isActive', 'createdAt'
+      attributes: ['salonId', 'salonName', 'ownerName', 'phoneNumber','addressLine1', 'planType', 'planEndDate', 'isActive', 'createdAt'
       ],
       order: [['createdAt', 'DESC']],
       limit,
