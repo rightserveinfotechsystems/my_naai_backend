@@ -146,18 +146,18 @@ const createSalonWithPlan = async (request, response) => {
 
 
         await transactionService.addTransaction(TransactionData, t);
-        // await razorpay.payments.capture(
-        //     value?.id,
-        //     value?.amount,
-        //     value?.currency
-        // );
+        await razorpay.payments.capture(
+            value?.id,
+            value?.amount,
+            value?.currency
+        );
 
         await t.commit()
 
         //  token generate
         const token = jwt.sign(
             { salonId: salon?.salonId },
-            process.env.JWT_SECRET ?? "secretkey"
+            process.env.JWT_SECRET ?? "secret_key"
         );
 
         /* ---------------- RESPONSE ---------------- */

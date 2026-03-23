@@ -27,6 +27,7 @@ const sendRegisterSalonOtp = require('../controller/salon/sendOtpRegister');
 const checkPlanActive = require('../utils/middleware/checkPlanActive');
 const deleteSalonByAdmin = require('../controller/salon/deleteSalonByAdmin');
 const getSalonsByAgent = require('../controller/salon/salonsCreatedByAgent');
+const renewSalonPlan = require('../controller/razorpay/renewSalonPlan');
 
 
 
@@ -38,6 +39,7 @@ salonRouter.post('/verify-otp-register', verifySalonOtpRegister);
 salonRouter.post('/create-payment-order', createPaymentOrder);
 salonRouter.post('/create-salon-with-plan', createSalonWithPlan);
 
+
 //Salon login
 salonRouter.post('/send-otp', sendSalonOtp);
 salonRouter.post('/login', verifySalonOtpLogin);
@@ -45,6 +47,8 @@ salonRouter.post('/nearby', getNearbySalons);
 salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
 salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
 salonRouter.post('/delete-salon-service', authenticateSalon, deleteService);
+salonRouter.post('/renew-salon-plan',authenticateSalon, renewSalonPlan);
+
 
 //user login   
 salonRouter.post('/salon-list', authenticateUser, listSalonsApp);
