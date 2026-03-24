@@ -330,6 +330,14 @@ const salonCreateValidationSchema = Joi.object({
         breakEndTime: Joi.string().allow(null),
         holidayDays: Joi.array().items(Joi.number().min(0).max(6)).default([]).optional()
     }).required(),
+     services: Joi.array().items(
+        Joi.object({
+            serviceName: Joi.string().min(2).max(100).required(),
+            description: Joi.string().allow(null, ''),
+            durationMinutes: Joi.number().min(1).required(),
+            price: Joi.number().min(0).optional()
+        })
+    ).optional(),
 });
 
 const renewPlanValidationSchema = Joi.object({

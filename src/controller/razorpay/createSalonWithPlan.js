@@ -27,7 +27,8 @@ const createSalonWithPlan = async (request, response) => {
             orderId,
             totalAmount,
             // grandTotal,
-            businessHours
+            businessHours,
+            services
         } = request.body;
 
         /* ---------------- VALIDATION ---------------- */
@@ -46,7 +47,8 @@ const createSalonWithPlan = async (request, response) => {
                 paymentId,
                 orderId,
                 totalAmount,
-                businessHours
+                businessHours,
+                services
                 // grandTotal,
             },
             { abortEarly: true }
@@ -118,7 +120,8 @@ const createSalonWithPlan = async (request, response) => {
                 message: "Salon creation failed",
             });
         }
-        
+
+        //create buisnessHours
         await db.BusinessHours.create({
             salonId: salon.salonId,
             openingTime: businessHours.openingTime,
@@ -128,6 +131,20 @@ const createSalonWithPlan = async (request, response) => {
             holidayDays: businessHours.holidayDays || [],
             isOpen: true
         }, { transaction: t });
+
+        //create services        
+        if (services && services?.length > 0) {
+            const servicesData = services.map(service => ({
+                salonId: salon.salonId,
+                serviceName: service.serviceName,
+                description: service.description || null,
+                durationMinutes: service.durationMinutes,
+                price: service.price || 0
+            }));
+
+            await db.Service.bulkCreate(servicesData, { transaction: t });
+        }
+
 
         // add payment logs in transaction , also capture the payment automatically
         const value = await razorpay.payments.fetch(paymentId);
@@ -146,11 +163,11 @@ const createSalonWithPlan = async (request, response) => {
 
 
         await transactionService.addTransaction(TransactionData, t);
-        await razorpay.payments.capture(
-            value?.id,
-            value?.amount,
-            value?.currency
-        );
+        // await razorpay.payments.capture(
+        //     value?.id,
+        //     value?.amount,
+        //     value?.currency
+        // );
 
         await t.commit()
 
