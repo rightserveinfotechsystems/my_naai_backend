@@ -48,6 +48,8 @@ salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
 salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
 salonRouter.post('/delete-salon-service', authenticateSalon, deleteService);
 salonRouter.post('/renew-salon-plan',authenticateSalon, renewSalonPlan);
+salonRouter.post('/delete-service', deleteSalonService);
+
 
 
 //user login   
