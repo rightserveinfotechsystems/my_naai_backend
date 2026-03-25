@@ -83,6 +83,11 @@ const createSalonWithPlan = async (request, response) => {
             if (isAgentExist) {
                 createdBy = isAgentExist.id;
             } else {
+
+                //add agent in db
+
+
+
                 // if user not found
                 await t.rollback();
                 return response.status(200).json({
