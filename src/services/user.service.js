@@ -292,6 +292,16 @@ const toggleUserBookmark = async (userId, salonId) => {
     }
 };
 
+const getUserSavedSalon = async (userId) => {
+    try {
+        return await db.Bookmark.findOne({
+            where: { userId }
+        });
+    } catch (error) {
+        throw error;
+    }
+
+};
 
 
 module.exports = {
@@ -309,5 +319,6 @@ module.exports = {
     removeUserSavedSalon,
     saveUserBookmark,
     removeUserBookmark,
-    toggleUserBookmark
+    toggleUserBookmark,
+    getUserSavedSalon
 };
