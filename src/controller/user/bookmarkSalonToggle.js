@@ -24,6 +24,18 @@ const saveSalonToggle = async (request, response) => {
                 message: 'Salon does not exist with this ID'
             });
         }
+
+          // check existing saved salon
+        const existingSavedSalon = await userService.getUserSavedSalon(userId);
+
+        // if already salon saved and it is different salon
+        if (existingSavedSalon && existingSavedSalon.salonId !== salonId) {
+            return response.status(400).json({
+                status: 'FAILED',
+                message: 'You can only save one salon at a time. Please unsave previous salon first.'
+            });
+        }
+
         // Toggle bookmark
         const saved = await userService.toggleUserBookmark(userId, salonId);
 
