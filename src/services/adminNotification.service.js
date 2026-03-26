@@ -8,54 +8,76 @@ const sendAdminNotification = async ({ targetType, title, body, data = {} }) => 
     try {
         let tokens = [];
 
-        // ✅ USERS
-        if (targetType === "ALL_USERS" || targetType === "ALL") {
+        if (targetType === "ALL_USERS") {
             const users = await db.User.findAll({
-                where: {
-                    deviceToken: { [Op.ne]: null }
-                },
+                where: { deviceToken: { [Op.ne]: null } },
                 attributes: ["deviceToken"]
             });
 
-            tokens.push(...users.map(u => u.deviceToken));
+            tokens = users.map(u => u.deviceToken);
         }
 
-        // ✅ SALONS
-        if (targetType === "ALL_SALONS" || targetType === "ALL") {
+        else if (targetType === "ALL_SALONS") {
             const salons = await db.DeviceToken.findAll({
-                where: {
-                    salonId: { [Op.ne]: null },
-                    isActive: true
-                },
+                where: { salonId: { [Op.ne]: null }, isActive: true },
                 attributes: ["deviceToken"]
             });
 
-            tokens.push(...salons.map(s => s.deviceToken));
+            tokens = salons.map(s => s.deviceToken);
         }
 
-        // 🔥 Clean tokens (remove duplicates + null)
+        else if (targetType === "ALL") {
+            const users = await db.User.findAll({
+                where: { deviceToken: { [Op.ne]: null } },
+                attributes: ["deviceToken"]
+            });
+
+            const salons = await db.DeviceToken.findAll({
+                where: { salonId: { [Op.ne]: null }, isActive: true },
+                attributes: ["deviceToken"]
+            });
+
+            tokens = [
+                ...users.map(u => u.deviceToken),
+                ...salons.map(s => s.deviceToken)
+            ];
+        }
+
+        else {
+            throw new Error("Invalid targetType");
+        }
+
+        // clean tokens
         tokens = [...new Set(tokens.filter(Boolean))];
 
         if (!tokens.length) {
-            return false;
+            return { success: false, message: "No tokens found" };
         }
-
-        // ✅ SAVE notification (history)
-        await db.AdminNotification.create({
-            targetType,
-            title,
-            body
-        });
 
         console.log(`📢 Sending notification to ${tokens.length} devices`);
 
-        // 🔥 SEND (safe way)
         const results = await Promise.allSettled(
             tokens.map(token =>
                 sendNotificationToDevice(token, title, body, data)
             )
         );
-        return true;
+
+        const successCount = results.filter(r => r.status === "fulfilled").length;
+
+        if (successCount > 0) {
+            await db.AdminNotification.create({
+                targetType,
+                title,
+                body
+            });
+        }
+
+        return {
+            success: true,
+            total: tokens.length,
+            successCount,
+            failedCount: tokens.length - successCount
+        };
 
     } catch (error) {
         console.error("❌ Notification Error:", error);
@@ -78,7 +100,7 @@ const getAdminNotificationList = async ({ page = 1, searchString = '' }) => {
             where[Op.or] = [
                 { title: { [Op.iLike]: like } },
                 { body: { [Op.iLike]: like } },
-                { targetType: { [Op.iLike]: like } }
+                // { targetType: { [Op.iLike]: like } }
             ];
         }
 

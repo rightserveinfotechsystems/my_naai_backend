@@ -170,7 +170,7 @@ const updateSalonValidationSchemaApp = Joi.object({
     email: Joi.string().email().allow(null, ''),
     addressLine1: Joi.string().min(5).max(255).allow(null, '').optional(),
     addressLine2: Joi.string().max(255).allow(null, '').optional(),
-    city: Joi.string().min(2).max(100).optional(),
+    city: Joi.string().min(2).max(100).allow(null, '').optional(),
     state: Joi.string().min(2).max(100).optional().allow(null, ''),
     pincode: Joi.string().pattern(/^[0-9]{6}$/).optional().allow(null, ''),
     latitude: Joi.number().allow(null),
