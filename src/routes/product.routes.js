@@ -6,6 +6,7 @@ const productList = require('../controller/product/getProductList');
 const deleteProduct = require('../controller/product/deleteProduct');
 const getAllSalonsProducts = require('../controller/product/allSalonsProductsList');
 const authenticateUser = require('../utils/middleware/authUser.middleware');
+const checkPlanActive = require('../utils/middleware/checkPlanActive');
 
 
 const productRouter = express.Router();
@@ -18,7 +19,7 @@ productRouter.use(authenticateSalon);
 
 productRouter.post('/create', addProduct);
 productRouter.post('/update', updateProduct);
-productRouter.post('/list',  productList);
+productRouter.post('/list', checkPlanActive , productList);
 productRouter.post('/delete',  deleteProduct);
 
 
