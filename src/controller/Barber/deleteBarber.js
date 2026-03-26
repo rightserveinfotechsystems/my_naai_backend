@@ -13,22 +13,22 @@ const deleteBarber = async (request, response) => {
         }
 
         //  Check if barber has active bookings/queues
-        const hasActiveBookings = await barberService.hasActiveBookings(barberId);
-        const hasActiveQueues = await barberService.hasActiveQueues(barberId);
+        // const hasActiveBookings = await barberService.hasActiveBookings(barberId);
+        // const hasActiveQueues = await barberService.hasActiveQueues(barberId);
 
-        if (hasActiveBookings) {
-            return response.status(400).json({
-                status: 'FAILED',
-                message: 'Cannot delete barber with active bookings. Please complete or cancel them first.'
-            });
-        }
+        // if (hasActiveBookings) {
+        //     return response.status(400).json({
+        //         status: 'FAILED',
+        //         message: 'Cannot delete barber with active bookings. Please complete or cancel them first.'
+        //     });
+        // }
 
-        if (hasActiveQueues) {
-            return response.status(400).json({
-                status: 'FAILED',
-                message: 'Cannot delete barber with active queues. Please complete or serve them first.'
-            });
-        }
+        // if (hasActiveQueues) {
+        //     return response.status(400).json({
+        //         status: 'FAILED',
+        //         message: 'Cannot delete barber with active queues. Please complete or serve them first.'
+        //     });
+        // }
 
         //  Soft delete barber
         const result = await barberService.deleteBarber(barberId);

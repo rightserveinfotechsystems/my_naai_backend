@@ -18,8 +18,8 @@ barberRouter.post('/send-otp', sendBarberOtp);
 barberRouter.post('/login', verifyBarberOtpLogin);
 
 //barber authenticate api
-barberRouter.get('/get-profile',authenticateBarber,getBarberProfile);
-barberRouter.post('/update',authenticateBarber, updateBarber);
+barberRouter.get('/get-profile', authenticateBarber, getBarberProfile);
+barberRouter.post('/update', authenticateBarber, updateBarber);
 
 
 
@@ -27,7 +27,7 @@ barberRouter.post('/update',authenticateBarber, updateBarber);
 barberRouter.post('/create-barber', authenticateSalon, createBarber);
 barberRouter.post('/get-barbers-list', authenticateSalon, getBarberList);
 barberRouter.post('/toggle-status', authenticateSalon, toggleStatus);
-barberRouter.delete('/delete',authenticateSalon,deleteBarber );
+barberRouter.delete('/delete-barber', authenticateSalon, deleteBarber);
 barberRouter.post('/toggle-availability', authenticateSalon, toggleAvailability);
 barberRouter.get('/get-salon-barbers', authenticateSalon, getSalonBarbers);
 
