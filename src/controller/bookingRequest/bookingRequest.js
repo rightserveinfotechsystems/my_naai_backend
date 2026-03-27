@@ -214,8 +214,8 @@ const createBookingRequest = async (req, res) => {
         return res.status(200).json({
             status: 'SUCCESS',
             message: 'Booking request sent to salon owner',
-            // data: bookingRequest,
-             ...bookingRequest.toJSON(),
+            data: bookingRequest,
+            //  ...bookingRequest.toJSON(),
             notificationId: notification.notificationId || notification.notification_id
         });
 
