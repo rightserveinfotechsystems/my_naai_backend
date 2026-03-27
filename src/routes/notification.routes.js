@@ -4,10 +4,14 @@ const getNotificationCount = require('../controller/notification/getSalonNotific
 const getSalonNotifications = require('../controller/notification/getNotification');
 const deleteNotifications = require('../controller/notification/deleteNotification');
 const checkPlanActive = require('../utils/middleware/checkPlanActive');
+const authenticateUser = require('../utils/middleware/authUser.middleware');
+const getUserNotifications = require('../controller/notification/getUserNotificationList');
 const notificationRouter = express.Router();
 
 notificationRouter.get('/get-notification-count', authenticateSalon, getNotificationCount);
 notificationRouter.post('/get-notification-list', authenticateSalon, checkPlanActive, getSalonNotifications);
 notificationRouter.post('/delete-notification', authenticateSalon, deleteNotifications);
+notificationRouter.post('/get-user-notification-list', authenticateUser, getUserNotifications);
+
 
 module.exports = notificationRouter;
