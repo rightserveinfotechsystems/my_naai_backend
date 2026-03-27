@@ -2,7 +2,7 @@ const notificationService = require('../../services/notification.service');
 
 const getSalonNotifications = async (request, response) => {
     try {
-        const salonId = request.salon.SalonId;
+        const salonId = request.salon.salonId;
 
         const { page, searchString } = request.body || {};
 

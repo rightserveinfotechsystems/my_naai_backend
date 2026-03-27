@@ -203,6 +203,7 @@ const createBookingRequest = async (req, res) => {
         }
 
         req.io.to(`salon_${salonId}`).emit("new_notification", {
+            notificationId: notification.notificationId,
             title: "New Booking",
             message: `You have received a new booking request from ${userName}${barberName ? ` for ${barberName}` : ''}`,
             bookingId: bookingRequest.bookingRequestId
@@ -213,7 +214,9 @@ const createBookingRequest = async (req, res) => {
         return res.status(200).json({
             status: 'SUCCESS',
             message: 'Booking request sent to salon owner',
-            data: bookingRequest
+            // data: bookingRequest,
+             ...bookingRequest.toJSON(),
+            notificationId: notification.notificationId || notification.notification_id
         });
 
     } catch (error) {
