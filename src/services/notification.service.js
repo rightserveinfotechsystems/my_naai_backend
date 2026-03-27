@@ -1,5 +1,8 @@
 const db = require('../database/models');
+const { Op } = require('sequelize');
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
+
+
 const getSalonNotificationCount = async (salonId) => {
     return await db.Notification.count({
         where: {
@@ -26,7 +29,7 @@ const getNotificationsByIds = async (notificationIds = []) => {
 };
 
 
-const getNotificationList = async ({salonId, page = 1, searchString = '' }) => {
+const getNotificationList = async ({ salonId, page = 1, searchString = '' }) => {
     try {
         const limit = DEFAULT_LIMIT;
         const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
@@ -47,27 +50,67 @@ const getNotificationList = async ({salonId, page = 1, searchString = '' }) => {
             ];
         }
 
-        const { count: totalNotifications, rows: notifications } = await db.Notification.findAndCountAll({
+        const bookingNotifications = await db.Notification.findAll({
             where,
-            attributes: ['notificationId', 'title', 'message', 'createdAt'
-            ],
-            order: [['createdAt', 'DESC']],
-            limit,
-            offset,
+            attributes: [
+                ['notification_id', 'id'],
+                'title',
+                ['message', 'body'],
+                'createdAt'
+            ]
         });
 
-        const totalPages = Math.ceil(totalNotifications / limit) || 1;
-        //  Mark all fetched notifications as read
-        const unreadIds = notifications.filter(n => !n.isRead).map(n => n.notificationId);
-        if (unreadIds.length > 0) {
-            await db.Notification.update(
-                { isRead: true },
-                { where: { notificationId: unreadIds } }
-            );
+        const adminWhere = {
+            targetType: {
+                [Op.in]: ['ALL', 'ALL_SALONS']
+            }
+        };
+        if (searchString?.trim()) {
+            const like = `%${searchString}%`;
+            adminWhere[Op.or] = [
+                { title: { [Op.iLike]: like } },
+                { body: { [Op.iLike]: like } }
+            ];
         }
 
+        const adminNotifications = await db.AdminNotification.findAll({
+            where: adminWhere,
+            attributes: [
+                'id',
+                'title',
+                ['body', 'body'],
+                'createdAt'
+            ]
+        });
+
+        const formattedBooking = bookingNotifications.map(n => ({
+            ...n.toJSON(),
+            type: 'BOOKING'
+        }));
+
+        const formattedAdmin = adminNotifications.map(n => ({
+            ...n.toJSON(),
+            type: 'ADMIN'
+        }));
+
+        let merged = [...formattedBooking, ...formattedAdmin];
+
+        merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        const totalNotifications = merged.length;
+        const paginated = merged.slice(offset, offset + limit);
+        const totalPages = Math.ceil(totalNotifications / limit) || 1;
+        //  Mark all fetched notifications as read
+        // const unreadIds = notifications.filter(n => !n.isRead).map(n => n.notificationId);
+        // if (unreadIds.length > 0) {
+        //     await db.Notification.update(
+        //         { isRead: true },
+        //         { where: { notificationId: unreadIds } }
+        //     );
+        // }
+
         return {
-            notifications,
+            notifications: paginated,
             pagination: {
                 page: safePage,
                 limit,
