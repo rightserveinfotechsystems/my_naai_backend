@@ -10,11 +10,11 @@ const getSalonNotificationCount = async (salonId) => {
     });
 };
 
-const getNotificationById =   async (notificationId) => {
+const getNotificationById = async (notificationId) => {
     return await db.Notification.findOne({
         where: { notificationId }
     });
-};     
+};
 
 const getNotificationsByIds = async (notificationIds = []) => {
     return await db.Notification.findAll({
@@ -26,13 +26,15 @@ const getNotificationsByIds = async (notificationIds = []) => {
 };
 
 
-const getNotificationList = async ({ page = 1, searchString = '' }) => {
+const getNotificationList = async ({salonId, page = 1, searchString = '' }) => {
     try {
         const limit = DEFAULT_LIMIT;
         const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
         const offset = (safePage - 1) * limit;
 
         const where = {
+            receiverType: 'SALON',
+            receiverId: salonId
         };
 
 
@@ -47,7 +49,7 @@ const getNotificationList = async ({ page = 1, searchString = '' }) => {
 
         const { count: totalNotifications, rows: notifications } = await db.Notification.findAndCountAll({
             where,
-            attributes: ['notificationId',  'title', 'message', 'createdAt'
+            attributes: ['notificationId', 'title', 'message', 'createdAt'
             ],
             order: [['createdAt', 'DESC']],
             limit,

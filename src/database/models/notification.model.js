@@ -4,25 +4,33 @@ module.exports = (sequelize) => {
     notificationId: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
+      field: 'notification_id'
     },
 
     receiverType: {
       type: DataTypes.ENUM('SALON', 'USER'),
-      allowNull: false
-    },
+      allowNull: false,
+      field: 'receiver_type'
+},
 
-    receiverId: {
+    receiverId: {    
       type: DataTypes.UUID,
-      allowNull: false
+      allowNull: false,
+      field: 'receiver_id'
     },
 
-    title: DataTypes.STRING,
-    message: DataTypes.STRING,
+    title: {
+      type: DataTypes.STRING,
+    },
+    message: {
+      type: DataTypes.STRING
+    },
 
     isRead: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false
+      defaultValue: false,
+      field: 'is_read'
     }
   }, {
     tableName: 'notifications',
