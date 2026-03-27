@@ -22,7 +22,7 @@ const verifySalonOtpRegister = async (request, response) => {
             where: {
                 phoneNumber: phoneNumber,
                 otpCode: otp,
-                purpose: 'login',
+                purpose: 'registration',
                 isVerified: false
             },
             order: [['createdAt', 'DESC']]
@@ -70,7 +70,7 @@ const verifySalonOtpRegister = async (request, response) => {
 
         return response.status(200).json({
             status: 'SUCCESS',
-            message: 'Phone Number Verify successful',
+            message: 'Phone number verified successfuliy',
            
         });
     } catch (error) {
