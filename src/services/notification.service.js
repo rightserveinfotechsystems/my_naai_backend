@@ -125,6 +125,114 @@ const getNotificationList = async ({ salonId, page = 1, searchString = '' }) => 
 };
 
 
+const geUsertNotificationList = async ({ userId, page = 1, searchString = '' }) => {
+    try {
+        const limit = DEFAULT_LIMIT;
+        const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+        const offset = (safePage - 1) * limit;
+
+        const userWhere  = {
+            receiverType: 'USER',
+            receiverId: userId
+        };
+
+
+        // 🔹 Search logic
+        if ( searchString?.trim()) {
+            const like = `%${searchString}%`;
+            userWhere [Op.or] = [
+                { title: { [Op.iLike]: like } },
+                { message: { [Op.iLike]: like } },
+            ];
+        }
+
+        // const bookingNotifications = await db.Notification.findAll({
+        //     where,
+        //     attributes: [
+        //         ['notification_id', 'id'],
+        //         'title',
+        //         ['message', 'body'],
+        //         'createdAt'
+        //     ]
+        // });
+
+           const userNotifications = await db.Notification.findAll({
+            where: userWhere,
+            attributes: [
+                ['notification_id', 'id'],
+                'title',
+                ['message', 'body'],
+                'createdAt'
+            ]
+        });
+
+        const adminWhere = {
+            targetType: {
+                [Op.in]: ['ALL', 'ALL_USERS']
+            }
+        };
+        if (searchString?.trim()) {
+            const like = `%${searchString}%`;
+            adminWhere[Op.or] = [
+                { title: { [Op.iLike]: like } },
+                { body: { [Op.iLike]: like } }
+            ];
+        }
+
+        const adminNotifications = await db.AdminNotification.findAll({
+            where: adminWhere,
+            attributes: [
+                'id',
+                'title',
+                ['body', 'body'],
+                'createdAt'
+            ]
+        });
+
+        // MERGE
+        const formattedUser = userNotifications.map(n => ({
+            ...n.toJSON(),
+            type: 'BOOKING'
+        }));
+
+        const formattedAdmin = adminNotifications.map(n => ({
+            ...n.toJSON(),
+            type: 'ADMIN'
+        }));
+
+        let merged = [...formattedUser, ...formattedAdmin];
+
+        //sort
+        merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        //pagination
+        const totalNotifications = merged.length;
+        const paginated = merged.slice(offset, offset + limit);
+        const totalPages = Math.ceil(totalNotifications / limit) || 1;
+        //  Mark all fetched notifications as read
+        // const unreadIds = notifications.filter(n => !n.isRead).map(n => n.notificationId);
+        // if (unreadIds.length > 0) {
+        //     await db.Notification.update(
+        //         { isRead: true },
+        //         { where: { notificationId: unreadIds } }
+        //     );
+        // }
+
+        return {
+            notifications: paginated,
+            pagination: {
+                page: safePage,
+                limit,
+                totalNotifications,
+                totalPages,
+            },
+        };
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+};
+
 const markNotificationAsRead = async (notificationId, salonId) => {
     return await db.Notification.update(
         { isRead: true },
@@ -169,5 +277,6 @@ module.exports = {
     markNotificationAsRead,
     deleteNotification,
     getNotificationById,
-    getNotificationsByIds
+    getNotificationsByIds,
+    geUsertNotificationList
 };
