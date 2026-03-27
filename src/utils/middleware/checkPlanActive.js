@@ -20,6 +20,7 @@ const checkPlanActive = async (request, response, next) => {
 
     if (!salon.isPlanActive) {
       return response.status(403).json({
+        status: "PLAN_EXPIRED",
         message: "Your plan is finished, please renew"
       });
     }
