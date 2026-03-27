@@ -26,6 +26,7 @@ const createSalonWithPlan = async (request, response) => {
             paymentId,
             orderId,
             totalAmount,
+            deviceToken,
             // grandTotal,
             businessHours,
             services
@@ -47,6 +48,7 @@ const createSalonWithPlan = async (request, response) => {
                 paymentId,
                 orderId,
                 totalAmount,
+                deviceToken,
                 businessHours,
                 services
                 // grandTotal,
@@ -115,9 +117,7 @@ const createSalonWithPlan = async (request, response) => {
             isActive: true
         }, t);
 
-
-
-
+        // If salon creation failed (no salonId returned), rollback the transaction and send error response
         if (!salon?.salonId) {
             await t.rollback()
             return response.status(200).json({
@@ -148,6 +148,14 @@ const createSalonWithPlan = async (request, response) => {
             }));
 
             await db.Service.bulkCreate(servicesData, { transaction: t });
+        }
+
+        //insert devicetoken
+        if (deviceToken) {
+            await db.DeviceToken.create({
+                salonId: salon.salonId,
+                deviceToken
+            }, { transaction: t });
         }
 
 

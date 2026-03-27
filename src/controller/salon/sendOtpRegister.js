@@ -32,18 +32,18 @@ const sendRegisterSalonOtp = async (request, response) => {
     //  Generate OTP
     const otp = generateOtp(6);
 
-    // send otp
-
-    const messageResponse = await axios.get(`https://sms.adservs.co.in/vb/apikey.php?apikey=${process.env.SMS_SECRET_kEY}&senderid=MYNAAI&number=${phoneNumber}&templateid=1707176788643020944&message=Welcome%20to%20My%20Naai%20!%20Your%20login%20OTP%20is%20${otp}.%20Please%20enter%20this%20to%20verify%20your%20account.%20MYNAAI`)
-    if (messageResponse && messageResponse?.data?.status?.toLowerCase() === "success") {
-      //  Save OTP in DB
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-      const otpLog = await db.OtpLog.create({
-        phoneNumber,
-        otpCode: otp,
-        purpose: 'login',
-        expiresAt
-      });
+  
+   // save OTP in DB (purpose: 'register')
+        const messageResponse = await axios.get(`https://sms.adservs.co.in/vb/apikey.php?apikey=${process.env.SMS_SECRET_kEY}&senderid=MYNAAI&number=${phoneNumber}&templateid=1707176786337855348&message=Welcome%20to%20My%20Naai%20!%20Your%20registration%20OTP%20is%20${otp}.%20Please%20enter%20this%20to%20verify%20your%20account.%20MYNAAI`)
+        if (messageResponse && messageResponse?.data?.status?.toLowerCase() === "success") {
+            //  Save OTP in DB
+            const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+            const otpLog = await db.OtpLog.create({
+                phoneNumber,
+                otpCode: otp,
+                purpose: 'registration',
+                expiresAt
+            });
 
       if (!otpLog) {
         return response.status(500).json({

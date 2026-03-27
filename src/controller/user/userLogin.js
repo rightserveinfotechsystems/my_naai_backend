@@ -81,7 +81,7 @@ const verifyOtpLogin = async (request, response) => {
         // Generate JWT token   
         const token = jwt.sign(
             { userId: user.userId },
-            process.env.JWT_SECRET || 'your-secret-key'
+            process.env.JWT_SECRET || 'secret_key'
         );
 
         //delete the verified otp
