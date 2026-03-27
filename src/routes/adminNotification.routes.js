@@ -4,8 +4,15 @@ const { authenticateAdmin } = require("../utils/middleware/auth.middleware");
 const getAdminNotificationsList = require("../controller/adminNotification/getNotificationList");
 const deleteAdminNotification = require("../controller/adminNotification/deleteAdminNotification");
 const getNotificationById = require("../controller/adminNotification/getNotificationById");
+const getUserAdminNotificationCount = require("../controller/adminNotification/getUserAdminNotificationCount");
+const authenticateUser = require("../utils/middleware/authUser.middleware");
 
 const adminNotificationRouter = express.Router();
+
+
+adminNotificationRouter.use(authenticateUser);
+adminNotificationRouter.get('/get-user-admin-notification-count', getUserAdminNotificationCount);
+
 
 // All routes require admin authentication
 adminNotificationRouter.use(authenticateAdmin);
@@ -14,6 +21,9 @@ adminNotificationRouter.post('/send-notification-by-admin', sendNotificationUser
 adminNotificationRouter.post('/get-admin-notification-list', getAdminNotificationsList);
 adminNotificationRouter.post('/delete-admin-notification', deleteAdminNotification);
 adminNotificationRouter.get('/get-admin-notification/:notificationId', getNotificationById);
+
+
+
 
 
 
