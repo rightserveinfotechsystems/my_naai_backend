@@ -169,9 +169,23 @@ const getAdminNotificationById = async (notificationId) => {
         throw error;
     }
 };
+
+const getUserAdminNotificationCount = async (userId) => {
+    return await db.AdminNotification.count({
+        where: {
+            isRead: false,
+            [Op.or]: [
+                { targetType: "ALL" },
+                { targetType: "ALL_USERS" }
+            ]
+        }
+    });
+};
+
 module.exports = {
     sendAdminNotification,
     getAdminNotificationList,
     deleteAdminNotification,
-    getAdminNotificationById
+    getAdminNotificationById,
+    getUserAdminNotificationCount
 };

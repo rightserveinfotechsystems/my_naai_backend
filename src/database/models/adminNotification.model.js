@@ -22,6 +22,11 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: false
         },
+        isRead: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+              field: 'is_read'
+        },
         createdAt: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -42,7 +47,7 @@ module.exports = (sequelize) => {
         createdBy: {
             type: DataTypes.INTEGER,
             allowNull: true,
-              field: 'created_by'
+            field: 'created_by'
         }
 
     }, {
