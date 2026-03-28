@@ -12,6 +12,7 @@ module.exports = (sequelize) => {
         mobile: {
             type: DataTypes.STRING(10),
             allowNull: true,
+            unique: true,
             validate: {
                 notEmpty: {
                     msg: 'Phone number is required'
@@ -63,7 +64,11 @@ module.exports = (sequelize) => {
             defaultValue: false,
             allowNull: true,
         },
-
+        isAutoCreated: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            allowNull: false,
+        },
         accessTab: {
             type: DataTypes.ARRAY(DataTypes.STRING), // ✅ Postgres only
             allowNull: true,

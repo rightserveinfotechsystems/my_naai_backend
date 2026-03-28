@@ -22,12 +22,22 @@ const loginAdmin = async (request, response) => {
             });
         }
 
+
+
         // Find admin by email or username
         const admin = await adminService.getAdminByEmail(email);
         if (!admin) {
             return response.status(401).json({
                 status: 'FAILED',
                 message: 'Invalid Email, Please check and try again'
+            });
+        }
+
+        //if admin is autocreated the block the login access
+        if (admin.isAutoCreated) {
+            return response.json({
+                status: "FAILED",
+                message: "Access denied"
             });
         }
 
@@ -38,9 +48,6 @@ const loginAdmin = async (request, response) => {
                 message: 'Your account has been deactivated. Please contact support.'
             });
         }
-
-
-
         // Verify password
         const isPasswordValid = await bcrypt.compare(password, admin.password);
         console.log('isPasswordValid:', isPasswordValid);
