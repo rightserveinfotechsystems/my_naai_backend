@@ -64,7 +64,7 @@ const createSalonWithPlan = async (request, response) => {
 
         /* ---------------- CALCULATE PLAN DATES ---------------- */
         // const planStartDate = new Date();
-        // const plans = {
+        // const plans = {  
         //     trial_2_months: 60,
         //     monthly: 30,
         //     quarterly: 90,
@@ -79,23 +79,44 @@ const createSalonWithPlan = async (request, response) => {
 
 
         let createdBy = null;
-
         if (agentCode) {
             const isAgentExist = await getAdminUserByPhone(agentCode);
             if (isAgentExist) {
-                createdBy = isAgentExist.id;
+                createdBy = isAgentExist?.id;
             } else {
-
                 //add agent in db
+                let agent = await db.Admin.create({
+                    mobile: agentCode,
+                    name: `Agent_${agentCode}`,
+                    email: `${agentCode}@auto.com`,
+                    password: "Pass123456",
+                    isAdmin: false,
+                    isAutoCreated: true,
+                    accessTab: []
+                }, { transaction: t });
 
+                createdBy = agent?.id;
 
+                let createdBy = null;
 
-                // if user not found
-                await t.rollback();
-                return response.status(200).json({
-                    status: "FAILED",
-                    message: "Invalid agent code",
-                });
+                //for race condition if two user trying to sae one number at a time 
+                // if (agentCode) {
+                //     const [agent, created] = await db.Admin.findOrCreate({
+                //         where: { mobile: agentCode },
+                //         defaults: {
+                //             mobile: agentCode,
+                //             name: `Agent_${agentCode}`,
+                //             email: `${agentCode}@auto.com`,
+                //             password: "123456",
+                //             isAdmin: false,
+                //             isAutoCreated: true,
+                //             accessTab: []
+                //         },
+                //         transaction: t
+                //     });
+
+                //     createdBy = agent.id;
+                // }
             }
         }
 
