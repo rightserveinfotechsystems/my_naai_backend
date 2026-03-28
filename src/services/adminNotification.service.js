@@ -85,59 +85,59 @@ const sendAdminNotification = async ({ targetType, title, body, data = {} }) => 
     }
 };
 
-const getAdminNotificationList = async ({ page = 1, searchString = '' }) => {
-    try {
-        const limit = DEFAULT_LIMIT;
-        const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
-        const offset = (safePage - 1) * limit;
+    const getAdminNotificationList = async ({ adminId, page = 1, searchString = '' }) => {
+        try {
+            const limit = DEFAULT_LIMIT;
+            const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+            const offset = (safePage - 1) * limit;
 
-        const where = {};
+            const where = { createdBy: adminId };
 
-        // 🔥 search
-        if (searchString && searchString.trim()) {
-            const like = `%${searchString.trim()}%`;
+            // 🔥 search
+            if (searchString && searchString.trim()) {
+                const like = `%${searchString.trim()}%`;
 
-            where[Op.or] = [
-                { title: { [Op.iLike]: like } },
-                { body: { [Op.iLike]: like } },
-                // { targetType: { [Op.iLike]: like } }
-            ];
+                where[Op.or] = [
+                    { title: { [Op.iLike]: like } },
+                    { body: { [Op.iLike]: like } },
+                    // { targetType: { [Op.iLike]: like } }
+                ];
+            }
+
+            const { count: totalNotifications, rows: notifications } =
+                await db.AdminNotification.findAndCountAll({
+                    where,
+                    attributes: [
+                        'id',
+                        'targetType',
+                        'title',
+                        'body',
+                        'createdAt'
+                    ],
+                    order: [['createdAt', 'DESC']],
+                    limit,
+                    offset,
+                });
+
+            const totalPages = Math.ceil(totalNotifications / limit) || 1;
+
+            const result = {
+                notifications,
+                pagination: {
+                    page: safePage,
+                    limit,
+                    totalNotifications,
+                    totalPages,
+                },
+            };
+
+            return result;
+
+        } catch (error) {
+            console.error(error);
+            throw error;
         }
-
-        const { count: totalNotifications, rows: notifications } =
-            await db.AdminNotification.findAndCountAll({
-                where,
-                attributes: [
-                    'id',
-                    'targetType',
-                    'title',
-                    'body',
-                    'createdAt'
-                ],
-                order: [['createdAt', 'DESC']],
-                limit,
-                offset,
-            });
-
-        const totalPages = Math.ceil(totalNotifications / limit) || 1;
-
-        const result = {
-            notifications,
-            pagination: {
-                page: safePage,
-                limit,
-                totalNotifications,
-                totalPages,
-            },
-        };
-
-        return result;
-
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
-};
+    };
 
 const deleteAdminNotification = async (notificationId) => {
     try {

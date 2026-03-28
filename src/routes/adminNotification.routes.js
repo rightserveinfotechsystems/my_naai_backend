@@ -9,9 +9,7 @@ const authenticateUser = require("../utils/middleware/authUser.middleware");
 
 const adminNotificationRouter = express.Router();
 
-
-adminNotificationRouter.use(authenticateUser);
-adminNotificationRouter.get('/get-user-admin-notification-count', getUserAdminNotificationCount);
+adminNotificationRouter.get('/get-user-admin-notification-count',authenticateUser, getUserAdminNotificationCount);
 
 
 // All routes require admin authentication

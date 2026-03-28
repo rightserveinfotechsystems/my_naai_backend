@@ -5,11 +5,11 @@ const adminService = require('../../services/admin.service');
 const createAdmin = async (request, response) => {
     try {
         // Extract data from request body
-        const { name, email, mobile, password } = request.body;
+        const { name, email, mobile, password,accessTab } = request.body;
 
         // Validate input
         const validationResult = createAdminValidationSchema.validate(
-            { name, email, mobile: mobile?.toString(), password },
+            { name, email, mobile: mobile?.toString(), password, accessTab},
             { abortEarly: true }
         );
 
@@ -35,10 +35,10 @@ const createAdmin = async (request, response) => {
             email: email.toLowerCase(),
             mobile: mobile,
             password,
-            isActive: true
+            accessTab,
+            isActive: true,
+            isAdmin: true
         };
-
-        console.log("dataToInsert", dataToInsert);
 
         // Insert data into database
         const result = await adminService.createAdmin(dataToInsert);
@@ -50,7 +50,8 @@ const createAdmin = async (request, response) => {
                     adminId: result.adminId,
                     email: result.email,
                     name: result.name,
-                    mobile: result.mobile
+                    mobile: result.mobile,
+                    accessTab:result.accessTab
                 }
             });
         } else {
