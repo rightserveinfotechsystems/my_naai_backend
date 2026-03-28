@@ -9,7 +9,7 @@ const getUserNotifications = require('../controller/notification/getUserNotifica
 const notificationRouter = express.Router();
 
 notificationRouter.get('/get-notification-count', authenticateSalon, getNotificationCount);
-notificationRouter.post('/get-notification-list', authenticateSalon, checkPlanActive, getSalonNotifications);
+notificationRouter.post('/get-salon-notification-list', authenticateSalon, checkPlanActive, getSalonNotifications);
 notificationRouter.post('/delete-notification', authenticateSalon, deleteNotifications);
 notificationRouter.post('/get-user-notification-list', authenticateUser, getUserNotifications);
 
