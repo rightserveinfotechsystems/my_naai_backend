@@ -2,10 +2,10 @@ const adminNotificationService = require('../../services/adminNotification.servi
 
 const getAdminNotificationsList = async (request, response) => {
     try {
-
+        const adminId = request.admin?.id;
         const { page, searchString } = request.body || {};
 
-        const notifications = await adminNotificationService.getAdminNotificationList({ page, searchString});
+        const notifications = await adminNotificationService.getAdminNotificationList({adminId, page, searchString });
         if (notifications.length === 0) {
             return response.status(200).json({
                 status: 'SUCCESS',
