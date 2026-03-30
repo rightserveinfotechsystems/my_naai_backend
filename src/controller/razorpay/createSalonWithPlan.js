@@ -97,8 +97,6 @@ const createSalonWithPlan = async (request, response) => {
 
                 createdBy = agent?.id;
 
-                let createdBy = null;
-
                 //for race condition if two user trying to sae one number at a time 
                 // if (agentCode) {
                 //     const [agent, created] = await db.Admin.findOrCreate({
