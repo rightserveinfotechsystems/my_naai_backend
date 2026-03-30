@@ -195,11 +195,11 @@ const createSalonWithPlan = async (request, response) => {
 
 
         await transactionService.addTransaction(TransactionData, t);
-        // await razorpay.payments.capture(
-        //     value?.id,
-        //     value?.amount,
-        //     value?.currency
-        // );
+        await razorpay.payments.capture(
+            value?.id,
+            value?.amount,
+            value?.currency
+        );
 
         await t.commit()
 
