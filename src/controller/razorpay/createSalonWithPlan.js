@@ -17,7 +17,7 @@ const createSalonWithPlan = async (request, response) => {
             ownerName,
             phoneNumber,
             addressLine1,
-            city,
+            // city,
             agentCode,
             genderType,
             latitude,
@@ -39,7 +39,7 @@ const createSalonWithPlan = async (request, response) => {
                 ownerName,
                 phoneNumber,
                 addressLine1,
-                city,
+                // city,
                 genderType,
                 agentCode,
                 latitude,
@@ -124,7 +124,7 @@ const createSalonWithPlan = async (request, response) => {
             ownerName,
             phoneNumber,
             addressLine1,
-            city,
+            // city,
             genderType,
             latitude,
             longitude,
@@ -195,11 +195,11 @@ const createSalonWithPlan = async (request, response) => {
 
 
         await transactionService.addTransaction(TransactionData, t);
-        await razorpay.payments.capture(
-            value?.id,
-            value?.amount,
-            value?.currency
-        );
+        // await razorpay.payments.capture(
+        //     value?.id,
+        //     value?.amount,
+        //     value?.currency
+        // );
 
         await t.commit()
 
