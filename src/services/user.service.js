@@ -303,6 +303,13 @@ const getUserSavedSalon = async (userId) => {
 
 };
 
+const getSaveSalonList = async () => {
+    try {
+        return await db.Bookmark.findAll();
+    } catch (error) {
+        throw error;
+    }
+};
 
 module.exports = {
     getUserByPhone,
@@ -320,5 +327,6 @@ module.exports = {
     saveUserBookmark,
     removeUserBookmark,
     toggleUserBookmark,
-    getUserSavedSalon
+    getUserSavedSalon,
+    getSaveSalonList
 };
