@@ -1,9 +1,7 @@
 const { Op, literal } = require('sequelize');
 const db = require('../database/models');
-
-
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
-const RADIUS = parseFloat(process.env.NEARBY_SALON_RADIUS) || 5;
+
 
 /**
  * Create salon
@@ -802,6 +800,11 @@ const deleteSalonByAdmin = async (salonId) => {
       {
         phoneNumber: updatedPhone
       });
+
+    // delete bookmarks BEFORE soft delete
+    await db.Bookmark.destroy({
+      where: { salonId }
+    });
     // soft delete (paranoid)
     await salon.destroy();
     return true;
@@ -831,7 +834,7 @@ const getSalonsByAgent = async ({ agentId, page = 1, searchString = '' }) => {
 
     const { count: totalSalons, rows: salons } = await db.Salon.findAndCountAll({
       where,
-      attributes: ['salonId', 'salonName', 'ownerName', 'phoneNumber', 'addressLine1', 'planType', 'planEndDate', 'isActive', 'createdAt'
+      attributes: ['salonId', 'salonName', 'ownerName', 'phoneNumber', 'addressLine1', 'planType', 'planStartDate', 'planEndDate', 'isPlanActive', 'isActive', 'createdAt'
       ],
       order: [['createdAt', 'DESC']],
       limit,

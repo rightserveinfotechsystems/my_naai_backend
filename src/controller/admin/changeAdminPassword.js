@@ -34,8 +34,8 @@ const changePassword = async (request, response) => {
         }
 
         console.log('ADMIN FROM DB =>', admin?.toJSON?.() || admin);
-console.log('currentPassword =>', currentPassword);
-console.log('admin.password =>', admin?.password);
+        // console.log('currentPassword =>', currentPassword);
+        // console.log('admin.password =>', admin?.password);
 
 
         // Verify current password

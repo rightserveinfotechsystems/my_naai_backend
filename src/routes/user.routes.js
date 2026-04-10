@@ -8,36 +8,38 @@ const authenticateUser = require('../utils/middleware/authUser.middleware');
 const getUserById = require('../controller/user/getUserById');
 // const authenticateAdmin = require('../utils/middleware/authAdmin.middleware');
 const getUserList = require('../controller/user/getUserList');
-const {authenticateAdmin } = require('../utils/middleware/auth.middleware');
+const { authenticateAdmin } = require('../utils/middleware/auth.middleware');
 const changeUserStatus = require('../controller/user/disableUser');
 const sendOtpRegister = require('../controller/user/send-otp-register');
 const deleteUser = require('../controller/user/deleteUser');
 const saveSalon = require('../controller/user/saveSalon');
 const removeSavedSalon = require('../controller/user/removeSaveSalon');
 const saveSalonToggle = require('../controller/user/bookmarkSalonToggle');
+const { getSaveSalonListController } = require('../controller/user/getSaveSalonList');
 
 
 
 // Define your user routes here
 const userRouter = express.Router();
 
-userRouter.post('/send-otp-register', sendOtpRegister); 
-userRouter.post('/create',createUser);
-userRouter.post('/send-otp', sendOtp);   
+userRouter.post('/send-otp-register', sendOtpRegister);
+userRouter.post('/create', createUser);
+userRouter.post('/send-otp', sendOtp);
 userRouter.post('/verify-otp', verifyOtpLogin);
 userRouter.get('/profile', authenticateUser, getUserById);
 userRouter.post('/update', authenticateUser, updateUser);
 userRouter.post('/save-salon', authenticateUser, saveSalon);
 userRouter.post('/remove-salon', authenticateUser, removeSavedSalon);
 userRouter.post('/toggle-saved-salon', authenticateUser, saveSalonToggle);
+userRouter.get('/get-save-salon-list', authenticateUser, getSaveSalonListController);
 
 
-   
+
 
 
 userRouter.post('/get-user-list', authenticateAdmin, getUserList);
-userRouter.post('/change-user-status',authenticateAdmin, changeUserStatus);
-userRouter.post('/delete-user',authenticateAdmin, deleteUser);
+userRouter.post('/change-user-status', authenticateAdmin, changeUserStatus);
+userRouter.post('/delete-user', authenticateAdmin, deleteUser);
 
 
 
