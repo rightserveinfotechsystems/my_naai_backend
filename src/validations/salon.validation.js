@@ -308,7 +308,7 @@ const salonCreateValidationSchema = Joi.object({
     salonName: Joi.string().trim().required(),
     phoneNumber: Joi.string().trim().pattern(/^[0-9]{10}$/).required(),
     addressLine1: Joi.string().trim().required(),
-    addressLine2: Joi.string().trim().required(),
+    addressLine2: Joi.string().trim().allow('').optional(),
     city: Joi.string().trim().allow('').optional(),
     // .valid('Katol', 'Warud', 'Karanja', 'Nagpur', 'Wardha', 'Kalmeshwar'),
     agentCode: Joi.string().trim().optional().allow(''),
