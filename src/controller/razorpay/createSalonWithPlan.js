@@ -17,6 +17,7 @@ const createSalonWithPlan = async (request, response) => {
             ownerName,
             phoneNumber,
             addressLine1,
+            addressLine2,
             // city,
             agentCode,
             genderType,
@@ -39,6 +40,7 @@ const createSalonWithPlan = async (request, response) => {
                 ownerName,
                 phoneNumber,
                 addressLine1,
+                addressLine2,
                 // city,
                 genderType,
                 agentCode,
@@ -124,6 +126,7 @@ const createSalonWithPlan = async (request, response) => {
             ownerName,
             phoneNumber,
             addressLine1,
+            addressLine2,
             // city,
             genderType,
             latitude,
@@ -179,7 +182,7 @@ const createSalonWithPlan = async (request, response) => {
 
 
         // add payment logs in transaction , also capture the payment automatically
-        const value = await razorpay.payments.fetch(paymentId);
+        // const value = await razorpay.payments.fetch(paymentId);
         const amount = (value?.amount / 100).toFixed(2);
         const TransactionData = {
             salonId: salon?.salonId ?? null,
