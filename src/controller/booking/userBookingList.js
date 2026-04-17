@@ -23,7 +23,8 @@ const userGetBookingList = async (request, response) => {
     const bookingsData = await Promise.all(
       result.bookings.map(async (booking) => {
         const services = booking.services || [];
-
+console.log("SALON OBJECT:", booking.salon);
+console.log("SALON KEYS:", booking.salon ? Object.keys(booking.salon) : null);
         const waitingTime =
           booking.queue?.queueNumber
             ? await BookingService.getUserWaitingTime(booking)
