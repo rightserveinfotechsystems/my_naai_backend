@@ -208,7 +208,7 @@ const ownerActionBooking = async (req, res) => {
         }
 
         await t.rollback();
-        return res.status(400).json({ status: 'FAILED', message: 'Invalid action' });
+        return res.status(400).json({ status: 'FAILED', message: 'Invalid action. Allowed values: ACCEPT, REJECT, DELAY' });
 
     } catch (error) {
         await t.rollback();

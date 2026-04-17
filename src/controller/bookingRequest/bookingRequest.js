@@ -3,6 +3,7 @@ const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 const { scheduleAutoCancelTask } = require('../../tasks/autoCancelTask');
+const { createBookingRequestSchema } = require('../../validations/bookingRequest.validation');
 
 
 // 24-hour time (HH:mm) to 12-hour format with AM/PM
@@ -25,7 +26,6 @@ const createBookingRequest = async (req, res) => {
     try {
         const userId = req.user.id;
         const { salonId, barberId, services, bookingDate, bookingTime } = req.body || {};
-
         // ----------------------------
         // 1️⃣ Basic validation
         // ----------------------------
@@ -36,6 +36,16 @@ const createBookingRequest = async (req, res) => {
                 message: 'Required fields missing'
             });
         }
+  
+        // const validationResult = await createBookingRequestSchema.validate(req.body);
+        // if (validationResult.error) {
+        //     await t.rollback();
+        //     return res.status(400).json({
+        //         status: 'FAILED',
+        //         message: validationResult.error.details[0].message
+        //     });
+        // }
+
 
         // ✅ Date validation: only today + 2 days
         const today = new Date();
