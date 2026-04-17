@@ -687,20 +687,23 @@ const userListBookings = async (userId, {
         { model: Queue, as: 'queue', attributes: [] },
         // { model: Service, as: 'service', attributes: [] },
         { model: Salon, as: 'salon', attributes: [] },
-        { model: Barber, as: 'barber', attributes: ['fullName'] }
+        { model: Barber, as: 'barber', attributes: [] }
       ]
     });
 
     // Fetch bookings
     const bookings = await Booking.findAll({
       where,
-      attributes: ['bookingId', 'salonId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services','barberId'],
+      attributes: ['bookingId', 'salonId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services',],
       include: [
         { model: Queue, as: 'queue', attributes: ['queueNumber', 'status'] },
         // { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
         { model: Salon, as: 'salon', attributes: ['salonName', 'city', 'addressLine1', 'phoneNumber', 'imageUrl'] },
 
-        { model: Barber, as: 'barber', attributes: ['fullName'] }
+        {
+          model: Barber, as: 'barber', attributes: ['barberId', 'fullName'],
+          required: false
+        }
       ],
       order: [['bookingDate', 'DESC'], ['createdAt', 'DESC']],
       limit: safeLimit,
@@ -718,6 +721,7 @@ const userListBookings = async (userId, {
     throw error;
   }
 };
+
 
 
 const getUserWaitingTime = async (booking) => {
