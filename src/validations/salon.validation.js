@@ -43,12 +43,11 @@ const createSalonValidationSchema = Joi.object({
     email: Joi.string().email().allow(null, ''),
     addressLine1: Joi.string().min(5).max(255).optional().allow(null, ''),
     addressLine2: Joi.string().max(255).optional().allow(null, ''),
-    city: Joi.string().min(2).max(100).required().messages({
-        'string.empty': 'City is required'
+    city: Joi.string().min(2).max(100).allow(null, '').optional().messages({
+        'string.empty': 'City is optional'
     }),
     state: Joi.string().min(2).max(100).optional().allow(null, ''),
     pincode: Joi.string().pattern(/^[0-9]{6}$/).allow(null, '').optional().messages({
-        'string.empty': 'Pincode is required',
         'string.pattern.base': 'Pincode must be 6 digits'
     }),
     genderType: Joi.string().valid('MALE', 'FEMALE', 'UNISEX').required().messages({
