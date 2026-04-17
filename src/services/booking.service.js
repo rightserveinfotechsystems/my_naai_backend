@@ -694,11 +694,11 @@ const userListBookings = async (userId, {
     // Fetch bookings
     const bookings = await Booking.findAll({
       where,
-      attributes: ['bookingId', 'salonId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services'],
+      attributes: ['bookingId', 'salonId', 'bookingDate', 'bookingTime', 'bookingStatus', 'amount', 'services','barberId'],
       include: [
         { model: Queue, as: 'queue', attributes: ['queueNumber', 'status'] },
         // { model: Service, as: 'service', attributes: ['serviceName', 'durationMinutes'] },
-        { model: Salon, as: 'salon', attributes: ['salonName', 'city', 'phoneNumber', 'imageUrl'] },
+        { model: Salon, as: 'salon', attributes: ['salonName', 'city', 'addressLine1', 'phoneNumber', 'imageUrl'] },
 
         { model: Barber, as: 'barber', attributes: ['fullName'] }
       ],

@@ -4,7 +4,7 @@ const BookingService = require('../../services/booking.service');
 const userGetBookingList = async (request, response) => {
   try {
 
-    const userId  = request.user?.id;
+    const userId = request.user?.id;
 
     if (!userId) {
       return response.status(400).json({
@@ -23,8 +23,7 @@ const userGetBookingList = async (request, response) => {
     const bookingsData = await Promise.all(
       result.bookings.map(async (booking) => {
         const services = booking.services || [];
-console.log("SALON OBJECT:", booking.salon);
-console.log("SALON KEYS:", booking.salon ? Object.keys(booking.salon) : null);
+         console.log("FULL BOOKING:", booking);
         const waitingTime =
           booking.queue?.queueNumber
             ? await BookingService.getUserWaitingTime(booking)
@@ -32,7 +31,8 @@ console.log("SALON KEYS:", booking.salon ? Object.keys(booking.salon) : null);
         return {
           bookingId: booking.bookingId,
           salonName: booking.salon?.salonName || '',
-          salonCity: booking.salon?.city || '',
+          // salonName: booking.salon?.salonName || booking.salon?.name || 'N/A',
+          salonCity: booking.salon?.addressLine1  || '',
           salonImage: booking.salon?.imageUrl,
           // ✅ Correct key from JSON
           serviceName: services.map(s => s.name).join(', '),
@@ -49,7 +49,7 @@ console.log("SALON KEYS:", booking.salon ? Object.keys(booking.salon) : null);
           bookingTime: booking.bookingTime,
           barberName: booking.barber?.fullName || '',
           status: booking.bookingStatus,
-          bookingRequestId: booking.bookingRequestId 
+          bookingRequestId: booking.bookingRequestId
         };
       }));
 
