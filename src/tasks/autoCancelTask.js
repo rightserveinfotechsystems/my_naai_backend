@@ -45,7 +45,7 @@ const scheduleAutoCancelTask = async ({
 }) => {
   const project = process.env.GCP_PROJECT_ID;
   const location = process.env.GCP_LOCATION;
-  const queue = 'auto-cancel-booking';
+  const queue = process.env.QUEUE_NAME;
 
   const url = `${process.env.BASE_URL}/api/bookingRequest/auto-cancel`;
 

@@ -3,7 +3,49 @@ const { Op } = require('sequelize');
 const db = require('../database/models');
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
 
+const getUserBookedSalons = async (userId) => {
+  try {
+    const bookings = await Booking.findAll({
+      where: { userId },
+      include: [
+        {
+          model: Salon,
+          as: 'salon',
+          attributes: ['salonId', 'salonName', 'city', 'addressLine1', 'imageUrl']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
 
+    // 🔥 unique salons map
+    const salonMap = new Map();
+
+    bookings.forEach((booking) => {
+      if (!booking.salon) return;
+
+      const salonId = booking.salon.salonId;
+
+      if (!salonMap.has(salonId)) {
+        salonMap.set(salonId, {
+          salonId,
+          salonName: booking.salon.salonName,
+          city: booking.salon.city,
+          addressLine1: booking.salon.addressLine1,
+          imageUrl: booking.salon.imageUrl,
+          totalBookings: 1,
+          lastBookingDate: booking.bookingDate
+        });
+      } else {
+        const existing = salonMap.get(salonId);
+        existing.totalBookings += 1;
+      }
+    });
+
+    return Array.from(salonMap.values());
+  } catch (error) {
+    throw error;
+  }
+};
 /**
  * Create user
  */
@@ -328,5 +370,6 @@ module.exports = {
     removeUserBookmark,
     toggleUserBookmark,
     getUserSavedSalon,
-    getSaveSalonList
+    getSaveSalonList,
+    getUserBookedSalons
 };

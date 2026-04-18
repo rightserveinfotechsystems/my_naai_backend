@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "mynaai-tasks-backend",
+  "private_key_id": "ddd534167d1bd87e8654934121ea9daee2047635",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCzC6s9MFC6NoVJ\nxprsl9fwwjOHUVX3KSPuN0TNwdioS7w3WJQFvJxMx749BRGLXwi+w8VuYrgJZooU\nR6LlzzphXJcCIZFMsAJN4FEjKMratOJ7lPM674p/p7SgRQozR43AxLmp02m/CyyB\nWqGZi4GtLXmjvzxcD9j/cZu/iFb/0Ivrq9F4f+DLnvzzcOLWnW5d2CBTNsNkTnIp\nLwtGuzIstdImdDlmmitkZcXl9GoJdT/eTvwGzf8yRFhtelxvGWOq2hFYjqlQ4ruo\n8r+MBQHlr+GHH6oGCTImk3syxvNEYFX4Qiwzz2LgR2Cb6sOpuAN73THrFU5K80Y4\n4e5M91EnAgMBAAECggEASodA8Gd8Mwce1GbndjR+nqk36cvhjNCDNFWtPjjChst/\nvUoR05F/Pjam6Z+CfhFBAqdbN2fAU6lrMKXhGOf51S1Fbo2qfdGGJASLwabpScCh\nxe9qj83GSPz2IwCaDl5qkyNQZXCrQ+rSy8V+HvwDLqMPTyn7ZhbyrOINgtyt2i2x\n8bL58eUt+vDW6RccTXKpQutdM0lhgw47sq+TPCpUjK+8BB64MGoHYjTNT2dtQRtr\nzmeXPZQeHR9dACxgu+vkcHN1Ff3MwGjTLYLxBdW+tnHeLAd6BzYbGXBrAvfRZ2pX\nEY6Zvtc7B+6swFjbcoMKRr8savBalXnvbtHavFnZAQKBgQDsgiqRINDUWK1NEmbw\nQLkiTGrSORuq7GuQJ5odZMqe7qMamZtnWwBVaBxQbFeFc/8FcKaR6CkarbGpTlaw\n4j2Jr1+mSPGhhNn1FDbiIGfFnF+bw8uFKZcHLZ+pSRs5++WYsfORHsRdmQ4uCA99\nX7xH0GfAsmDX8OOwb++rprwp+QKBgQDBzSf0eQZI9Ptt3xsDgmHoKw8DCpQ4CFRn\nxzgVQs6ipEhjSCETXgK3FzLxAZnr3GZXdu9hg0kxiAzO9QKhHLsdu5d+pDtCXvm6\nNaI0H20lWYYhv18yr9nlwldTTrFjaAzYo8uSZdASDGzN1p6BMJ9sTO2Hpgq+qvKP\ni/mHIg8cHwKBgQCZ6hP9opeEubj+gU1QaS6SbZzO9q9UysstYzhejKt4RuEKfJCv\n8H8FFd3nULqcdOKwDaG5Lpchb4xBHGQ6dOGLawAaXToy3Rxi7CbTfjdKWPu3iPI3\n1NsepshTCOqZD59ZgeV6ucUdDHA38LLz6ovDSJNcyjlQDsp+ljopQTcPMQKBgFds\nsOV74vXuba22w3zlyDzvj6oTj6FnQIxANnCA3q5H5c/DrggKlLb7ZCOMUV8w4Yn7\nQSmAC/ioIv8JT9JWH6LeCQ08EO9z4Lu7jhxtQNNkezmmFs/KvEUFUldmXGc3fPQN\nj7vO6fn6WOrSMladFI3KdiyHHrm8bAeNYVcwahiJAoGAfNZrUfajP9VG9L+h5KBQ\nPeLf8VIVoLbH1hbKgOch1VcNMZXF0DLUsEv+GqTUFgB4E83/m1UXnyYv4lWP3pIC\nAsBI2OWXgJ8yvDCvHmxofN/Gmo6IVLM+jtiRIvmniV09qlORddXXlka9q+f/JyTp\neXeg6EjAn+hBITmXdQpXAmE=\n-----END PRIVATE KEY-----\n",
+  "client_email": "task-scheduler@mynaai-tasks-backend.iam.gserviceaccount.com",
+  "client_id": "114082772773406705848",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/task-scheduler%40mynaai-tasks-backend.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

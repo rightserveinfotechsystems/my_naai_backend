@@ -1,4 +1,3 @@
-// controllers/booking/createBookingRequest.js
 const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
@@ -160,10 +159,10 @@ const createBookingRequest = async (req, res) => {
             { transaction: t }
         );
         // ⏱️ OWNER RESPONSE → 5 MIN
-        // await scheduleAutoCancelTask({
-        //     bookingRequestId: bookingRequest.id,
-        //     delayInSeconds: 5 * 60,
-        // });
+        await scheduleAutoCancelTask({
+            bookingRequestId: bookingRequest.bookingRequestId,
+            delayInSeconds: 5 * 60,
+        });
 
         // ----------------------------
         // 5️⃣ Notifications

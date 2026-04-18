@@ -16,6 +16,7 @@ const saveSalon = require('../controller/user/saveSalon');
 const removeSavedSalon = require('../controller/user/removeSaveSalon');
 const saveSalonToggle = require('../controller/user/bookmarkSalonToggle');
 const { getSaveSalonListController } = require('../controller/user/getSaveSalonList');
+const { getUserBookedSalonsController } = require('../controller/user/getUserBookedSalons.controller');
 
 
 
@@ -32,6 +33,8 @@ userRouter.post('/save-salon', authenticateUser, saveSalon);
 userRouter.post('/remove-salon', authenticateUser, removeSavedSalon);
 userRouter.post('/toggle-saved-salon', authenticateUser, saveSalonToggle);
 userRouter.get('/get-save-salon-list', authenticateUser, getSaveSalonListController);
+userRouter.get('/get-user-save-salon-list', authenticateUser, getUserBookedSalonsController);
+
 
 
 
