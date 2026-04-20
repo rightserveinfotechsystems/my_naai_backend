@@ -1,9 +1,9 @@
-// controllers/booking/ownerActionBooking.js
 const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 const { formatTo12Hour } = require('../../utils/timeFormat');
 const { scheduleAutoCancelTask } = require('../../tasks/autoCancelTask');
+const { createBookingReminderTask } = require('../../tasks/bookingReminderTask');
 
 const ownerActionBooking = async (req, res) => {
     const t = await db.sequelize.transaction();
@@ -13,9 +13,14 @@ const ownerActionBooking = async (req, res) => {
         const ownerId = req.salon.salonId;
 
         const bookingRequest = await db.BookingRequest.findByPk(bookingRequestId, { transaction: t });
-        if (!bookingRequest || bookingRequest.status === 'CANCELLED') {
+        if (!bookingRequest) {
             await t.rollback();
-            return res.status(404).json({ status: 'FAILED', message: 'Booking request not found or cancelled' });
+            return res.status(404).json({ status: 'FAILED', message: 'Booking request not found.' });
+        }
+
+        if (bookingRequest.status === 'CANCELLED' || bookingRequest.status === 'AUTO_CANCELLED') {
+            await t.rollback();
+            return res.status(400).json({ status: 'FAILED', message: 'Booking request already cancelled' });
         }
 
         const user = await db.User.findByPk(bookingRequest.customerId, { attributes: ['userId', 'fullName', 'deviceToken'] });
@@ -167,7 +172,7 @@ const ownerActionBooking = async (req, res) => {
 
             // Set reminder 1 minute before booking time
             booking.reminderTime = new Date(
-                bookingDateTime.getTime() - 1 * 60 * 1000
+                bookingDateTime.getTime() - 20 * 60 * 1000
             );
 
             booking.reminderSent = false;

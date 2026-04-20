@@ -17,6 +17,7 @@ const salonOwnerActionBooking = require('../controller/booking/salonOwnerActionB
 const customerDelayAction = require('../controller/booking/customerDelayAction');
 const userCancelBooking = require('../controller/booking/cancelUserBooking');
 const checkPlanActive = require('../utils/middleware/checkPlanActive');
+const { sendBookingReminder } = require('../controller/bookingRequest/sendBookingReminder');
 
 const bookingRouter = express.Router();
 
@@ -30,12 +31,8 @@ bookingRouter.get('/get-all-list', authenticateAdmin, adminGetAllBookings);
 
 
 bookingRouter.post('/get-booking-list', authenticateSalon, salonGetBookingList);
-// bookingRouter.post('/get-booking-list', authenticateSalon, checkPlanActive, salonGetBookingList);
-
-bookingRouter.post('/booking-complete', authenticateSalon,checkPlanActive, markBookingDone);
-bookingRouter.get('/get-completed-bookings', authenticateSalon,checkPlanActive, getCompletedBookings);
-// bookingRouter.post('/booking-complete', authenticateSalon, markBookingDone);
-// bookingRouter.get('/get-completed-bookings', authenticateSalon, getCompletedBookings);
+bookingRouter.post('/booking-complete', authenticateSalon, checkPlanActive, markBookingDone);
+bookingRouter.get('/get-completed-bookings', authenticateSalon, checkPlanActive, getCompletedBookings);
 bookingRouter.post('/create-walk-in', authenticateSalon, addWalkInCustomers);
 bookingRouter.post('/booking-request-cancel/:bookingRequestId', authenticateUser, userCancelBooking);
 
@@ -46,9 +43,7 @@ bookingRouter.post('/:bookingId/owner-action', authenticateSalon, salonOwnerActi
 // Customer responds to delay request
 bookingRouter.post('/:bookingId/customer-delay-action', authenticateUser, customerDelayAction);
 
-
-
-
+bookingRouter.post('/send-reminder', sendBookingReminder);
 
 
 module.exports = bookingRouter;

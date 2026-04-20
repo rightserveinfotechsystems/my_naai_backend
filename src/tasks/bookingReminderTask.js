@@ -3,10 +3,10 @@ const client = new CloudTasksClient();
 
 const createBookingReminderTask = async (booking) => {
     const project = process.env.GCP_PROJECT_ID;
-    const location = process.env.GCP_LOCATION; // eg: us-central1
-    const queue = 'booking-reminders';
+    const location = process.env.GCP_LOCATION; 
+    const queue = process.env.GCP_REMINDER_QUEUE;
 
-    const url = `${process.env.BASE_URL}/api/booking/reminder`;
+    const url = `${process.env.BASE_URL}/api/booking/send-reminder`;
 
     const payload = {
         bookingId: booking.bookingId
@@ -16,6 +16,10 @@ const createBookingReminderTask = async (booking) => {
         httpRequest: {
             httpMethod: 'POST',
             url,
+            // oidcToken: {
+            //     serviceAccountEmail: process.env.SERVICE_ACCOUNT,
+            //     audience: process.env.BASE_URL
+            // },
             headers: {
                 'Content-Type': 'application/json',
             },

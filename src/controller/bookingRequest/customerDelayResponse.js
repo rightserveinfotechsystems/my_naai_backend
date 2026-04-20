@@ -1,8 +1,8 @@
-// controllers/bookingRequest/customerDelayResponse.js
 const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 const { formatTo12Hour } = require('../../utils/timeFormat');
+const { createBookingReminderTask } = require('../../tasks/bookingReminderTask');
 
 const customerActionBooking = async (req, res) => {
   const t = await db.sequelize.transaction();
@@ -166,7 +166,25 @@ const customerActionBooking = async (req, res) => {
       });
       req.io.to(`salon_${salonId}`).emit('notification_count_updated');
 
+      // 🆕 ADD THIS REMINDER LOGIC HERE (Exactly like Owner Action)
+      const bookingDateTime = new Date(`${booking.bookingDate}T${booking.bookingTime}`);
+
+      // Set reminder 1 minute before (Testing ke liye)
+      booking.reminderTime = new Date(
+        bookingDateTime.getTime() - 20 * 60 * 1000
+      );
+      booking.reminderSent = false;
+
+      // Save booking with reminder info
+      await booking.save({ transaction: t });
+
       await t.commit();
+      // send task in queue
+      try {
+        await createBookingReminderTask(booking);
+      } catch (reminderError) {
+        console.error('Error creating booking reminder task:', reminderError);
+      }
       return res.status(200).json({
         status: 'SUCCESS',
         message: 'Customer accepted the delay and booking confirmed',

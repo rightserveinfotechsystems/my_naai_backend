@@ -1,4 +1,3 @@
-// bookingRequest/autoCancel.controller.js
 const db = require('../../database/models');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 
@@ -14,7 +13,7 @@ const autoCancelBooking = async (req, res) => {
             return res.status(404).json({ status: 'FAILED', message: 'Booking request not found' });
         }
 
-        // Agar owner already respond kar chuka hai → ignore
+        // if owner already responded, do not auto-cancel
         if (bookingRequest.status !== 'PENDING') {
             return res.status(200).json({ status: 'SUCCESS', message: 'Already handled' });
         }
@@ -27,16 +26,23 @@ const autoCancelBooking = async (req, res) => {
         if (bookingRequest.user?.deviceToken) {
             await sendNotificationToDevice(
                 bookingRequest.user.deviceToken,
-                '❌ Booking Cancelled',
+                '❌ Booking Cancelled!',
                 'Salon owner did not respond in time, your booking request is auto-cancelled.'
             );
         }
+        // ✅ Get all salon device tokens
+        const deviceTokens = await db.DeviceToken.findAll({
+            where: {
+                salonId: bookingRequest.salonId,
+                isActive: true
+            }
+        });
 
-        // Notify salon owner (optional)
-        if (bookingRequest.salon?.deviceToken) {
+        // ✅ Send notification to all devices
+        for (const dt of deviceTokens) {
             await sendNotificationToDevice(
-                bookingRequest.salon.deviceToken,
-                '⚠️ Booking Auto Cancelled',
+                dt.deviceToken,
+                '⚠️ Booking Auto Cancelled!',
                 'Customer booking request auto-cancelled because no response was given.'
             );
         }
