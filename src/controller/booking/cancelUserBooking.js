@@ -1,17 +1,19 @@
 const db = require('../../database/models');
+const { formatTo12Hour } = require('../../utils/timeFormat');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 
 const userCancelBooking = async (req, res) => {
     const t = await db.sequelize.transaction();
 
     try {
-        // ⚠️ yaha naam bookingRequestId hai, but actually bookingId hai
+        // ✅ Extract bookingId from params
         const { bookingRequestId } = req.params;
+        //assign bookingRequestId to bookingId because we are passing bookingRequestId in the route, but we will use it as bookingId to find the booking and cancel it
         const bookingId = bookingRequestId;
 
         const userId = req.user.id;
 
-        console.log("BOOKING ID:", bookingId);
+        // console.log("BOOKING ID:", bookingId);
 
         // ✅ Validate
         if (!bookingId || bookingId === "null") {
@@ -75,8 +77,11 @@ const userCancelBooking = async (req, res) => {
             await queue.save({ transaction: t });
         }
 
+        //convert booking time to 12-hour format
+        const formattedBookingTime = formatTo12Hour(booking.bookingTime);
+
         // ✅ Notification
-        const message = `Customer cancelled the booking on ${booking.bookingDate} at ${booking.bookingTime}.`;
+        const message = `Customer cancelled the booking on ${booking.bookingDate} at ${formattedBookingTime}.`;
 
         const deviceTokens = await db.DeviceToken.findAll({
             where: {

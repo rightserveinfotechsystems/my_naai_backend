@@ -1,4 +1,3 @@
-// utils/timeFormat.js
 function formatTo12Hour(timeStr) {
     const date = new Date(`1970-01-01T${timeStr}`);
     let hours = date.getHours();
