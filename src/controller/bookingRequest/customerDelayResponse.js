@@ -13,9 +13,13 @@ const customerActionBooking = async (req, res) => {
 
     // Fetch booking request
     const bookingRequest = await db.BookingRequest.findByPk(bookingRequestId, { transaction: t });
-    if (!bookingRequest || bookingRequest.status !== 'DELAY_PROPOSED') {
+    if (!bookingRequest) {
       await t.rollback();
-      return res.status(404).json({ status: 'FAILED', message: 'Booking request not found or not pending delay' });
+      return res.status(404).json({ status: 'FAILED', message: 'Booking request not found' });
+    }
+    if (bookingRequest.status !== 'DELAY_PROPOSED') {
+      await t.rollback();
+      return res.status(400).json({ status: 'FAILED', message: 'No delay proposed for this booking request' });
     }
 
     // Fetch salon for owner info
@@ -76,6 +80,16 @@ const customerActionBooking = async (req, res) => {
     // 2️⃣ CUSTOMER ACCEPTS DELAY
     // --------------------------
     if (action === 'ACCEPT') {
+      const delayMinutes = bookingRequest.delayMinutes || 0;
+
+      const originalTime = new Date(`${bookingRequest.bookingDate}T${bookingRequest.startTime}`);
+      const finalTime = new Date(originalTime.getTime() + delayMinutes * 60 * 1000);
+
+      const finalTimeStr = finalTime.toTimeString().slice(0, 8);
+      const finalTime12hr = formatTo12Hour(finalTime.toTimeString().slice(0, 5));
+
+      bookingRequest.startTime = finalTimeStr;
+      console.log('Updated bookingRequest startTime to:', finalTimeStr, bookingRequest.startTime = finalTimeStr);
       bookingRequest.status = 'ACCEPTED';
       await bookingRequest.save({ transaction: t });
 
@@ -100,14 +114,16 @@ const customerActionBooking = async (req, res) => {
         userId: customerId,
         barberId: bookingRequest.barberId || null,
         bookingDate: bookingRequest.bookingDate,
-        bookingTime: bookingRequest.startTime,
+        // bookingTime: bookingRequest.startTime, // This will be the original time
+        bookingTime: finalTimeStr,
         queueNumber,
         estimatedWaitTime: totalDuration
       }, { transaction: t });
 
 
       // Calculate booking end time
-      const bookingStartTime = new Date(`${bookingRequest.bookingDate}T${bookingRequest.startTime}`);
+      // const bookingStartTime = new Date(`${bookingRequest.bookingDate}T${bookingRequest.startTime}`);
+      const bookingStartTime = new Date(`${bookingRequest.bookingDate}T${finalTimeStr}`);
       const bookingEndTime = new Date(bookingStartTime.getTime() + totalDuration * 60 * 1000);
 
       // Create Booking
@@ -117,7 +133,8 @@ const customerActionBooking = async (req, res) => {
         userId: customerId,
         barberId: bookingRequest.barberId || null,
         bookingDate: bookingRequest.bookingDate,
-        bookingTime: bookingRequest.startTime,
+        // bookingTime: bookingRequest.startTime,
+        bookingTime: finalTimeStr,
         bookingEndTime: bookingEndTime.toTimeString().slice(0, 8),
         bookingStatus: 'confirmed',
         services: bookingRequest.serviceIds,

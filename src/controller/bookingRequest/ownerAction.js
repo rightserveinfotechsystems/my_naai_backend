@@ -103,14 +103,14 @@ const ownerActionBooking = async (req, res) => {
             await t.commit();
 
             // ⏱️ CUSTOMER RESPONSE → 1 MIN AUTO-CANCEL
-            // try {
-            //     await scheduleAutoCancelTask({
-            //         bookingRequestId: bookingRequest.bookingRequestId,
-            //         delayInSeconds: 60, // 1 minute
-            //     });
-            // } catch (err) {
-            //     console.error('Error scheduling auto-cancel for delayed booking:', err);
-            // }
+            try {
+                await scheduleAutoCancelTask({
+                    bookingRequestId: bookingRequest.bookingRequestId,
+                    delayInSeconds: 60, // 1 minute
+                });
+            } catch (err) {
+                console.error('Error scheduling auto-cancel for delayed booking:', err);
+            }
             return res.status(200).json({ status: 'SUCCESS', message: 'Delay proposed to customer' });
         }
 

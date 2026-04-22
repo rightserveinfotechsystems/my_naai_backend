@@ -35,7 +35,7 @@ const createBookingRequest = async (req, res) => {
                 message: 'Required fields missing'
             });
         }
-  
+
         // const validationResult = await createBookingRequestSchema.validate(req.body);
         // if (validationResult.error) {
         //     await t.rollback();
@@ -159,10 +159,15 @@ const createBookingRequest = async (req, res) => {
             { transaction: t }
         );
         // ⏱️ OWNER RESPONSE → 5 MIN
-        await scheduleAutoCancelTask({
-            bookingRequestId: bookingRequest.bookingRequestId,
-            delayInSeconds: 5 * 60,
-        });
+        try {
+            await scheduleAutoCancelTask({
+                bookingRequestId: bookingRequest.bookingRequestId,
+                delayInSeconds: 5 * 60,
+            });
+        } catch (err) {
+            console.error('Error scheduling auto-cancel for booking request:', err);
+        }
+
 
         // ----------------------------
         // 5️⃣ Notifications

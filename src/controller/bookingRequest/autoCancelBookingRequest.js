@@ -13,9 +13,28 @@ const autoCancelBooking = async (req, res) => {
             return res.status(404).json({ status: 'FAILED', message: 'Booking request not found' });
         }
 
+        // If delay proposed, skip auto-cancel
+        // if (bookingRequest.status === 'DELAY_PROPOSED') {
+        //     // console.log("⏳ Delay proposed by salon, auto-cancel skip");
+        //     return res.status(200).json({
+        //         status: 'SUCCESS',
+        //         message: 'Delay proposed, not auto-cancelled'
+        //     });
+        // }
         // if owner already responded, do not auto-cancel
-        if (bookingRequest.status !== 'PENDING') {
-            return res.status(200).json({ status: 'SUCCESS', message: 'Already handled' });
+        // if (bookingRequest.status !== 'PENDING') {
+        //     return res.status(200).json({ status: 'SUCCESS', message: 'Already handled' });
+        // }
+
+        // ✅ Allow auto-cancel for BOTH cases
+        const cancellableStatuses = ['PENDING', 'DELAY_PROPOSED'];
+
+        if (!cancellableStatuses.includes(bookingRequest.status)) {
+            // console.log("⛔ Skipping auto-cancel, status:", bookingRequest.status);
+            return res.status(200).json({
+                status: 'SUCCESS',
+                message: `Skipped for status ${bookingRequest.status}`
+            });
         }
 
         // Auto cancel booking request
