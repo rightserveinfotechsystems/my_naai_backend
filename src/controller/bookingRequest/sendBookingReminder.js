@@ -53,8 +53,21 @@ const sendBookingReminder = async (req, res) => {
         });
 
         // Skip if: booking deleted, already sent, or cancelled
-        if (!booking || booking.reminderSent || booking.bookingStatus !== 'confirmed') {
+        // if (!booking || booking.reminderSent || booking.bookingStatus !== 'confirmed') {
+        //     return res.status(200).json({ message: 'Reminder not required' });
+        // }
+        if (!booking || booking.reminderSent) {
             return res.status(200).json({ message: 'Reminder not required' });
+        }
+
+        // ⛔ If booking is cancelled or completed, skip reminder
+        if (booking.bookingStatus === 'cancelled' || booking.bookingStatus === 'completed') {
+            return res.status(200).json({ message: 'Booking cancelled/completed, no reminder' });
+        }
+
+        // ✅ Only send reminder for confirmed bookings
+        if (booking.bookingStatus !== 'confirmed') {
+            return res.status(200).json({ message: 'Reminder skipped (not confirmed)' });
         }
 
         const formattedTime = formatTo12Hour(booking.bookingTime);
