@@ -23,6 +23,11 @@ const ownerActionBooking = async (req, res) => {
             return res.status(400).json({ status: 'FAILED', message: 'Booking request already cancelled' });
         }
 
+        if (['ACCEPTED', 'REJECTED', 'DELAY_PROPOSED'].includes(bookingRequest?.status)) {
+            await t.rollback();
+            return res.status(400).json({ status: 'FAILED', message: 'Action is already taken on this booking request' });
+        }
+
         const user = await db.User.findByPk(bookingRequest.customerId, { attributes: ['userId', 'fullName', 'deviceToken'] });
         if (!user?.deviceToken) {
             console.log('❌ No device token found for customer');

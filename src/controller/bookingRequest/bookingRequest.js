@@ -121,25 +121,56 @@ const createBookingRequest = async (req, res) => {
             bookingDate,
             bookingStatus: 'confirmed'
         };
-        if (barberId) whereClause.barberId = barberId;
-
-        const slotConflict = await db.Booking.findOne({
-            where: {
-                ...whereClause,
-                [Op.and]: db.sequelize.literal(`
+        let slotConflict = null
+        if (barberId) {
+            whereClause.barberId = barberId;
+            const isSlotBookedForbarber = await db.Booking.findOne({
+                where: {
+                    ...whereClause,
+                    [Op.and]: db.sequelize.literal(`
                         "booking_time" < TIME '${endTime}' AND
                         ("booking_time" + ("service_duration" || ' minutes')::interval) > TIME '${bookingTime}'
                     `)
-            }
-        });
-
-        if (slotConflict) {
-            await t.rollback();
-            return res.status(409).json({
-                status: 'FAILED',
-                message: 'Selected slot is no longer available'
+                }
             });
+
+            if (isSlotBookedForbarber) {
+                await t.rollback();
+                return res.status(409).json({
+                    status: 'FAILED',
+                    message: 'Selected slot is already Booked for this barber'
+                });
+            }
+        } else {
+            const noOfBookings = await db.Booking.count({
+                where: {
+                    ...whereClause,
+                    [Op.and]: db.sequelize.literal(`
+                        "booking_time" < TIME '${endTime}' AND
+                        ("booking_time" + ("service_duration" || ' minutes')::interval) > TIME '${bookingTime}'
+                    `)
+                }
+            });
+
+            const noOfBarber = await db.Barber.count({
+                where: {
+                    salonId
+                }
+            })
+
+            if (noOfBookings === (noOfBarber + 1)) {
+                await t.rollback();
+                return res.status(409).json({
+                    status: 'FAILED',
+                    message: 'Selected slot is no longer available for this salon'
+                });
+            }
+
         }
+
+
+
+
 
         // ----------------------------
         // 4️⃣ Create BookingRequest
@@ -158,11 +189,11 @@ const createBookingRequest = async (req, res) => {
             },
             { transaction: t }
         );
-        // ⏱️ OWNER RESPONSE → 5 MIN
+        // ⏱️ OWNER RESPONSE → 1 MIN
         try {
             await scheduleAutoCancelTask({
                 bookingRequestId: bookingRequest.bookingRequestId,
-                delayInSeconds: 5 * 60,
+                delayInSeconds: 60,
             });
         } catch (err) {
             console.error('Error scheduling auto-cancel for booking request:', err);
