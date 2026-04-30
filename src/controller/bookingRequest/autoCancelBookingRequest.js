@@ -58,9 +58,13 @@ const autoCancelBooking = async (req, res) => {
         });
 
         // ✅ Send notification to all devices
-        for (const dt of deviceTokens) {
+        // 👉 Extract unique tokens
+        const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+
+        // ✅ Send notification
+        for (const token of uniqueTokens) {
             await sendNotificationToDevice(
-                dt.deviceToken,
+                token,
                 '⚠️ Booking Auto Cancelled!',
                 'Customer booking request auto-cancelled because no response was given.'
             );
