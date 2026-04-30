@@ -184,7 +184,7 @@ const customerActionBooking = async (req, res) => {
       req.io.to(`salon_${salonId}`).emit('notification_count_updated');
 
       // 🆕 ADD THIS REMINDER LOGIC HERE (Exactly like Owner Action)
-      const bookingDateTime = new Date(`${booking.bookingDate}T${booking.bookingTime}`);
+      const bookingDateTime = new Date(`${booking.bookingDate}T${booking.bookingTime}+05:30`);
 
       // Set reminder 20 minute before booking time
       booking.reminderTime = new Date(

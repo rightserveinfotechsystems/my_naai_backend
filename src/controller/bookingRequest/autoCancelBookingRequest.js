@@ -40,7 +40,7 @@ const autoCancelBooking = async (req, res) => {
         // Auto cancel booking request
         bookingRequest.status = 'AUTO_CANCELLED';
         await bookingRequest.save();
-
+        console.log("bookingRequest.user by saurabh", bookingRequest.user)
         // Notify customer
         if (bookingRequest.user?.deviceToken) {
             await sendNotificationToDevice(
