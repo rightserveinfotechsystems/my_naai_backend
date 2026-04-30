@@ -1,4 +1,5 @@
 const { CloudTasksClient } = require('@google-cloud/tasks');
+const db = require('../database/models');
 const client = new CloudTasksClient();
 
 const createBookingReminderTask = async (booking) => {
@@ -30,8 +31,25 @@ const createBookingReminderTask = async (booking) => {
 
     const parent = client.queuePath(project, location, queue);
     const [response] = await client.createTask({ parent, task });
-
+    await db.Booking.update(
+        { reminderTaskName: response.name },
+        { where: { bookingId: booking.bookingId } }
+    );
     console.log('✅ Cloud Task created:', response.name);
 };
 
-module.exports = { createBookingReminderTask };
+
+const deleteReminderTask = async (taskName) => {
+    try {
+        await client.deleteTask({ name: taskName });
+        console.log('🗑 Task deleted:', taskName);
+    } catch (err) {
+        if (err.code === 5) {
+            console.log('Task already executed or not found');
+        } else {
+            throw err;
+        }
+    }
+};
+
+module.exports = { createBookingReminderTask, deleteReminderTask };

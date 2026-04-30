@@ -2,7 +2,7 @@ const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 const { formatTo12Hour } = require('../../utils/timeFormat');
-const { scheduleAutoCancelTask } = require('../../tasks/autoCancelTask');
+const { scheduleAutoCancelTask, deleteBookingAutoCancelTask } = require('../../tasks/autoCancelTask');
 const { createBookingReminderTask } = require('../../tasks/bookingReminderTask');
 
 const ownerActionBooking = async (req, res) => {
@@ -35,6 +35,10 @@ const ownerActionBooking = async (req, res) => {
         const userName = user ? user.fullName : 'Customer';
         const deviceTokens = user && user.deviceToken ? [user.deviceToken] : [];
 
+        //cancel the auto cancel task if owner took action
+        if (bookingRequest?.autoCancelTaskName) {
+            await deleteBookingAutoCancelTask(bookingRequest.autoCancelTaskName);
+        }
         // --------------------------
         // 1️⃣ REJECT
         // --------------------------
@@ -216,6 +220,8 @@ const ownerActionBooking = async (req, res) => {
                 data: booking
             });
         }
+
+
 
         await t.rollback();
         return res.status(400).json({ status: 'FAILED', message: 'Invalid action. Allowed values: ACCEPT, REJECT, DELAY' });

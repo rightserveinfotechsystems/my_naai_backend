@@ -85,6 +85,10 @@ module.exports = (sequelize) => {
         allowNull: false,
         field: 'updated_at',
       },
+      autoCancelTaskName: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       sequelize,

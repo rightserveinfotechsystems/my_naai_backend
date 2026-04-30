@@ -98,7 +98,7 @@ app.get("/", (request, response) => {
 app.get("/test-db", async (req, res) => {
     try {
         await db.sequelize.authenticate();
-        db.sequelize.sync({ alter: true });
+        await db.sequelize.sync({ alter: true });
         const models = Object.keys(db).filter(key => key !== 'sequelize');
 
         res.json({
@@ -138,7 +138,7 @@ process.on('SIGTERM', async () => {
 });
 // 🔥 CRON REGISTER
 require('./cron/notification.cron');
-require('./cron/plan-check.cron'); 
+require('./cron/plan-check.cron');
 
 //connect db
 connectDb();
@@ -148,6 +148,6 @@ connectDb();
 //     console.log(`Server is running on port ${PORT} 🏃‍♂️`);
 // });
 
-server.listen(PORT,'0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT} 🏃‍♂️`);
 });
