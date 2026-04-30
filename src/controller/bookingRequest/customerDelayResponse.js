@@ -186,7 +186,7 @@ const customerActionBooking = async (req, res) => {
       // 🆕 ADD THIS REMINDER LOGIC HERE (Exactly like Owner Action)
       const bookingDateTime = new Date(`${booking.bookingDate}T${booking.bookingTime}`);
 
-      // Set reminder 1 minute before (Testing ke liye)
+      // Set reminder 20 minute before booking time
       booking.reminderTime = new Date(
         bookingDateTime.getTime() - 20 * 60 * 1000
       );
