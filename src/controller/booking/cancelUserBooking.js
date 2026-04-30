@@ -112,7 +112,7 @@ const userCancelBooking = async (req, res) => {
 
         //cancel reminder task if exists
         if (booking?.reminderTaskName) {
-            await deleteReminderTask(booking.reminderTaskName);
+            // await deleteReminderTask(booking.reminderTaskName);
         }
 
         await t.commit();

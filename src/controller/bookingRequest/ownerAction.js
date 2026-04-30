@@ -37,7 +37,7 @@ const ownerActionBooking = async (req, res) => {
 
         //cancel the auto cancel task if owner took action
         if (bookingRequest?.autoCancelTaskName) {
-            await deleteBookingAutoCancelTask(bookingRequest.autoCancelTaskName);
+            // await deleteBookingAutoCancelTask(bookingRequest.autoCancelTaskName);
         }
         // --------------------------
         // 1️⃣ REJECT
