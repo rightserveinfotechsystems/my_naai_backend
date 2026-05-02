@@ -90,10 +90,10 @@ const userCancelBooking = async (req, res) => {
                 isActive: true
             }
         });
-
-        for (const dt of deviceTokens) {
+        const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+        for (const deviceToken of uniqueTokens) {
             await sendNotificationToDevice(
-                dt.deviceToken,
+                deviceToken,
                 'Booking Cancelled',
                 message,
                 {

@@ -39,6 +39,7 @@ const ownerActionBooking = async (req, res) => {
         if (bookingRequest?.autoCancelTaskName) {
             // await deleteBookingAutoCancelTask(bookingRequest.autoCancelTaskName);
         }
+
         // --------------------------
         // 1️⃣ REJECT
         // --------------------------
@@ -47,8 +48,9 @@ const ownerActionBooking = async (req, res) => {
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
-            for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Rejected', `Your booking request has been rejected by the salon.`,
+            const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+            for (const deviceToken of uniqueTokens) {
+                await sendNotificationToDevice(deviceToken, 'Booking Rejected', `Your booking request has been rejected by the salon.`,
                     {
                         bookingRequestId: bookingRequest.bookingRequestId,
                         type: 'BOOKING_REJECTED'
@@ -89,8 +91,8 @@ const ownerActionBooking = async (req, res) => {
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
-            for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Delay Proposed',
+            for (const deviceToken of uniqueTokens) {
+                await sendNotificationToDevice(deviceToken, 'Booking Delay Proposed',
                     `Salon proposed to delay your booking to ${proposedTimeStr}. Accept or Reject?`,
                     {
                         bookingRequestId: bookingRequest.bookingRequestId,
@@ -191,8 +193,9 @@ const ownerActionBooking = async (req, res) => {
 
 
             // Notify customer
-            for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingTime12hr}`,
+            const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+            for (const deviceToken of uniqueTokens) {
+                await sendNotificationToDevice(deviceToken, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingTime12hr}`,
                     {
                         bookingRequestId: bookingRequest.bookingRequestId,
                         type: 'BOOKING_CONFIRMED'

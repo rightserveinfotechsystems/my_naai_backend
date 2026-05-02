@@ -44,9 +44,10 @@ const customerActionBooking = async (req, res) => {
       });
 
       const formattedTime = formatTo12Hour(bookingRequest.startTime);
-      for (const dt of deviceTokens) {
+      const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+      for (const deviceToken of uniqueTokens) {
         await sendNotificationToDevice(
-          dt.deviceToken,
+          deviceToken,
           'Customer Rejected Delay',
           `Customer rejected the proposed delay for booking at ${formattedTime}`,
           {
@@ -146,7 +147,7 @@ const customerActionBooking = async (req, res) => {
       const deviceTokens = await db.DeviceToken.findAll({
         where: { salonId, isActive: true }
       });
-
+      const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
       const startTime12hr = formatTo12Hour(bookingRequest.startTime);
       const endTime12hr = formatTo12Hour(bookingEndTime.toTimeString().slice(0, 5));
 
@@ -155,9 +156,9 @@ const customerActionBooking = async (req, res) => {
       const customerName = customer ? customer.fullName : 'Customer';
       const formattedTime = bookingRequest.startTime;
 
-      for (const dt of deviceTokens) {
+      for (const deviceToken of uniqueTokens) {
         await sendNotificationToDevice(
-          dt.deviceToken,
+          deviceToken,
           "Booking Update",
           `Customer ${customerName} has accepted the delay for booking from ${startTime12hr} to ${endTime12hr}`,
           {

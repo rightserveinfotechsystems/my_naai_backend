@@ -141,13 +141,13 @@ const createBooking = async (req, res) => {
       }
     });
 
-
+    const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
 
     // 🔔 SEND PUSH NOTIFICATION
-    for (const dt of deviceTokens) {
+    for (const deviceToken of uniqueTokens) {
 
       await sendNotificationToDevice(
-        dt.deviceToken,
+        deviceToken,
         "New Booking",
         `You have received a new booking request from ${name}`
       );

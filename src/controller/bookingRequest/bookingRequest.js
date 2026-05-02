@@ -212,10 +212,11 @@ const createBookingRequest = async (req, res) => {
         const formattedDate = formatDateDMY(bookingDate);
 
         // 🔔 SEND PUSH NOTIFICATION
-        for (const dt of deviceTokens) {
+        const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+        for (const deviceToken of uniqueTokens) {
 
             await sendNotificationToDevice(
-                dt.deviceToken,
+                deviceToken,
                 "New Booking",
                 `${userName} requested a booking at ${formattedTime} on ${formattedDate} for ${serviceNames}`,
                 {
