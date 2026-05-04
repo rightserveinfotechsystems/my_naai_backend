@@ -40,11 +40,13 @@ const autoCancelBooking = async (req, res) => {
         // Auto cancel booking request
         bookingRequest.status = 'AUTO_CANCELLED';
         await bookingRequest.save();
-
+       
         // Notify customer
-        if (bookingRequest.user?.deviceToken) {
+        if (bookingRequest?.customerId) {
+            //get the user's device token
+            const userDetails = await db.User.findByPk(bookingRequest?.customerId);
             await sendNotificationToDevice(
-                bookingRequest.user.deviceToken,
+                userDetails?.deviceToken,
                 '❌ Booking Cancelled!',
                 'Salon owner did not respond in time, your booking request is auto-cancelled.'
             );
@@ -58,9 +60,13 @@ const autoCancelBooking = async (req, res) => {
         });
 
         // ✅ Send notification to all devices
-        for (const dt of deviceTokens) {
+        // 👉 Extract unique tokens
+        const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+
+        // ✅ Send notification
+        for (const token of uniqueTokens) {
             await sendNotificationToDevice(
-                dt.deviceToken,
+                token,
                 '⚠️ Booking Auto Cancelled!',
                 'Customer booking request auto-cancelled because no response was given.'
             );

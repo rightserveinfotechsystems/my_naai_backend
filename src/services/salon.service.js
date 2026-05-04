@@ -243,15 +243,55 @@ const getSalonBasicWithQueue = async (salonId) => {
     // ------------------------
     // GROUP BOOKINGS BY DATE
     // ------------------------
-    const bookedSlots = salonBookings.reduce((acc, b) => {
-      if (!acc[b.bookingDate]) acc[b.bookingDate] = [];
-      acc[b.bookingDate].push({
-        start: b.bookingTime,
-        end: b.bookingEndTime
-      });
-      return acc;
-    }, {});
 
+    // const bookedSlots = salonBookings.reduce((acc, b) => {
+    //   if (!acc[b.bookingDate]) acc[b.bookingDate] = [];
+    //   acc[b.bookingDate].push({
+    //     start: b.bookingTime,
+    //     end: b.bookingEndTime
+    //   });
+    //   return acc;
+    // }, {});
+
+    // const bookedSlotsArray = Object.keys(bookedSlots).map(date => ({
+    //   date,
+    //   slots: bookedSlots[date]
+    // }));
+
+    const barberLength = (salon?.barbers?.length || 0) + 1;
+
+    // Step 1: count bookings per slot
+    const slotCountMap = {};
+
+    salonBookings.forEach(b => {
+      const key = `${b.bookingDate}_${b.bookingTime}_${b.bookingEndTime}`;
+
+      if (!slotCountMap[key]) {
+        slotCountMap[key] = 0;
+      }
+
+      slotCountMap[key]++;
+    });
+
+    // Step 2: build bookedSlots in OLD FORMAT (only full slots)
+    const bookedSlots = {};
+
+    Object.keys(slotCountMap).forEach(key => {
+      const count = slotCountMap[key];
+
+      if (count >= barberLength) { // ✅ only FULL slots
+        const [date, start, end] = key.split("_");
+
+        if (!bookedSlots[date]) bookedSlots[date] = [];
+
+        bookedSlots[date].push({
+          start,
+          end
+        });
+      }
+    });
+
+    // Step 3: convert to array (same as before)
     const bookedSlotsArray = Object.keys(bookedSlots).map(date => ({
       date,
       slots: bookedSlots[date]

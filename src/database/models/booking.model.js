@@ -75,7 +75,7 @@ module.exports = (sequelize) => {
 
         bookingStatus: {
             // type: DataTypes.ENUM('requested', 'delay_requested', 'confirmed', 'cancelled', 'completed', 'pending'),
-            type: DataTypes.ENUM( 'confirmed', 'cancelled', 'completed'),
+            type: DataTypes.ENUM('confirmed', 'cancelled', 'completed'),
             allowNull: false,
             field: 'booking_status'
         },
@@ -172,6 +172,10 @@ module.exports = (sequelize) => {
             allowNull: true,
             comment: 'Exact timestamp when reminder should be sent',
             field: 'reminder_time'
+        },
+        reminderTaskName: {
+            type: DataTypes.TEXT,
+            allowNull: true,
         },
         // expiresAt: {
         //     type: DataTypes.DATE,

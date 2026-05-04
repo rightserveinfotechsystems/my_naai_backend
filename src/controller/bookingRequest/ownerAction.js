@@ -2,7 +2,7 @@ const db = require('../../database/models');
 const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 const { formatTo12Hour } = require('../../utils/timeFormat');
-const { scheduleAutoCancelTask } = require('../../tasks/autoCancelTask');
+const { scheduleAutoCancelTask, deleteBookingAutoCancelTask } = require('../../tasks/autoCancelTask');
 const { createBookingReminderTask } = require('../../tasks/bookingReminderTask');
 
 const ownerActionBooking = async (req, res) => {
@@ -20,7 +20,12 @@ const ownerActionBooking = async (req, res) => {
 
         if (bookingRequest.status === 'CANCELLED' || bookingRequest.status === 'AUTO_CANCELLED') {
             await t.rollback();
-            return res.status(400).json({ status: 'FAILED', message: 'Booking request already cancelled' });
+            return res.status(200).json({ status: 'FAILED', message: 'Booking request already cancelled' });
+        }
+
+        if (['ACCEPTED', 'REJECTED', 'DELAY_PROPOSED'].includes(bookingRequest?.status)) {
+            await t.rollback();
+            return res.status(200).json({ status: 'FAILED', message: 'Action is already taken on this booking request' });
         }
 
         const user = await db.User.findByPk(bookingRequest.customerId, { attributes: ['userId', 'fullName', 'deviceToken'] });
@@ -30,6 +35,11 @@ const ownerActionBooking = async (req, res) => {
         const userName = user ? user.fullName : 'Customer';
         const deviceTokens = user && user.deviceToken ? [user.deviceToken] : [];
 
+        //cancel the auto cancel task if owner took action
+        if (bookingRequest?.autoCancelTaskName) {
+            // await deleteBookingAutoCancelTask(bookingRequest.autoCancelTaskName);
+        }
+
         // --------------------------
         // 1️⃣ REJECT
         // --------------------------
@@ -38,8 +48,9 @@ const ownerActionBooking = async (req, res) => {
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
-            for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Rejected', `Your booking request has been rejected by the salon.`,
+            const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+            for (const deviceToken of uniqueTokens) {
+                await sendNotificationToDevice(deviceToken, 'Booking Rejected', `Your booking request has been rejected by the salon.`,
                     {
                         bookingRequestId: bookingRequest.bookingRequestId,
                         type: 'BOOKING_REJECTED'
@@ -80,8 +91,8 @@ const ownerActionBooking = async (req, res) => {
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
-            for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Delay Proposed',
+            for (const deviceToken of uniqueTokens) {
+                await sendNotificationToDevice(deviceToken, 'Booking Delay Proposed',
                     `Salon proposed to delay your booking to ${proposedTimeStr}. Accept or Reject?`,
                     {
                         bookingRequestId: bookingRequest.bookingRequestId,
@@ -167,10 +178,10 @@ const ownerActionBooking = async (req, res) => {
 
             // Set reminder time for booking
             const bookingDateTime = new Date(
-                `${booking.bookingDate}T${booking.bookingTime}`
+                `${booking.bookingDate}T${booking.bookingTime}+05:30` //  salon is in IST timezone, adjust as needed    
             );
 
-            // Set reminder 1 minute before booking time
+            // Set reminder 20 minute before booking time
             booking.reminderTime = new Date(
                 bookingDateTime.getTime() - 20 * 60 * 1000
             );
@@ -182,8 +193,9 @@ const ownerActionBooking = async (req, res) => {
 
 
             // Notify customer
-            for (const dt of deviceTokens) {
-                await sendNotificationToDevice(dt, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingTime12hr}`,
+            const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+            for (const deviceToken of uniqueTokens) {
+                await sendNotificationToDevice(deviceToken, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingTime12hr}`,
                     {
                         bookingRequestId: bookingRequest.bookingRequestId,
                         type: 'BOOKING_CONFIRMED'
@@ -211,6 +223,8 @@ const ownerActionBooking = async (req, res) => {
                 data: booking
             });
         }
+
+
 
         await t.rollback();
         return res.status(400).json({ status: 'FAILED', message: 'Invalid action. Allowed values: ACCEPT, REJECT, DELAY' });

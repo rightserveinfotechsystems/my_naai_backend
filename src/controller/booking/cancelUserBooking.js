@@ -1,6 +1,7 @@
 const db = require('../../database/models');
 const { formatTo12Hour } = require('../../utils/timeFormat');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
+const { deleteReminderTask } = require('../../tasks/bookingReminderTask');
 
 const userCancelBooking = async (req, res) => {
     const t = await db.sequelize.transaction();
@@ -89,10 +90,10 @@ const userCancelBooking = async (req, res) => {
                 isActive: true
             }
         });
-
-        for (const dt of deviceTokens) {
+        const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+        for (const deviceToken of uniqueTokens) {
             await sendNotificationToDevice(
-                dt.deviceToken,
+                deviceToken,
                 'Booking Cancelled',
                 message,
                 {
@@ -108,6 +109,11 @@ const userCancelBooking = async (req, res) => {
             title: 'Booking Cancelled',
             message
         }, { transaction: t });
+
+        //cancel reminder task if exists
+        if (booking?.reminderTaskName) {
+            // await deleteReminderTask(booking.reminderTaskName);
+        }
 
         await t.commit();
 

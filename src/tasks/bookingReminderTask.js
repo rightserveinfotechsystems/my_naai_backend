@@ -1,9 +1,10 @@
 const { CloudTasksClient } = require('@google-cloud/tasks');
+const db = require('../database/models');
 const client = new CloudTasksClient();
 
 const createBookingReminderTask = async (booking) => {
     const project = process.env.GCP_PROJECT_ID;
-    const location = process.env.GCP_LOCATION; 
+    const location = process.env.GCP_LOCATION;
     const queue = process.env.GCP_REMINDER_QUEUE;
 
     const url = `${process.env.BASE_URL}/api/booking/send-reminder`;
@@ -16,10 +17,6 @@ const createBookingReminderTask = async (booking) => {
         httpRequest: {
             httpMethod: 'POST',
             url,
-            // oidcToken: {
-            //     serviceAccountEmail: process.env.SERVICE_ACCOUNT,
-            //     audience: process.env.BASE_URL
-            // },
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -34,8 +31,25 @@ const createBookingReminderTask = async (booking) => {
 
     const parent = client.queuePath(project, location, queue);
     const [response] = await client.createTask({ parent, task });
-
+    await db.Booking.update(
+        { reminderTaskName: response.name },
+        { where: { bookingId: booking.bookingId } }
+    );
     console.log('✅ Cloud Task created:', response.name);
 };
 
-module.exports = { createBookingReminderTask };
+
+const deleteReminderTask = async (taskName) => {
+    try {
+        await client.deleteTask({ name: taskName });
+        console.log('🗑 Task deleted:', taskName);
+    } catch (err) {
+        if (err.code === 5) {
+            console.log('Task already executed or not found');
+        } else {
+            throw err;
+        }
+    }
+};
+
+module.exports = { createBookingReminderTask, deleteReminderTask };
