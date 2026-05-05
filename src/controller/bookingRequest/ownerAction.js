@@ -91,6 +91,7 @@ const ownerActionBooking = async (req, res) => {
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
+            const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
             for (const deviceToken of uniqueTokens) {
                 await sendNotificationToDevice(deviceToken, 'Booking Delay Proposed',
                     `Salon proposed to delay your booking to ${proposedTimeStr}. Accept or Reject?`,
