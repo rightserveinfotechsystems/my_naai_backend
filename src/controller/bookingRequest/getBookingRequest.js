@@ -29,6 +29,8 @@ const getBookingRequestById = async (req, res) => {
       return res.status(404).json({ status: 'FAILED', message: 'Booking request not found' });
     }
 
+    console.log("br", br.salonId, salonId);
+
     if (br.salonId !== salonId) {
       return res.status(403).json({ status: 'FAILED', message: 'Not authorized to view this booking' });
     }

@@ -6,24 +6,16 @@ async function sendNotificationToDevice(deviceToken = null, title, body, data = 
             return false
         }
         const message = {
-            notification: {
+            data: {
                 title: title,
                 body: body,
-            },
-            data: {
                 ...data,
-                name: "MyNaai"
+                name: "MyNaai",
             },
             android: {
                 priority: "high",
-                notification: {
-                    channelId: "default_channel", // Ensure this matches the channel ID created in the app
-                    priority: "max", // Set high priority for Android
-                    clickAction: "OPEN_ACTIVITY_1",// Ensure this matches the intent filter in the AndroidManifest.xml
-                    visibility: "public" // Show notification content on lock screen
-                }
             },
-            token: deviceToken, // FCM device token
+            token: deviceToken,
         };
 
         //🔍 LOG EXACT PAYLOAD

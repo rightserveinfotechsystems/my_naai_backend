@@ -26,6 +26,8 @@ const scheduleAutoCancelTask = async ({ bookingRequestId, delayInSeconds }) => {
 
   const parent = client.queuePath(project, location, queue);
   const [response] = await client.createTask({ parent, task });
+  console.log(" response.name", response.name);
+
   await db.BookingRequest.update(
     { autoCancelTaskName: response.name },
     { where: { bookingRequestId: bookingRequestId } }

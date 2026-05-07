@@ -221,7 +221,9 @@ const createBookingRequest = async (req, res) => {
                 `${userName} requested a booking at ${formattedTime} on ${formattedDate} for ${serviceNames}`,
                 {
                     bookingRequestId: bookingRequest.bookingRequestId,
-                    type: 'BOOKING_REQUEST'
+                    type: 'BOOKING_REQUEST',
+                    title: "New Booking",
+                    body: `${userName} requested a booking at ${formattedTime} on ${formattedDate} for ${serviceNames}`
                 }
             );
         }

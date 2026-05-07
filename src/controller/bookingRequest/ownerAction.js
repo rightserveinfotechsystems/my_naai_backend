@@ -34,7 +34,7 @@ const ownerActionBooking = async (req, res) => {
         }
         const userName = user ? user.fullName : 'Customer';
         const deviceTokens = user && user.deviceToken ? [user.deviceToken] : [];
-
+        const uniqueTokens = [...new Set(deviceTokens.map(dt => dt))];
         //cancel the auto cancel task if owner took action
         if (bookingRequest?.autoCancelTaskName) {
             // await deleteBookingAutoCancelTask(bookingRequest.autoCancelTaskName);
@@ -48,7 +48,7 @@ const ownerActionBooking = async (req, res) => {
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
-            const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+           
             for (const deviceToken of uniqueTokens) {
                 await sendNotificationToDevice(deviceToken, 'Booking Rejected', `Your booking request has been rejected by the salon.`,
                     {
@@ -91,7 +91,9 @@ const ownerActionBooking = async (req, res) => {
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
-            const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+
+
+            
             for (const deviceToken of uniqueTokens) {
                 await sendNotificationToDevice(deviceToken, 'Booking Delay Proposed',
                     `Salon proposed to delay your booking to ${proposedTimeStr}. Accept or Reject?`,
@@ -194,7 +196,7 @@ const ownerActionBooking = async (req, res) => {
 
 
             // Notify customer
-            const uniqueTokens = [...new Set(deviceTokens.map(dt => dt.deviceToken))];
+         
             for (const deviceToken of uniqueTokens) {
                 await sendNotificationToDevice(deviceToken, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingTime12hr}`,
                     {
