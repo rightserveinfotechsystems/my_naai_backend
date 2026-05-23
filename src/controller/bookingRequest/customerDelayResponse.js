@@ -189,7 +189,8 @@ const customerActionBooking = async (req, res) => {
 
       // Set reminder 20 minute before booking time
       booking.reminderTime = new Date(
-        bookingDateTime.getTime() - 20 * 60 * 1000
+        // bookingDateTime.getTime() - 20 * 60 * 1000
+        bookingDateTime.getTime() - 10 * 60 * 1000
       );
       booking.reminderSent = false;
 
