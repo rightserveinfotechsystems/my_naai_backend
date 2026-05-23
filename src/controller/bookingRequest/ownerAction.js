@@ -48,7 +48,7 @@ const ownerActionBooking = async (req, res) => {
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
-           
+
             for (const deviceToken of uniqueTokens) {
                 await sendNotificationToDevice(deviceToken, 'Booking Rejected', `Your booking request has been rejected by the salon.`,
                     {
@@ -93,7 +93,7 @@ const ownerActionBooking = async (req, res) => {
             // Notify customer
 
 
-            
+
             for (const deviceToken of uniqueTokens) {
                 await sendNotificationToDevice(deviceToken, 'Booking Delay Proposed',
                     `Salon proposed to delay your booking to ${proposedTimeStr}. Accept or Reject?`,
@@ -186,7 +186,8 @@ const ownerActionBooking = async (req, res) => {
 
             // Set reminder 20 minute before booking time
             booking.reminderTime = new Date(
-                bookingDateTime.getTime() - 20 * 60 * 1000
+                // bookingDateTime.getTime() - 20 * 60 * 1000
+                bookingDateTime.getTime() - 10 * 60 * 1000
             );
 
             booking.reminderSent = false;
@@ -196,7 +197,7 @@ const ownerActionBooking = async (req, res) => {
 
 
             // Notify customer
-         
+
             for (const deviceToken of uniqueTokens) {
                 await sendNotificationToDevice(deviceToken, 'Booking Confirmed', `Your booking at salon is confirmed for ${bookingTime12hr}`,
                     {
