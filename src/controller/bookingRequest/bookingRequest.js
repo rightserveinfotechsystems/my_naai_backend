@@ -173,7 +173,7 @@ const createBookingRequest = async (req, res) => {
         // ----------------------------
         const existingUserBooking = await db.Booking.findOne({
             where: {
-                customerId: userId,
+                userId: userId,
                 bookingDate,
                 bookingStatus: 'confirmed',
                 [Op.and]: db.sequelize.literal(`
