@@ -14,7 +14,7 @@ const authenticateSalon = async (request, response, next) => {
 
     if (!token) {
       return response.status(401).json({
-        status: 'FAILED',
+        status: 'JWT_FAILED',
         message: 'Not authorized, no token provided'
       });
     }
@@ -23,18 +23,18 @@ const authenticateSalon = async (request, response, next) => {
 
     if (!decoded || !decoded.salonId) {
       return response.status(401).json({
-        status: 'FAILED',
+        status: 'JWT_FAILED',
         message: 'Invalid token payload'
       });
     }
 
     const salon = await db.Salon.findOne({
-      where: { salonId: decoded.salonId, isActive: true }
+      where: { salonId: decoded.salonId, isActive: true, deletedAt: null }
     });
 
     if (!salon) {
       return response.status(401).json({
-        status: 'FAILED',
+        status: 'JWT_FAILED',
         message: 'Not authorized, invalid salon token'
       });
     }
@@ -50,7 +50,7 @@ const authenticateSalon = async (request, response, next) => {
   } catch (error) {
     console.log('ERROR:', error.message);
     return response.status(401).json({
-      status: 'FAILED',
+      status: 'JWT_FAILED',
       message: 'Not authorized'
     });
   }

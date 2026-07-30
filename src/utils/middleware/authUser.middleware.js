@@ -10,7 +10,7 @@ const authenticateUser = async (request, response, next) => {
         //check if token is missing
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return response.status(401).json({
-                status: 'FAILED',
+                status: 'JWT_FAILED',
                 message: 'Access token required'
             });
         }
@@ -26,7 +26,7 @@ const authenticateUser = async (request, response, next) => {
         // check if user exists
         if (!user) {
             return response.status(401).json({
-                status: 'FAILED',
+                status: 'JWT_FAILED',
                 message: 'User not found'
             });
         }
@@ -34,7 +34,7 @@ const authenticateUser = async (request, response, next) => {
         // check if user is active
         if (!user.isActive) {
             return response.status(403).json({
-                status: 'FAILED',
+                status: 'JWT_FAILED',
                 message: 'User is not active. Please contact support.'
             })
         }
@@ -50,7 +50,7 @@ const authenticateUser = async (request, response, next) => {
     } catch (error) {
         console.log("error : ", error)
         return response.status(401).json({
-            status: 'FAILED',
+            status: 'JWT_FAILED',
             message: 'Invalid token'
         });
     }

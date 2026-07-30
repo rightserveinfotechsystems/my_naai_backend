@@ -36,7 +36,7 @@ const getSalonById = async (salonId) => {
 const getSalonByPhone = async (phoneNumber) => {
   try {
     const salon = await db.Salon.findOne({
-      where: { phoneNumber }
+      where: { phoneNumber, deletedAt: null }
     });
     return salon;
   } catch (error) {
