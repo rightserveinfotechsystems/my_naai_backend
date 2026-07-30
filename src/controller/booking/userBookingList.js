@@ -23,7 +23,7 @@ const userGetBookingList = async (request, response) => {
     const bookingsData = await Promise.all(
       result.bookings.map(async (booking) => {
         const services = booking.services || [];
-         console.log("FULL BOOKING:", booking);
+        
         const waitingTime =
           booking.queue?.queueNumber
             ? await BookingService.getUserWaitingTime(booking)

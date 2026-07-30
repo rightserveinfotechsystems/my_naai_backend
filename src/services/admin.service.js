@@ -99,7 +99,7 @@ const getAdminUserByPhone = async (phoneNumber) => {
  */
 const getAdminUserByEmail = async (email) => {
     try {
-        const user = await db.User.findOne({
+        const user = await db.Admin.findOne({
             where: { email: email?.toLowerCase() }
         });
         return user;

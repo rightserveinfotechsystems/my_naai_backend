@@ -22,17 +22,12 @@ const verifySalonOtpLogin = async (request, response) => {
 
         // Get salon by phone
         const salon = await salonService.getSalonByPhone(validData.phoneNumber);
-        if (!salon) {
-            return response.status(404).json({
-                status: 'FAILED',
-                message: 'Salon not found.'
-            });
-        }
 
-        if (!salon.isActive) {
+
+        if (salon && !salon.isActive) {
             return response.status(404).json({
                 status: 'FAILED',
-                message: 'Salon account is inactive.'
+                message: 'Salon account is inactive. Please contact MY Naai Admin to activate your account.'
             });
         }
 
@@ -71,78 +66,6 @@ const verifySalonOtpLogin = async (request, response) => {
             verifiedAt: new Date()
         });
 
-
-        // Update last login ONLY
-        await salonService.updateSalon(salon.salonId, {
-            lastLogin: new Date()
-        });
-
-        // ✅ NEW DEVICE TOKEN FLOW (MULTIPLE DEVICES SAFE)
-
-
-        // if (deviceToken) {
-        //     const devices = await DeviceToken.findAll({
-        //         where: { salonId: salon.salonId }
-        //     });
-
-        //     const alreadyExists = devices.some(
-        //         device => device.deviceToken === deviceToken
-        //     );
-
-        //     if (!alreadyExists && devices.length >= 10) {
-        //         return response.status(403).json({
-        //             status: 'FAILED',
-        //             message: 'Already logged in on 10 devices'
-        //         });
-        //     }
-
-        //     if (!alreadyExists) {
-        //         await DeviceToken.create({
-        //             salonId: salon.salonId,
-        //             deviceToken
-        //         });
-        //     }
-        // }
-
-        if (deviceToken) {
-            //  Check if device already exists
-            const existingDevice = await DeviceToken.findOne({
-                where: {
-                    salonId: salon.salonId,
-                    deviceToken
-                }
-            });
-            if (existingDevice) {
-            } else {
-                //  Count total devices
-                const deviceCount = await DeviceToken.count({
-                    where: { salonId: salon.salonId }
-                });
-                // If limit reached → delete oldest
-                if (deviceCount >= 10) {
-                    const oldestDevice = await DeviceToken.findOne({
-                        where: { salonId: salon.salonId },
-                        order: [['createdAt', 'ASC']]
-                    });
-                    if (oldestDevice) {
-                        await oldestDevice.destroy();
-                    }
-                }
-                // Insert new device
-                await DeviceToken.create({
-                    salonId: salon.salonId,
-                    deviceToken
-                });
-                console.log(`📱 New device added: ${deviceToken}`);
-            }
-        }
-        // Generate JWT token
-        const token = generateToken({
-            salonId: salon.salonId,
-            // role: 'SALON'
-        });
-
-
         //delete the verified otp
         await db.OtpLog.destroy({
             where: {
@@ -150,19 +73,99 @@ const verifySalonOtpLogin = async (request, response) => {
             }
         });
 
-        return response.status(200).json({
-            status: 'SUCCESS',
-            message: 'Salon login successful',
-            data: {
-                salon,
-                // salon: {
-                //     salonId: salon.salonId,
-                //     salonName: salon.salonName,
-                //     phoneNumber: salon.phoneNumber,
-                // },
-                token
+        if (salon) {
+
+            // Update last login ONLY
+            await salonService.updateSalon(salon.salonId, {
+                lastLogin: new Date()
+            });
+
+
+            if (deviceToken) {
+                //  Check if device already exists
+                const existingDevice = await DeviceToken.findOne({
+                    where: {
+                        salonId: salon.salonId,
+                        deviceToken
+                    }
+                });
+                if (existingDevice) {
+                } else {
+                    //  Count total devices
+                    const deviceCount = await DeviceToken.count({
+                        where: { salonId: salon.salonId }
+                    });
+                    // If limit reached → delete oldest
+                    if (deviceCount >= 10) {
+                        const oldestDevice = await DeviceToken.findOne({
+                            where: { salonId: salon.salonId },
+                            order: [['createdAt', 'ASC']]
+                        });
+                        if (oldestDevice) {
+                            await oldestDevice.destroy();
+                        }
+                    }
+                    // Insert new device
+                    await DeviceToken.create({
+                        salonId: salon.salonId,
+                        deviceToken
+                    });
+                    console.log(`📱 New device added: ${deviceToken}`);
+                }
             }
-        });
+            // Generate JWT token
+            const token = generateToken({
+                salonId: salon.salonId,
+                // role: 'SALON'
+            });
+
+            return response.status(200).json({
+                status: 'SUCCESS',
+                message: 'Salon login successful',
+                data: {
+                    salon,
+                    token
+                },
+                isNewSalon: (salon?.isProfileCompleted && salon?.isProfileCompleted === false) ? true : false
+            });
+        } else {
+            const dataToInsert = {
+                salonName: "Your Salon Name",
+                phoneNumber: phoneNumber,
+                genderType: 'UNISEX',
+                isActive: true,
+                isOpen: false,
+                isPlanActive: true,
+                planType: 'FREE',
+                planStartDate: new Date(),
+                planEndDate: new Date(new Date().setDate(new Date().getDate() + 7)), //set for 7 days free trial
+                totalReviews: 0,
+                totalRating: 0,
+                deviceToken: deviceToken || null,
+                isProfileCompleted: false
+            };
+            const newSalon = await salonService.createSalon(dataToInsert);
+
+            // Insert new device
+            if (deviceToken) {
+                await DeviceToken.create({
+                    salonId: newSalon.salonId,
+                    deviceToken
+                });
+            }
+
+            return response.status(201).json({
+                status: 'SUCCESS',
+                message: 'Salon account not found. A new salon account has been created. Please update your salon details to activate your account.',
+                data: {
+                    salon: newSalon,
+                    token: generateToken({
+                        salonId: newSalon.salonId
+                    })
+                },
+                isNewSalon: true
+            });
+        }
     } catch (error) {
         return response.status(500).json({
             status: 'FAILED',

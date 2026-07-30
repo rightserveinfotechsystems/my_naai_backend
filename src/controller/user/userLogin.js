@@ -25,9 +25,42 @@ const verifyOtpLogin = async (request, response) => {
 
         //User not found
         if (!user) {
-            return response.status(404).json({
-                status: 'FAILED',
-                message: 'User not found'
+            const otpRow = await db.OtpLog.findOne({
+                where: {
+                    phoneNumber: validData.phoneNumber,
+                    otpCode: validData.otp,
+                    purpose: 'login',
+                    isVerified: false
+                },
+                order: [['createdAt', 'DESC']]
+            });
+
+            //OTP not found OR OTP does not match
+            if (!otpRow || otpRow.otpCode !== validData.otp) {
+                return response.status(401).json({
+                    status: 'FAILED',
+                    message: 'Invalid OTP'
+                });
+            }
+
+            //  OTP expired
+            if (otpRow.expiresAt < new Date()) {
+                return response.status(401).json({
+                    status: 'FAILED',
+                    message: 'OTP has expired'
+                });
+            }
+
+
+            await otpRow.update({
+                isVerified: true,
+                verifiedAt: new Date()
+            });
+
+            return response.status(200).json({
+                status: 'SUCCESS',
+                message: 'OTP verified successfully. Please signup to continue.',
+                isUserExist: false
             });
         }
 

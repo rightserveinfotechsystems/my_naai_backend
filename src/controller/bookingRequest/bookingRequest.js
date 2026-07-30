@@ -191,12 +191,13 @@ const createBookingRequest = async (req, res) => {
         );
         // ⏱️ OWNER RESPONSE → 1 MIN
         try {
-            await scheduleAutoCancelTask({
+            const data = await scheduleAutoCancelTask({
                 bookingRequestId: bookingRequest.bookingRequestId,
                 delayInSeconds: 60,
             });
+            console.log('Auto-cancel task scheduled:', data);
         } catch (err) {
-            console.error('Error scheduling auto-cancel for booking request:', err);
+            console.log('Error scheduling auto-cancel for booking request:', err);
         }
 
 

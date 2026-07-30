@@ -13,6 +13,16 @@ const getSalonNotificationCount = async (salonId) => {
     });
 };
 
+const getUserNotificationCount = async (userId) => {
+    return await db.Notification.count({
+        where: {
+            receiverType: 'USER',
+            receiverId: userId,
+            isRead: false
+        }
+    });
+};
+
 const getNotificationById = async (notificationId) => {
     return await db.Notification.findOne({
         where: { notificationId }

@@ -98,19 +98,31 @@ app.get("/", (request, response) => {
 app.get("/test-db", async (req, res) => {
     try {
         await db.sequelize.authenticate();
-        await db.sequelize.sync({ alter: true });
-        const models = Object.keys(db).filter(key => key !== 'sequelize');
 
-        res.json({
+        const ignoredModels = ["Admin"];
+
+        for (const [modelName, model] of Object.entries(db.sequelize.models)) {
+            if (ignoredModels.includes(modelName)) {
+                console.log(`Skipping table sync: ${modelName}`);
+                continue;
+            }
+
+            await model.sync({ alter: true });
+        }
+
+        return res.json({
             success: true,
-            message: "Database connected successfully",
-            models: models
+            message: "Database connected and tables updated successfully",
+            ignoredModels,
+            models: Object.keys(db.sequelize.models),
         });
     } catch (error) {
-        res.status(500).json({
+        console.error("Database update failed:", error);
+
+        return res.status(500).json({
             success: false,
-            message: "Database connection failed",
-            error: error.message
+            message: "Database update failed",
+            error: error.message,
         });
     }
 });

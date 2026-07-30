@@ -10,7 +10,7 @@ module.exports = (sequelize) => {
         },
         salonName: {
             type: DataTypes.STRING(150),
-            allowNull: false,
+            allowNull: true,
             validate: {
                 notEmpty: {
                     msg: 'Salon name is required'
@@ -118,6 +118,12 @@ module.exports = (sequelize) => {
             defaultValue: true,
             allowNull: false,
             field: 'is_active'
+        },
+        isProfileCompleted: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: null,
+            allowNull: true,
+            field: 'is_profile_completed'
         },
         ratingAverage: {
             type: DataTypes.DECIMAL(3, 2),

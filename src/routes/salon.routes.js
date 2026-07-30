@@ -28,6 +28,7 @@ const checkPlanActive = require('../utils/middleware/checkPlanActive');
 const deleteSalonByAdmin = require('../controller/salon/deleteSalonByAdmin');
 const getSalonsByAgent = require('../controller/salon/salonsCreatedByAgent');
 const renewSalonPlan = require('../controller/razorpay/renewSalonPlan');
+const editSalonProfile = require('../controller/salon/editSalonProfile');
 
 
 
@@ -48,6 +49,7 @@ salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
 salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
 salonRouter.post('/delete-salon-service', authenticateSalon, deleteService);
 salonRouter.post('/renew-salon-plan',authenticateSalon, renewSalonPlan);
+salonRouter.post('/edit-salon-profile',authenticateSalon, editSalonProfile);
 salonRouter.post('/delete-service', deleteSalonService);
 
 

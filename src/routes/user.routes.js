@@ -17,6 +17,7 @@ const removeSavedSalon = require('../controller/user/removeSaveSalon');
 const saveSalonToggle = require('../controller/user/bookmarkSalonToggle');
 const { getSaveSalonListController } = require('../controller/user/getSaveSalonList');
 const { getUserBookedSalonsController } = require('../controller/user/getUserBookedSalons.controller');
+const userOnBoarding = require('../controller/user/user-onboarding');
 
 
 
@@ -25,6 +26,7 @@ const userRouter = express.Router();
 
 userRouter.post('/send-otp-register', sendOtpRegister);
 userRouter.post('/create', createUser);
+userRouter.post('/onboard', userOnBoarding);
 userRouter.post('/send-otp', sendOtp);
 userRouter.post('/verify-otp', verifyOtpLogin);
 userRouter.get('/profile', authenticateUser, getUserById);

@@ -98,16 +98,6 @@ const User = (sequelize) => {
             allowNull: true,
             field: 'deleted_at'
         },
-        // savedSalonId: {
-        //     type: DataTypes.UUID,
-        //     allowNull: true,
-        //     field: 'saved_salon_id',
-        //     references: {
-        //         model: 'salons', 
-        //         key: 'salon_id'
-        //     },
-        //     onDelete: 'SET NULL'
-        // }
     }, {
         sequelize,
         modelName: 'User',

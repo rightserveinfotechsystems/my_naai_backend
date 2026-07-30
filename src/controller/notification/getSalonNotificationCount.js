@@ -1,6 +1,7 @@
 const notificationService = require('../../services/notification.service')
 const getNotificationCount = async (request, response) => {
     try {
+        
         const salonId = request.salon.salonId;
 
         if (!salonId) {
