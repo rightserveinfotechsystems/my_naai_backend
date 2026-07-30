@@ -31,8 +31,19 @@ const sendOtpRegister = async (request, response) => {
         const otp = generateOtp(6);
 
         // 3) save OTP in DB (purpose: 'register')
-        const messageResponse = await axios.get(`https://sms.adservs.co.in/vb/apikey.php?apikey=${process.env.SMS_SECRET_kEY}&senderid=MYNAAI&number=${phoneNumber}&templateid=1707176786337855348&message=Welcome%20to%20My%20Naai%20!%20Your%20registration%20OTP%20is%20${otp}.%20Please%20enter%20this%20to%20verify%20your%20account.%20MYNAAI`)
-        if (messageResponse && messageResponse?.data?.status?.toLowerCase() === "success") {
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-API-Key': process.env.SMS_SECRET_kEY
+        };
+        const newMessageResponse = await axios.post(`https://smsc.adservs.co.in/api/v1/gateway/sendSMS`, {
+            number: [`91${phoneNumber}`],
+            header: 'MYNAAI',
+            message: `Welcome to My Naai ! Your registration OTP is ${otp}. Please enter this to verify your account. MYNAAI`,
+            templateid: '1707176786337855348',
+            flash: false
+        }, { headers });
+        // const messageResponse = await axios.get(`https://sms.adservs.co.in/vb/apikey.php?apikey=${process.env.SMS_SECRET_kEY}&senderid=MYNAAI&number=${phoneNumber}&templateid=1707176786337855348&message=Welcome%20to%20My%20Naai%20!%20Your%20registration%20OTP%20is%20${otp}.%20Please%20enter%20this%20to%20verify%20your%20account.%20MYNAAI`)
+        if (newMessageResponse && newMessageResponse?.data?.success == true) {
             //  Save OTP in DB
             const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
             const otpLog = await db.OtpLog.create({
