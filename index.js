@@ -32,11 +32,20 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
     console.log("🟢 Socket connected:", socket.id);
 
+    // Join salon room
     socket.on("join_salon", (salonId) => {
         socket.join(`salon_${salonId}`);
         console.log(`🏪 Salon joined room: salon_${salonId}`);
     });
 
+    //User Join Private Room
+    socket.on("join_user", (userId) => {
+        if (userId) {
+           const room=`user_${userId}`;
+           socket.join(room);
+           console.log(`👤 User joined room: ${room}`);
+        }
+    });
     socket.on("disconnect", () => {
         console.log("🔴 Socket disconnected:", socket.id);
     });

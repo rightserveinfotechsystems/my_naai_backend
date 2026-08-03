@@ -65,6 +65,12 @@ const ownerActionBooking = async (req, res) => {
                 message: 'Your booking request has been rejected by the salon.'
             }, { transaction: t });
 
+            req.io.to(`user_${bookingRequest?.customerId}`).emit("booking_status_updated", {
+                title: "Booking Rejected",
+                message: "Your booking request has been rejected by the salon.",
+                bookingId: booking.bookingId
+            });
+
             await t.commit();
             return res.status(200).json({ status: 'SUCCESS', message: 'Booking request rejected' });
         }
@@ -125,6 +131,12 @@ const ownerActionBooking = async (req, res) => {
             } catch (err) {
                 console.error('Error scheduling auto-cancel for delayed booking:', err);
             }
+
+            req.io.to(`user_${bookingRequest?.customerId}`).emit("booking_status_updated", {
+                title: "Booking Delay Proposed",
+                message: `Salon proposed to delay your booking to ${proposedTimeStr}. Accept or Reject?`,
+                bookingId: booking.bookingId
+            });
             return res.status(200).json({ status: 'SUCCESS', message: 'Delay proposed to customer' });
         }
 
@@ -221,6 +233,11 @@ const ownerActionBooking = async (req, res) => {
             } catch (reminderError) {
                 console.error('Error creating booking reminder task:', reminderError);
             }
+            req.io.to(`user_${bookingRequest?.customerId}`).emit("booking_status_updated", {
+                title: "Booking Rejected",
+                message: "Your booking request has been rejected by the salon.",
+                bookingId: booking.bookingId
+            });
             return res.status(200).json({
                 status: 'SUCCESS',
                 message: 'Booking request accepted and confirmed',
