@@ -234,8 +234,14 @@ const ownerActionBooking = async (req, res) => {
                 console.error('Error creating booking reminder task:', reminderError);
             }
             req.io.to(`user_${bookingRequest?.customerId}`).emit("booking_status_updated", {
-                title: "Booking Rejected",
-                message: "Your booking request has been rejected by the salon.",
+                title: "Booking Accepted",
+                message: "Your booking request has been accepted by the salon.",
+                bookingId: booking.bookingId
+            });
+
+            req.io.to(`salon_${ownerId}`).emit("queue_updated", {
+                title: "Booking Confirmed",
+                message: `Your booking at salon is confirmed for ${bookingTime12hr}`,
                 bookingId: booking.bookingId
             });
             return res.status(200).json({

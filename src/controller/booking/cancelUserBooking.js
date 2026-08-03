@@ -117,6 +117,13 @@ const userCancelBooking = async (req, res) => {
 
         await t.commit();
 
+        // Emit socket event to salon room
+        req.io.to(`salon_${booking.salonId}`).emit("queue_updated", {
+            title: "Booking Cancelled",
+            message: `Customer cancelled the booking`,
+            bookingId: booking?.bookingId
+        });
+
         return res.status(200).json({
             status: 'SUCCESS',
             message: 'Booking cancelled successfully'
