@@ -68,7 +68,7 @@ const ownerActionBooking = async (req, res) => {
             req.io.to(`user_${bookingRequest?.customerId}`).emit("booking_status_updated", {
                 title: "Booking Rejected",
                 message: "Your booking request has been rejected by the salon.",
-                bookingId: booking.bookingId
+                bookingId: bookingRequest.bookingRequestId
             });
 
             await t.commit();
