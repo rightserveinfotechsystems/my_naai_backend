@@ -1,4 +1,4 @@
-// cron/bookingCompletedCron.js
+// cron/bookingCompletionCron.js
 
 const cron = require("node-cron");
 const dayjs = require("dayjs");
@@ -6,7 +6,7 @@ const utc = require("dayjs/plugin/utc");
 const timezone = require("dayjs/plugin/timezone");
 const { Op } = require("sequelize");
 
-const { Booking } = require("../src/database/models/booking.model"); // Update the path if needed
+const Booking = require("../src/database/models/booking.model"); // Update the path if needed
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
