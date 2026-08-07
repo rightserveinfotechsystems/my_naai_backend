@@ -138,7 +138,7 @@ const verifySalonOtpLogin = async (request, response) => {
                 isPlanActive: true,
                 planType: 'FREE',
                 planStartDate: new Date(),
-                planEndDate: new Date(new Date().setDate(new Date().getDate() + 7)), //set for 7 days free trial
+                planEndDate: new Date(new Date().setDate(new Date().getDate() + 20)), //set for 20 days free trial
                 totalReviews: 0,
                 totalRating: 0,
                 deviceToken: deviceToken || null,
