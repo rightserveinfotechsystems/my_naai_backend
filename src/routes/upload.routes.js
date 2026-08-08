@@ -1,6 +1,7 @@
 const express = require("express");
 const uploadImage = require("../utils/middleware/multer.utils");
 const { uploadImageController } = require("../controller/upload.controller");
+const multer = require("multer");
 
 
 const ImageRoutes = express.Router();
