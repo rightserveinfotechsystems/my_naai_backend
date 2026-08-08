@@ -2,121 +2,71 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const uploadsDir = path.join(__dirname, "../../../public/uploads");
+const uploadsDir = path.join(__dirname, "../../../../public/uploads");
 
-// Ensure upload directory exists
+// Create uploads folder if it doesn't exist
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+    fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 // Storage config
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        let ext = path.extname(file.originalname).toLowerCase();
 
-  filename: (req, file, cb) => {
-    const uniqueName =
-      Date.now() + "-" + Math.round(Math.random() * 1e9);
+        // Fallback for mobile devices (iOS/Android) when originalname lacks extension
+        if (!ext) {
+            if (file.mimetype.includes("heic")) ext = ".heic";
+            else if (file.mimetype.includes("heif")) ext = ".heif";
+            else if (file.mimetype.includes("pdf")) ext = ".pdf";
+            else if (file.mimetype.includes("png")) ext = ".png";
+            else ext = ".jpg";
+        }
 
-    const extension = path.extname(file.originalname).toLowerCase();
-
-    cb(null, uniqueName + extension);
-  },
+        cb(null, `${uniqueName}${ext}`);
+    },
 });
 
-// Image filter
-const imageFilter = (req, file, cb) => {
-  // Common image MIME types
-  const allowedMimeTypes = [
-    // JPEG
-    "image/jpeg",
-    "image/jpg",
+// Universal Filter for Images (including HEIC/HEIF) and PDFs/Documents
+const universalFileFilter = (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const mime = (file.mimetype || "").toLowerCase();
 
-    // PNG
-    "image/png",
+    // 1. Allowed File Extensions
+    const allowedExtensions = [
+        ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg",
+        ".heic", ".heif",
+        ".pdf", ".doc", ".docx", ".txt"
+    ];
 
-    // WebP
-    "image/webp",
+    // 2. Allowed MIME Keywords
+    const allowedMimeKeywords = [
+        "image",
+        "pdf",
+        "document",
+        "msword",
+        "officedocument",
+        "octet-stream" // Mobile devices often send custom files/HEIC as octet-stream
+    ];
 
-    // GIF
-    "image/gif",
+    const isValidExt = allowedExtensions.includes(ext) || ext === "";
+    const isValidMime = allowedMimeKeywords.some((keyword) => mime.includes(keyword));
 
-    // BMP
-    "image/bmp",
-
-    // TIFF
-    "image/tiff",
-
-    // HEIC / HEIF - iPhone
-    "image/heic",
-    "image/heif",
-
-    // AVIF
-    "image/avif",
-
-    // SVG
-    "image/svg+xml",
-
-    // ICO
-    "image/x-icon",
-    "image/vnd.microsoft.icon",
-
-    // JPEG 2000
-    "image/jp2",
-
-    // JPEG XL
-    "image/jxl",
-  ];
-
-  // Common image extensions
-  const allowedExtensions = [
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".webp",
-    ".gif",
-    ".bmp",
-    ".tif",
-    ".tiff",
-    ".heic",
-    ".heif",
-    ".avif",
-    ".svg",
-    ".ico",
-    ".jp2",
-    ".j2k",
-    ".jpf",
-    ".jpx",
-    ".jpm",
-    ".mj2",
-    ".jxl",
-  ];
-
-  const extension = path.extname(file.originalname).toLowerCase();
-
-  const isValidMime = allowedMimeTypes.includes(
-    file.mimetype.toLowerCase()
-  );
-
-  const isValidExtension = allowedExtensions.includes(extension);
-
-  if (isValidMime || isValidExtension) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only image files are allowed"));
-  }
+    if (isValidExt || isValidMime) {
+        cb(null, true);
+    } else {
+        cb(new Error("Unsupported file format! Only images (JPG, PNG, HEIC, WEBP) and document files (PDF) are allowed."));
+    }
 };
 
 const uploadImage = multer({
-  storage,
-
-  limits: {
-    // 2 MB
-    fileSize: 2 * 1024 * 1024,
-  },
-
-  fileFilter: imageFilter,
+    storage,
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB Limit (handles uncompressed HEIC photos & multi-page PDFs)
+    fileFilter: universalFileFilter,
 });
 
 module.exports = uploadImage;
