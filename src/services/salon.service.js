@@ -550,6 +550,7 @@ const getActiveSalonsListForUsers = async ({
     const where = {
       isActive: true,
       isPlanActive: true,
+      isProfileCompleted:true
     };
 
     if (searchString?.trim()) {
