@@ -3,7 +3,7 @@ const { authenticateAdmin } = require('../utils/middleware/auth.middleware');
 const createSalon = require('../controller/salon/createSalon');
 const getSalonById = require('../controller/salon/getSalonById');
 const updateSalon = require('../controller/salon/updateSalon');
-const deleteSalon = require('../controller/salon/deleteSalon'); 
+const deleteSalon = require('../controller/salon/deleteSalon');
 const toggleStatus = require('../controller/salon/toggleSalonStatus');
 const toggleOpenClose = require('../controller/salon/toggleOpenCloseSalon');
 const verifySalonOtpLogin = require('../controller/salon/salonLogin');
@@ -49,8 +49,8 @@ salonRouter.post('/nearby', getNearbySalons);
 salonRouter.post('/get-salon', authenticateSalon, getSalonByIdApp);
 salonRouter.post('/update-salon', authenticateSalon, updateSalonApp);
 salonRouter.post('/delete-salon-service', authenticateSalon, deleteService);
-salonRouter.post('/renew-salon-plan',authenticateSalon, renewSalonPlan);
-salonRouter.post('/edit-salon-profile',authenticateSalon, editSalonProfile);
+salonRouter.post('/renew-salon-plan', authenticateSalon, renewSalonPlan);
+salonRouter.post('/edit-salon-profile', authenticateSalon, editSalonProfile);
 salonRouter.post('/delete-service', deleteSalonService);
 
 
@@ -58,7 +58,7 @@ salonRouter.post('/delete-service', deleteSalonService);
 //user login   
 salonRouter.post('/salon-list', authenticateUser, listSalonsApp);
 salonRouter.post('/salon-list-public', getSalonListPublic);
-salonRouter.post('/get-salon-by-id', authenticateUser, getSalonByIdUser);
+salonRouter.post('/get-salon-by-id', getSalonByIdUser);
 salonRouter.get('/get-city-list', authenticateUser, getCityFilterUser)
 
 
