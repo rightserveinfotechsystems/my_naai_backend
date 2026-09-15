@@ -11,42 +11,44 @@ const Booking = require("../src/database/models/booking.model"); // Update the p
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+async function BookingUpdates(params) {
+  try {
+    const today = dayjs()
+      .tz("Asia/Kolkata")
+      .format("YYYY-MM-DD");
+
+    console.log(
+      `[Booking Completion Cron] Running for date: ${today}`
+    );
+
+    const [updatedCount] = await Booking.update(
+      {
+        bookingStatus: "completed",
+      },
+      {
+        where: {
+          bookingDate: today,
+          bookingStatus: {
+            // Remove "pending" if it is not present in your ENUM
+            [Op.in]: ["confirmed"],
+            // If pending exists in DB, use:
+            // [Op.in]: ["confirmed", "pending"]
+          },
+        },
+      }
+    );
+
+    console.log(
+      `[Booking Completion Cron] ${updatedCount} booking(s) marked as completed.`
+    );
+  } catch (error) {
+    console.error("[Booking Completion Cron Error]", error);
+  }
+}
+
 cron.schedule(
   "0 23 * * *", // Every day at 11:00 PM IST
-  async () => {
-    try {
-      const today = dayjs()
-        .tz("Asia/Kolkata")
-        .format("YYYY-MM-DD");
-
-      console.log(
-        `[Booking Completion Cron] Running for date: ${today}`
-      );
-
-      const [updatedCount] = await Booking.update(
-        {
-          bookingStatus: "completed",
-        },
-        {
-          where: {
-            bookingDate: today,
-            bookingStatus: {
-              // Remove "pending" if it is not present in your ENUM
-              [Op.in]: ["confirmed"],
-              // If pending exists in DB, use:
-              // [Op.in]: ["confirmed", "pending"]
-            },
-          },
-        }
-      );
-
-      console.log(
-        `[Booking Completion Cron] ${updatedCount} booking(s) marked as completed.`
-      );
-    } catch (error) {
-      console.error("[Booking Completion Cron Error]", error);
-    }
-  },
+  BookingUpdates,
   {
     scheduled: true,
     timezone: "Asia/Kolkata",
