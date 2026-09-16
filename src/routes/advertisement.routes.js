@@ -10,15 +10,15 @@ const deleteAdvertisement = require('../controller/advertisement/deleteAdvertise
 
 const advertisementRouter = express.Router();
 
-advertisementRouter.post('/create',authenticateAdmin, createAdvertisement);
-advertisementRouter.post('/get-list',authenticateAdmin, listAdvertisementsAdmin);
-advertisementRouter.post('/update',authenticateAdmin, updateAdvertisement);
-advertisementRouter.post('/status',authenticateAdmin,toggleAdvertisementStatus);
-advertisementRouter.post('/delete',authenticateAdmin, deleteAdvertisement);
+advertisementRouter.post('/create', authenticateAdmin, createAdvertisement);
+advertisementRouter.post('/get-list', authenticateAdmin, listAdvertisementsAdmin);
+advertisementRouter.post('/update', authenticateAdmin, updateAdvertisement);
+advertisementRouter.post('/status', authenticateAdmin, toggleAdvertisementStatus);
+advertisementRouter.post('/delete', authenticateAdmin, deleteAdvertisement);
 
 
 
-advertisementRouter.get('/get-advertisement',authenticateUser, getAdvertisementUser);
+advertisementRouter.get('/get-advertisement', getAdvertisementUser);
 
 
 
