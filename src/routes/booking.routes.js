@@ -18,6 +18,7 @@ const customerDelayAction = require('../controller/booking/customerDelayAction')
 const userCancelBooking = require('../controller/booking/cancelUserBooking');
 const checkPlanActive = require('../utils/middleware/checkPlanActive');
 const { sendBookingReminder } = require('../controller/bookingRequest/sendBookingReminder');
+const salonUpdateBookingTime = require('../controller/booking/update-booking-time');
 
 const bookingRouter = express.Router();
 
@@ -35,6 +36,7 @@ bookingRouter.post('/booking-complete', authenticateSalon, checkPlanActive, mark
 bookingRouter.get('/get-completed-bookings', authenticateSalon, checkPlanActive, getCompletedBookings);
 bookingRouter.post('/create-walk-in', authenticateSalon, addWalkInCustomers);
 bookingRouter.post('/booking-request-cancel/:bookingRequestId', authenticateUser, userCancelBooking);
+bookingRouter.post('/salon/queue/update-time/:bookingId', salonAuth, salonUpdateBookingTime);
 
 
 // Owner actions: ACCEPT / REJECT / DELAY

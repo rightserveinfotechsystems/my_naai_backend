@@ -82,7 +82,7 @@ salonRouter.post('/delete-service', deleteSalonService);
 salonRouter.post('/status', toggleStatus);
 salonRouter.delete('/delete-salon-by-admin/:salonId', deleteSalonByAdmin);
 salonRouter.post('/get-salon-by-agent', getSalonsByAgent);
-salonRouter.post('/queue/update-time/:bookingId', authenticateSalon, salonUpdateBookingTime)
+
 
 
 
