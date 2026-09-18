@@ -36,7 +36,7 @@ bookingRouter.post('/booking-complete', authenticateSalon, checkPlanActive, mark
 bookingRouter.get('/get-completed-bookings', authenticateSalon, checkPlanActive, getCompletedBookings);
 bookingRouter.post('/create-walk-in', authenticateSalon, addWalkInCustomers);
 bookingRouter.post('/booking-request-cancel/:bookingRequestId', authenticateUser, userCancelBooking);
-bookingRouter.post('/salon/queue/update-time/:bookingId', salonAuth, salonUpdateBookingTime);
+bookingRouter.post('/salon/queue/update-time/:bookingId', authenticateSalon, salonUpdateBookingTime);
 
 
 // Owner actions: ACCEPT / REJECT / DELAY
