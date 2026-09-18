@@ -30,6 +30,7 @@ const getSalonsByAgent = require('../controller/salon/salonsCreatedByAgent');
 const renewSalonPlan = require('../controller/razorpay/renewSalonPlan');
 const editSalonProfile = require('../controller/salon/editSalonProfile');
 const getSalonListPublic = require('../controller/salon/get-salon-list-for-public');
+const salonUpdateBookingTime = require('../controller/booking/update-booking-time');
 
 
 
@@ -81,6 +82,7 @@ salonRouter.post('/delete-service', deleteSalonService);
 salonRouter.post('/status', toggleStatus);
 salonRouter.delete('/delete-salon-by-admin/:salonId', deleteSalonByAdmin);
 salonRouter.post('/get-salon-by-agent', getSalonsByAgent);
+salonRouter.post('/queue/update-time/:bookingId', authenticateSalon, salonUpdateBookingTime)
 
 
 
