@@ -282,7 +282,6 @@ const salonUpdateBookingTime = async (req, res) => {
       previousBookingDate: day,
       previousTime: fromLabel,
       reason: reason || '',
-      queueNumber: queue?.queueNumber ?? null,
     };
 
     let notified = false;
