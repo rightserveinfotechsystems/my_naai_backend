@@ -234,18 +234,18 @@ const salonUpdateBookingTime = async (req, res) => {
         expiresAt: null,
       }), { transaction: t });
 
-      queue = await db.Queue.findOne({ where: { bookingId: booking.bookingId }, transaction: t });
-      if (queue) {
-        await queue.update(pickColumns(db.Queue, { bookingTime: newClock, bookingDate: newDay }), { transaction: t });
-      } else if (booking.bookingStatus === 'confirmed' && db.Queue?.create) {
-        queue = await db.Queue.create(pickColumns(db.Queue, {
-          bookingId: booking.bookingId,
-          salonId: booking.salonId,
-          userId: booking.userId,
-          bookingDate: newDay,
-          bookingTime: newClock,
-        }), { transaction: t });
-      }
+      // queue = await db.Queue.findOne({ where: { bookingId: booking.bookingId }, transaction: t });
+      // if (queue) {
+      //   await queue.update(pickColumns(db.Queue, { bookingTime: newClock, bookingDate: newDay }), { transaction: t });
+      // } else if (booking.bookingStatus === 'confirmed' && db.Queue?.create) {
+      //   queue = await db.Queue.create(pickColumns(db.Queue, {
+      //     bookingId: booking.bookingId,
+      //     salonId: booking.salonId,
+      //     userId: booking.userId,
+      //     bookingDate: newDay,
+      //     bookingTime: newClock,
+      //   }), { transaction: t });
+      // }
       await t.commit();
     } catch (writeError) {
       await t.rollback();
