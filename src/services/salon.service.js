@@ -549,7 +549,6 @@ const getActiveSalonsListForUsers = async ({
     // ==================== BASE FILTER ====================
     const where = {
       isActive: true,
-      isPlanActive: true,
       isProfileCompleted:true
     };
 
