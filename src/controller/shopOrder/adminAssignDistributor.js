@@ -31,7 +31,7 @@ const adminAssignDistributor = async (request, response) => {
         return response.status(200).json({
             status: 'SUCCESS',
             message: 'Distributor assigned — awaiting their acceptance',
-            data: updated
+            data: shopOrderService.decorateForFulfilment(updated)
         });
     } catch (error) {
         console.log('error', error);

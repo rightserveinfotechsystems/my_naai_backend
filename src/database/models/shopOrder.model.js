@@ -108,6 +108,22 @@ module.exports = (sequelize) => {
             field: 'distributor_id'
         },
 
+        // The delivery point, snapshotted at placement: the buying salon's
+        // coordinates (or the address pin the client sent). Snapshotted, not
+        // joined, so moving the salon later never rewrites where an old parcel
+        // went — and dispatch can still compute KM for completed orders.
+        deliveryLatitude: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            field: 'delivery_latitude'
+        },
+
+        deliveryLongitude: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            field: 'delivery_longitude'
+        },
+
         cancelledAt: {
             type: DataTypes.DATE,
             allowNull: true,

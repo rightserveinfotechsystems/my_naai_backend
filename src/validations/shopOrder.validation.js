@@ -25,7 +25,12 @@ const createShopOrderSchema = Joi.object({
         line1: Joi.string().max(255).required(),
         city: Joi.string().max(100).required(),
         state: Joi.string().max(100).allow(null, '').optional(),
-        pincode: Joi.string().pattern(/^\d{6}$/).required()
+        pincode: Joi.string().pattern(/^\d{6}$/).required(),
+        // Optional delivery pin from the client. The server prefers the
+        // salon's own coordinates and only falls back to these, so a tampered
+        // browser cannot move a delivery (and its KM) to another city.
+        latitude: Joi.number().min(-90).max(90).optional().allow(null, ''),
+        longitude: Joi.number().min(-180).max(180).optional().allow(null, '')
     }).required(),
     payment: Joi.object({
         method: Joi.string().valid('ONLINE', 'COD').default('COD'),
@@ -51,6 +56,14 @@ const adminUpdateShopOrderStatusSchema = Joi.object({
     orderId: Joi.string().max(64).required(),
     status: Joi.string().valid('PENDING_ASSIGNMENT', 'AWAITING_ACCEPTANCE', 'ASSIGNED', 'PICKED', 'SHIPPED', 'DELIVERED', 'CANCELLED').required(),
     notes: Joi.string().max(1000).allow(null, '').optional()
+});
+
+// Admin corrects the delivery pin (a salon with no coordinates yet, or an
+// order that goes to a different gate/warehouse).
+const adminSetDeliveryLocationSchema = Joi.object({
+    orderId: Joi.string().max(64).required(),
+    latitude: Joi.number().min(-90).max(90).required(),
+    longitude: Joi.number().min(-180).max(180).required()
 });
 
 const adminAssignDistributorSchema = Joi.object({
@@ -88,6 +101,7 @@ module.exports = {
     cancelShopOrderSchema,
     adminUpdateShopOrderStatusSchema,
     adminAssignDistributorSchema,
+    adminSetDeliveryLocationSchema,
     distributorOrderSchema,
     distributorRejectOrderSchema,
     distributorListOrdersSchema,

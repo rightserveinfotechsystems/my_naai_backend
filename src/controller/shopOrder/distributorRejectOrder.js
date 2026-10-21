@@ -20,7 +20,7 @@ const distributorRejectOrder = async (request, response) => {
         if (!updated) {
             return response.status(404).json({ status: 'FAILED', message: 'Order not found' });
         }
-        return response.status(200).json({ status: 'SUCCESS', message: 'Order rejected — waiting for re-assignment', data: updated });
+        return response.status(200).json({ status: 'SUCCESS', message: 'Order rejected — waiting for re-assignment', data: shopOrderService.decorateForFulfilment(updated) });
     } catch (error) {
         console.log('error', error);
         const known = /Only an order awaiting|not assigned to your distributor/.test(error.message);

@@ -23,7 +23,7 @@ const adminUpdateShopOrderStatus = async (request, response) => {
             actorLabel: request.admin?.name || 'Admin'
         };
         const updated = await shopOrderService.updateStatus(orderId, status, notes || null, actor);
-        return response.status(200).json({ status: 'SUCCESS', message: 'Order status updated successfully', data: updated });
+        return response.status(200).json({ status: 'SUCCESS', message: 'Order status updated successfully', data: shopOrderService.decorateForFulfilment(updated) });
     } catch (error) {
         console.log('error', error);
         const known = /terminal|Unknown order status/.test(error.message);

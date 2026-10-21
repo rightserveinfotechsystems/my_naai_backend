@@ -10,6 +10,7 @@ const adminListShopOrders = require('../controller/shopOrder/adminListShopOrders
 const adminGetShopOrderById = require('../controller/shopOrder/adminGetShopOrderById');
 const adminUpdateShopOrderStatus = require('../controller/shopOrder/adminUpdateShopOrderStatus');
 const adminAssignDistributor = require('../controller/shopOrder/adminAssignDistributor');
+const adminSetDeliveryLocation = require('../controller/shopOrder/adminSetDeliveryLocation');
 const distributorAcceptOrder = require('../controller/shopOrder/distributorAcceptOrder');
 const distributorRejectOrder = require('../controller/shopOrder/distributorRejectOrder');
 const distributorListOrders = require('../controller/shopOrder/distributorListOrders');
@@ -29,6 +30,9 @@ shopOrderRouter.post('/admin-list', authenticateAdmin, adminListShopOrders);
 shopOrderRouter.post('/admin-get-by-id', authenticateAdmin, adminGetShopOrderById);
 shopOrderRouter.post('/admin-update-status', authenticateAdmin, adminUpdateShopOrderStatus);
 shopOrderRouter.post('/admin-assign-distributor', authenticateAdmin, adminAssignDistributor);
+// Place or correct the delivery pin on an order (map in the admin detail
+// drawer); drives the KM shown while assigning a distributor.
+shopOrderRouter.post('/admin-set-delivery-location', authenticateAdmin, adminSetDeliveryLocation);
 
 // Distributor portal (distributor token) — the admin token is accepted too,
 // so the admin can record a distributor's accept/reject on their behalf.

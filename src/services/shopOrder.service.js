@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const db = require('../database/models');
 const shopSettingsService = require('./shopSettings.service');
+const { toCoordinate, toPoint, distanceKm, formatKm } = require('../utils/geo');
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
 
 /* ------------------------------------------------------------------ *\
@@ -145,11 +146,26 @@ const createOrder = async ({ salonId, orderId, items, address, payment, notes })
   }
   const paid = method === 'ONLINE' && payment?.status === 'PAID';
 
+  // The delivery point, decided once and stored on the order:
+  //   1. the salon's own coordinates (the server's truth — a client cannot
+  //      claim a different delivery city to shave its bill or its KM);
+  //   2. the address pin the client sent (a salon whose profile has no
+  //      coordinates yet still gets a map for the dispatcher).
+  // Everything downstream (KM on assignment, the admin map, the distributor
+  // portal) reads these two columns.
+  const salon = await db.Salon.findByPk(salonId, { attributes: ['salonName', 'latitude', 'longitude', 'addressLine1', 'city'] });
+  const deliveryPoint = toPoint({ latitude: salon?.latitude, longitude: salon?.longitude })
+    || toPoint({ latitude: address?.latitude, longitude: address?.longitude });
+
   const order = await db.ShopOrder.create({
     orderId: orderId || generateOrderId(),
     salonId,
     items,
-    address,
+    // Coordinates never live inside the address snapshot (the salon's address
+    // text must not silently change); they get their own columns below.
+    address: address ? { name: address.name, phone: address.phone, line1: address.line1, city: address.city, state: address.state, pincode: address.pincode } : address,
+    deliveryLatitude: deliveryPoint ? deliveryPoint.latitude : null,
+    deliveryLongitude: deliveryPoint ? deliveryPoint.longitude : null,
     payment: {
       method,
       status: paid ? 'PAID' : 'PENDING',
@@ -166,13 +182,63 @@ const createOrder = async ({ salonId, orderId, items, address, payment, notes })
 
   // First entries of the audit record: the order arrived on the central
   // dashboard, and (if paid) the payment is confirmed.
-  const salon = await db.Salon.findByPk(salonId, { attributes: ['salonName'] });
   const actor = { actorType: 'SALON', actorId: salonId, actorLabel: salon?.salonName || 'Salon' };
   await logEvent(order, { ...actor, action: 'ORDER_PLACED', toStatus: order.status, note: method === 'ONLINE' ? 'Order placed (online payment)' : 'Order placed (cash on delivery)' });
   if (paid) {
     await logEvent(order, { ...actor, action: 'PAYMENT_CONFIRMED', toStatus: order.customerStatus });
   }
   return order;
+};
+
+/* ------------------------------------------------------------------ *\
+ * Delivery location + distance
+ *
+ * Every fulfilment payload (admin, distributor) names the point the parcel is
+ * going to and how far the assigned partner is from it. The salon sees the
+ * point (it is the salon's own address) but never the partner's distance or
+ * identity — the two tracks stay separate, as they always were.
+ * ------------------------------------------------------------------ */
+
+const DELIVERY_LOCATION_SOURCES = {
+  ORDER: 'ORDER',
+  SALON: 'SALON'
+};
+
+// The point the parcel is going to. The order snapshot wins; a salon moved
+// after placement is only a fallback, so history stays truthful.
+const deliveryLocationOf = (order) => {
+  const raw = order?.toJSON ? order.toJSON() : (order || {});
+  const fromOrder = toPoint({ latitude: raw.deliveryLatitude, longitude: raw.deliveryLongitude });
+  if (fromOrder) return { ...fromOrder, source: DELIVERY_LOCATION_SOURCES.ORDER, hasLocation: true };
+  const fromSalon = toPoint({ latitude: raw.salon?.latitude, longitude: raw.salon?.longitude });
+  if (fromSalon) return { ...fromSalon, source: DELIVERY_LOCATION_SOURCES.SALON, hasLocation: true };
+  return { latitude: null, longitude: null, source: null, hasLocation: false };
+};
+
+/**
+ * The fulfilment view of an order (admin + distributor portal):
+ *   deliveryLocation { latitude, longitude, source, hasLocation }
+ *   distributor.distanceKm (km from the partner's stored location to the
+ *                  delivery point, null when either end is unknown)
+ *   distributor.hasLocation / locationUpdatedAt
+ * The salon payload never passes through here.
+ */
+const decorateForFulfilment = (order) => {
+  if (!order) return null;
+  const plain = order.toJSON ? order.toJSON() : { ...order };
+  const deliveryLocation = deliveryLocationOf(plain);
+  plain.deliveryLocation = deliveryLocation;
+  if (plain.distributor) {
+    const distance = distanceKm(plain.distributor, deliveryLocation);
+    plain.distributor = {
+      ...plain.distributor,
+      latitude: toCoordinate(plain.distributor.latitude),
+      longitude: toCoordinate(plain.distributor.longitude),
+      hasLocation: Boolean(toPoint(plain.distributor)),
+      distanceKm: distance
+    };
+  }
+  return plain;
 };
 
 const listForSalon = async (salonId, page = 1) => {
@@ -182,7 +248,7 @@ const listForSalon = async (salonId, page = 1) => {
 
   const { count: totalOrders, rows: orders } = await db.ShopOrder.findAndCountAll({
     where: { salonId },
-    include: [{ model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName'] }],
+    include: [{ model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'latitude', 'longitude'] }],
     order: [['createdAt', 'DESC']],
     limit,
     offset
@@ -202,8 +268,14 @@ const getById = async (orderIdOrId, { withEvents = false } = {}) => {
     where[Op.or] = [{ orderId: orderIdOrId }, { id: orderIdOrId }];
   }
   const include = [
-    { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName'] },
-    { model: db.Distributor, as: 'distributor', attributes: ['distributorId', 'name', 'phone'] }
+    // Coordinates travel with both ends of the delivery: the salon's (the
+    // delivery location) and the distributor's (the dispatch location).
+    { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'phoneNumber', 'latitude', 'longitude', 'addressLine1', 'city'] },
+    {
+      model: db.Distributor,
+      as: 'distributor',
+      attributes: ['distributorId', 'name', 'phone', 'area', 'deliveryCapability', 'latitude', 'longitude', 'locationUpdatedAt']
+    }
   ];
   if (withEvents) {
     include.push({
@@ -233,6 +305,10 @@ const assignDistributor = async (orderIdOrId, distributorId, note, actor = {}, d
   if (order.status === 'DELIVERED' || order.status === 'CANCELLED') {
     throw new Error(`Order can no longer be assigned (status: ${order.status})`);
   }
+  // The distance the admin saw on the assign screen is written into the
+  // permanent record, so "why this partner?" is answerable months later.
+  const deliveryPoint = deliveryLocationOf(order);
+  const distanceLabel = formatKm(distanceKm(distributor, deliveryPoint));
 
   const fromStatus = order.status;
   order.distributorId = distributorId;
@@ -248,7 +324,11 @@ const assignDistributor = async (orderIdOrId, distributorId, note, actor = {}, d
     action: 'ASSIGNED',
     fromStatus,
     toStatus: order.status,
-    note: [note, `Distributor requested: ${distributor?.name || distributorId}`].filter(Boolean).join(' — ')
+    note: [
+      note,
+      `Distributor requested: ${distributor?.name || distributorId}`,
+      distanceLabel ? `${distanceLabel} from the delivery location` : 'delivery distance unknown (no coordinates)'
+    ].filter(Boolean).join(' — ')
   });
   return order;
 };
@@ -422,8 +502,12 @@ const listForAdmin = async ({ page = 1, status, customerStatus, salonId, distrib
   const { count: totalOrders, rows: orders } = await db.ShopOrder.findAndCountAll({
     where,
     include: [
-      { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'phoneNumber'] },
-      { model: db.Distributor, as: 'distributor', attributes: ['distributorId', 'name', 'phone', 'area'] },
+      { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'phoneNumber', 'latitude', 'longitude', 'addressLine1', 'city'] },
+      {
+        model: db.Distributor,
+        as: 'distributor',
+        attributes: ['distributorId', 'name', 'phone', 'area', 'deliveryCapability', 'latitude', 'longitude', 'locationUpdatedAt']
+      },
       {
         model: db.ShopOrderEvent,
         as: 'events',
@@ -437,7 +521,7 @@ const listForAdmin = async ({ page = 1, status, customerStatus, salonId, distrib
   });
 
   return {
-    orders,
+    orders: orders.map(decorateForFulfilment),
     pagination: { page: safePage, limit, totalOrders, totalPages: Math.ceil(totalOrders / limit) || 0 }
   };
 };
@@ -455,7 +539,12 @@ const listForDistributor = async (distributorId, { page = 1, status } = {}) => {
   const { count: totalOrders, rows: orders } = await db.ShopOrder.findAndCountAll({
     where,
     include: [
-      { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'phoneNumber'] },
+      { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'phoneNumber', 'latitude', 'longitude', 'addressLine1', 'city'] },
+      {
+        model: db.Distributor,
+        as: 'distributor',
+        attributes: ['distributorId', 'name', 'phone', 'area', 'latitude', 'longitude', 'locationUpdatedAt']
+      },
       {
         model: db.ShopOrderEvent,
         as: 'events',
@@ -469,13 +558,46 @@ const listForDistributor = async (distributorId, { page = 1, status } = {}) => {
   });
 
   return {
-    orders,
+    orders: orders.map(decorateForFulfilment),
     pagination: { page: safePage, limit, totalOrders, totalPages: Math.ceil(totalOrders / limit) || 0 }
   };
 };
 
+/**
+ * Admin: correct or add the delivery pin for an order (a salon with no
+ * coordinates on file, or a delivery that goes somewhere else). Recorded in
+ * the timeline with who moved it, because the pin decides the KM the next
+ * assignment shows.
+ */
+const setDeliveryLocation = async (orderIdOrId, { latitude, longitude }, actor = {}) => {
+  const order = await getById(orderIdOrId);
+  if (!order) return null;
+  if (order.status === 'DELIVERED' || order.status === 'CANCELLED') {
+    throw new Error(`The delivery location is locked once an order is ${order.status}`);
+  }
+  const point = toPoint({ latitude, longitude });
+  if (!point) throw new Error('A valid latitude and longitude pair is required');
+  const previous = deliveryLocationOf(order);
+  await order.update({ deliveryLatitude: point.latitude, deliveryLongitude: point.longitude });
+  await logEvent(order, {
+    actorType: actor.actorType || 'ADMIN',
+    actorId: actor.actorId || null,
+    actorLabel: actor.actorLabel || 'Admin',
+    action: 'DELIVERY_LOCATION_SET',
+    fromStatus: order.status,
+    toStatus: order.status,
+    note: `Delivery location set to ${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`
+      + (previous.hasLocation ? ' (replacing the previous pin)' : '')
+  });
+  const fresh = await getById(orderIdOrId, { withEvents: true });
+  return decorateForFulfilment(fresh);
+};
+
 module.exports = {
   DELIVERY_FEE,
+  deliveryLocationOf,
+  decorateForFulfilment,
+  setDeliveryLocation,
   FREE_DELIVERY_ABOVE,
   computeTotals,
   INTERNAL_STATUSES,

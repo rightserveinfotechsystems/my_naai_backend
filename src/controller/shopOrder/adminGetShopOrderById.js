@@ -26,7 +26,9 @@ const adminGetShopOrderById = async (request, response) => {
         return response.status(200).json({
             status: 'SUCCESS',
             message: 'Order fetched successfully',
-            data: order
+            // Adds `deliveryLocation` (the point on the map) and
+            // `distributor.distanceKm` (how far the partner is from it).
+            data: shopOrderService.decorateForFulfilment(order)
         });
     } catch (error) {
         console.log('error', error);

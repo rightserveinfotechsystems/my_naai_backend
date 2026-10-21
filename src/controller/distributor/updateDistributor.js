@@ -1,11 +1,12 @@
 const { updateDistributorSchema } = require('../../validations/distributor.validation');
 const distributorService = require('../../services/distributor.service');
 
-// Company admin: partially update a delivery partner.
+// Company admin: partially update a delivery partner. `latitude`/`longitude`
+// move the dispatch pin (both must be sent together; both null clears it).
 const updateDistributor = async (request, response) => {
     try {
-        const { distributorId, name, phone, email, area, deliveryCapability, address, password, isActive } = request.body || {};
-        const validationResult = updateDistributorSchema.validate({ distributorId, name, phone, email, area, deliveryCapability, address, password, isActive }, { abortEarly: true });
+        const { distributorId, name, phone, email, area, deliveryCapability, address, password, isActive, latitude, longitude } = request.body || {};
+        const validationResult = updateDistributorSchema.validate({ distributorId, name, phone, email, area, deliveryCapability, address, password, isActive, latitude, longitude }, { abortEarly: true });
         if (validationResult.error) {
             return response.status(400).json({ status: 'FAILED', message: validationResult.error.details[0].message });
         }
@@ -18,6 +19,12 @@ const updateDistributor = async (request, response) => {
         if (address !== undefined) dataToUpdate.address = address || null;
         if (password !== undefined) dataToUpdate.password = password || null;
         if (typeof isActive === 'boolean') dataToUpdate.isActive = isActive;
+        // An unrelated edit must not wipe the pin: only pass the pair through
+        // when the admin actually sent it.
+        if (latitude !== undefined || longitude !== undefined) {
+            dataToUpdate.latitude = latitude === undefined ? undefined : latitude;
+            dataToUpdate.longitude = longitude === undefined ? undefined : longitude;
+        }
         if (Object.keys(dataToUpdate).length === 0) {
             return response.status(400).json({ status: 'FAILED', message: 'No fields to update' });
         }
