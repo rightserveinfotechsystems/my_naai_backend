@@ -13,6 +13,7 @@ const shopCartRouter = require('./shopCart.routes');
 const distributorRouter = require('./distributor.routes');
 const shopOrderRouter = require('./shopOrder.routes');
 const shopSettingsRouter = require('./shopSettings.routes');
+const shopPublicRouter = require('./shopPublic.routes');
 const razorpayWebhook = require('../controller/razorpay/razorpayWebhook');
 const notificationRouter = require('./notification.routes');
 const bookingRequestRouter = require('./bookingRequest.routes');
@@ -41,6 +42,10 @@ routes.use('/shop-cart', shopCartRouter);
 routes.use('/distributors', distributorRouter);
 routes.use('/shop-orders', shopOrderRouter);
 routes.use('/shop-settings', shopSettingsRouter);
+// The website storefront: catalog + bill rules with NO token (a visitor
+// browses before signing in). Same handlers, no auth chain, edge-cacheable
+// and rate-limited per IP.
+routes.use('/shop-public', shopPublicRouter);
 
 // Razorpay webhook — public, but signature-verified (raw body HMAC-SHA256).
 routes.post('/razorpay/webhook', razorpayWebhook);

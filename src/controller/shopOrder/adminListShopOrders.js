@@ -1,13 +1,14 @@
 const shopOrderService = require('../../services/shopOrder.service');
 
 // Company admin (and, via the distributorId filter, the admin/distributor
-// view): every salon's orders with BOTH status tracks and the assigned
-// distributor. Filters: status (internal track), customerStatus (salon
-// track), salonId, distributorId, searchString (order id), page.
+// view): every buyer's orders with BOTH status tracks and the assigned
+// distributor. Filters: status (internal track), customerStatus (customer
+// track), buyerType ('SALON' | 'CUSTOMER'), salonId, distributorId,
+// searchString (order id, salon name, customer name or phone), page.
 const adminListShopOrders = async (request, response) => {
     try {
-        const { page, status, customerStatus, salonId, distributorId, searchString } = request.body || {};
-        const data = await shopOrderService.listForAdmin({ page, status, customerStatus, salonId, distributorId, searchString });
+        const { page, status, customerStatus, buyerType, salonId, distributorId, searchString } = request.body || {};
+        const data = await shopOrderService.listForAdmin({ page, status, customerStatus, buyerType, salonId, distributorId, searchString });
 
         return response.status(200).json({
             status: 'SUCCESS',

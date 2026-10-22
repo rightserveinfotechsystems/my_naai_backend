@@ -1,9 +1,11 @@
 const { Op } = require('sequelize');
 const db = require('../database/models');
 const shopOrderService = require('./shopOrder.service');
+const { buyerWhere, buyerColumns } = require('../utils/shopBuyer');
 
 /**
- * Server-side shop cart (table `shop_carts`), keyed by the buying salon.
+ * Server-side shop cart (table `shop_carts`), keyed by the BUYER — a salon
+ * buying stock, or a customer buying for themselves (`buyerType`).
  *
  * The web portal and the mobile app both read and write the cart through
  * this service, so the same salon sees the same cart on every device —
@@ -21,9 +23,9 @@ const clampQty = (value) => Math.max(1, Math.min(99, Math.round(Number(value) ||
 // is unavailable are kept (flagged) so the UI can show "no longer
 // available" and let the buyer remove them. Totals count available lines
 // only — you cannot buy what is off the shelf.
-const getCart = async (salonId) => {
+const getCart = async (buyer) => {
   const rows = await db.ShopCart.findAll({
-    where: { salonId },
+    where: buyerWhere(buyer),
     include: [{
       model: db.ShopProduct,
       as: 'product',
@@ -59,24 +61,26 @@ const requireBuyableProduct = async (productId) => {
 };
 
 // Add (or top up) a line. Returns the fresh line qty.
-const addLine = async (salonId, productId, qty = 1) => {
+const addLine = async (buyer, productId, qty = 1) => {
   const product = await requireBuyableProduct(productId);
   if (!product) return null;
 
   const nextQty = clampQty(qty);
-  const existing = await db.ShopCart.findOne({ where: { salonId, productId } });
+  const existing = await db.ShopCart.findOne({ where: { ...buyerWhere(buyer), productId } });
   if (existing) {
     await existing.update({ qty: Math.min(99, existing.qty + nextQty) });
     return existing.qty;
   }
-  const row = await db.ShopCart.create({ salonId, productId, qty: nextQty });
+  // `buyerColumns` sets exactly one of salonId / customerId, matching the
+  // buyerType the token carried.
+  const row = await db.ShopCart.create({ ...buyerColumns(buyer), productId, qty: nextQty });
   return row.qty;
 };
 
 // Absolute set (the stepper). qty <= 0 removes the line.
-const setLineQty = async (salonId, productId, qty) => {
+const setLineQty = async (buyer, productId, qty) => {
   const next = Math.round(Number(qty) || 0);
-  const existing = await db.ShopCart.findOne({ where: { salonId, productId } });
+  const existing = await db.ShopCart.findOne({ where: { ...buyerWhere(buyer), productId } });
   if (next <= 0) {
     if (existing) await existing.destroy();
     return 0;
@@ -87,8 +91,8 @@ const setLineQty = async (salonId, productId, qty) => {
   return clamped;
 };
 
-const removeLine = async (salonId, productId) => {
-  const existing = await db.ShopCart.findOne({ where: { salonId, productId } });
+const removeLine = async (buyer, productId) => {
+  const existing = await db.ShopCart.findOne({ where: { ...buyerWhere(buyer), productId } });
   if (!existing) return false;
   await existing.destroy();
   return true;
@@ -96,8 +100,8 @@ const removeLine = async (salonId, productId) => {
 
 // Called after a successful order placement so the placed cart is not
 // bought twice from another device.
-const clearCart = async (salonId) => {
-  await db.ShopCart.destroy({ where: { salonId } });
+const clearCart = async (buyer) => {
+  await db.ShopCart.destroy({ where: buyerWhere(buyer) });
   return true;
 };
 

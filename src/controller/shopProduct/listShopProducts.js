@@ -1,19 +1,11 @@
 const shopProductService = require('../../services/shopProduct.service');
 
 // The buying side's catalog: the mobile app browses as a USER, the web shop
-// as a SALON — authUserOrSalon accepts either token and identifies the
-// caller. The catalog itself is company-wide, so the identity only proves
-// the caller is an account, not which account.
+// as a SALON, and a visitor on the public website browses with no token at
+// all. The catalog is company-wide and the payload carries only published
+// fields, so no identity is required — the shop must open before sign-in.
 const listShopProducts = async (request, respsone) => {
     try {
-        const callerId = request.user?.id || request.salon?.salonId;
-        if (!callerId) {
-            return respsone.status(400).json({
-                status: 'FAILED',
-                message: 'Caller identity not found in token'
-            });
-        }
-
         const { page, searchString } = request.body || {};
         const data = await shopProductService.listCatalog({ page, searchString });
 

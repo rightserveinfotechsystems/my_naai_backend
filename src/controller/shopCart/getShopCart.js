@@ -1,14 +1,16 @@
 const shopCartService = require('../../services/shopCart.service');
+const { resolveShopBuyer } = require('../../utils/shopBuyer');
 
-// The salon's cart, with live product fields and a server-computed bill.
-// Web and app both render from this — same salon, same cart, every device.
+// The buyer's cart, with live product fields and a server-computed bill.
+// Web and app both render from this — same account, same cart, every device.
+// The buyer (salon or customer) comes from the token, never the body.
 const getShopCart = async (request, response) => {
     try {
-        const salonId = request.salon?.salonId;
-        if (!salonId) {
-            return response.status(400).json({ status: 'FAILED', message: 'Salon Id not found in token' });
+        const buyer = resolveShopBuyer(request);
+        if (!buyer) {
+            return response.status(401).json({ status: 'JWT_FAILED', message: 'Sign in to view your cart' });
         }
-        const data = await shopCartService.getCart(salonId);
+        const data = await shopCartService.getCart(buyer);
         return response.status(200).json({ status: 'SUCCESS', message: 'Cart fetched successfully', data });
     } catch (error) {
         console.log('error', error);

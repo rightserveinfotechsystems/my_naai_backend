@@ -20,11 +20,28 @@ module.exports = (sequelize) => {
             primaryKey: true
         },
 
-        // The buying salon (salon token in the JWT).
+        // Who owns the line. A salon cart carries `salonId`; a customer cart
+        // (app / website USER role) carries `customerId`. `buyerType` says
+        // which one to read; existing rows are salon carts.
+        buyerType: {
+            type: DataTypes.ENUM('SALON', 'CUSTOMER'),
+            allowNull: false,
+            defaultValue: 'SALON',
+            field: 'buyer_type'
+        },
+
+        // The buying salon (salon token in the JWT). NULL for a customer.
         salonId: {
             type: DataTypes.UUID,
-            allowNull: false,
+            allowNull: true,
             field: 'salon_id'
+        },
+
+        // The buying customer (users.user_id). NULL for a salon.
+        customerId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            field: 'customer_id'
         },
 
         // Shop product in the line (shop_products.product_id).
@@ -44,8 +61,12 @@ module.exports = (sequelize) => {
         tableName: 'shop_carts',
         timestamps: true,
         indexes: [
-            { unique: true, fields: ['salon_id', 'product_id'] },
-            { fields: ['salon_id'] }
+            // One row per buyer + product. Postgres treats NULLs as distinct,
+            // so a salon row (customer_id NULL) and a customer row
+            // (salon_id NULL) can both hold the same product.
+            { unique: true, name: 'shop_carts_buyer_product_key', fields: ['buyer_type', 'salon_id', 'customer_id', 'product_id'] },
+            { fields: ['salon_id'] },
+            { fields: ['customer_id'] }
         ]
     });
 
@@ -53,6 +74,10 @@ module.exports = (sequelize) => {
         ShopCart.belongsTo(models.ShopProduct, {
             foreignKey: 'productId',
             as: 'product'
+        });
+        ShopCart.belongsTo(models.User, {
+            foreignKey: 'customerId',
+            as: 'customer'
         });
     };
 

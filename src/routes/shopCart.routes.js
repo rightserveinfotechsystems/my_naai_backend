@@ -1,15 +1,17 @@
 const express = require('express');
-const { authenticateSalon } = require('../utils/middleware/authSalon.middleware');
+const authenticateUserOrSalon = require('../utils/middleware/authUserOrSalon.middleware');
 const getShopCart = require('../controller/shopCart/getShopCart');
 const addToShopCart = require('../controller/shopCart/addToShopCart');
 const setShopCartLineQty = require('../controller/shopCart/setShopCartLineQty');
 const removeFromShopCart = require('../controller/shopCart/removeFromShopCart');
 const clearShopCart = require('../controller/shopCart/clearShopCart');
 
-// The cart belongs to the BUYING SALON's account — the same identity that
-// owns the shop orders — so web and mobile app share it.
+// The cart belongs to the BUYER's account — the same identity that owns the
+// shop orders — so web and mobile app share it. Either a salon token (partner
+// portal) or a user token (customer app / website) is accepted; which one it
+// was decides whose cart this is.
 const shopCartRouter = express.Router();
-shopCartRouter.use(authenticateSalon);
+shopCartRouter.use(authenticateUserOrSalon);
 
 shopCartRouter.post('/get', getShopCart);
 shopCartRouter.post('/add', addToShopCart);

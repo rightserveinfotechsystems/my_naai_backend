@@ -2,6 +2,7 @@ const { Op } = require('sequelize');
 const db = require('../database/models');
 const shopSettingsService = require('./shopSettings.service');
 const { toCoordinate, toPoint, distanceKm, formatKm } = require('../utils/geo');
+const { buyerWhere, buyerColumns, buyerOwnsOrder, buyerActor } = require('../utils/shopBuyer');
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
 
 /* ------------------------------------------------------------------ *\
@@ -132,7 +133,7 @@ const inr = (n) => `₹${Number(n).toLocaleString('en-IN')}`;
  * The COD limit (shop_settings.codThreshold) is enforced here as well as in
  * the checkout UI — a tampered client cannot order COD above it.
  */
-const createOrder = async ({ salonId, orderId, items, address, payment, notes }) => {
+const createOrder = async ({ buyerType, buyerId, isSalon, orderId, items, address, payment, notes }) => {
   const method = payment?.method === 'ONLINE' ? 'ONLINE' : 'COD';
   const settings = await shopSettingsService.getSettings();
 
@@ -147,19 +148,34 @@ const createOrder = async ({ salonId, orderId, items, address, payment, notes })
   const paid = method === 'ONLINE' && payment?.status === 'PAID';
 
   // The delivery point, decided once and stored on the order:
-  //   1. the salon's own coordinates (the server's truth — a client cannot
-  //      claim a different delivery city to shave its bill or its KM);
-  //   2. the address pin the client sent (a salon whose profile has no
-  //      coordinates yet still gets a map for the dispatcher).
+  //   1. a SALON order: the salon's own coordinates (the server's truth — a
+  //      client cannot claim a different delivery city to shave its KM),
+  //      else the address pin the client sent;
+  //   2. a CUSTOMER order: the pin the client sent. A customer has no
+  //      standing address on file, so there is nothing to look up — and
+  //      inventing one would send the parcel to the wrong door.
   // Everything downstream (KM on assignment, the admin map, the distributor
-  // portal) reads these two columns.
-  const salon = await db.Salon.findByPk(salonId, { attributes: ['salonName', 'latitude', 'longitude', 'addressLine1', 'city'] });
-  const deliveryPoint = toPoint({ latitude: salon?.latitude, longitude: salon?.longitude })
-    || toPoint({ latitude: address?.latitude, longitude: address?.longitude });
+  // portal) reads these two columns, so fulfilment is identical for both.
+  let salon = null;
+  let customer = null;
+  let deliveryPoint = null;
+
+  if (isSalon) {
+    salon = await db.Salon.findByPk(buyerId, { attributes: ['salonName', 'latitude', 'longitude', 'addressLine1', 'city'] });
+    deliveryPoint = toPoint({ latitude: salon?.latitude, longitude: salon?.longitude })
+      || toPoint({ latitude: address?.latitude, longitude: address?.longitude });
+  } else {
+    deliveryPoint = toPoint({ latitude: address?.latitude, longitude: address?.longitude });
+    // Snapshot who bought it; the users row keeps the account's current name
+    // and phone so the admin and the delivery partner know who the parcel is
+    // for without a second lookup.
+    customer = await db.User.findByPk(buyerId, { attributes: ['userId', 'fullName', 'phoneNumber'] });
+  }
 
   const order = await db.ShopOrder.create({
     orderId: orderId || generateOrderId(),
-    salonId,
+    // Writes buyerType + exactly one of salonId / customerId.
+    ...buyerColumns({ buyerType, buyerId }),
     items,
     // Coordinates never live inside the address snapshot (the salon's address
     // text must not silently change); they get their own columns below.
@@ -181,8 +197,12 @@ const createOrder = async ({ salonId, orderId, items, address, payment, notes })
   });
 
   // First entries of the audit record: the order arrived on the central
-  // dashboard, and (if paid) the payment is confirmed.
-  const actor = { actorType: 'SALON', actorId: salonId, actorLabel: salon?.salonName || 'Salon' };
+  // dashboard, and (if paid) the payment is confirmed. The actor is whoever
+  // bought it — the admin timeline renders the same row for both buyers.
+  const actor = buyerActor(
+    { buyerType, buyerId },
+    isSalon ? (salon?.salonName || 'Salon') : (customer?.fullName || 'Customer')
+  );
   await logEvent(order, { ...actor, action: 'ORDER_PLACED', toStatus: order.status, note: method === 'ONLINE' ? 'Order placed (online payment)' : 'Order placed (cash on delivery)' });
   if (paid) {
     await logEvent(order, { ...actor, action: 'PAYMENT_CONFIRMED', toStatus: order.customerStatus });
@@ -241,14 +261,22 @@ const decorateForFulfilment = (order) => {
   return plain;
 };
 
-const listForSalon = async (salonId, page = 1) => {
+/**
+ * A buyer's own order history — a salon's or a customer's, decided by the
+ * token. Everything except the `where` is the shared list: same pagination,
+ * same newest-first order, same payload.
+ */
+const listForBuyer = async ({ buyer, page = 1 } = {}) => {
   const limit = DEFAULT_LIMIT;
   const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
   const offset = (safePage - 1) * limit;
 
   const { count: totalOrders, rows: orders } = await db.ShopOrder.findAndCountAll({
-    where: { salonId },
-    include: [{ model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'latitude', 'longitude'] }],
+    where: buyerWhere(buyer),
+    include: [
+      { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'latitude', 'longitude'] },
+      { model: db.User, as: 'customer', attributes: ['userId', 'fullName', 'phoneNumber'] }
+    ],
     order: [['createdAt', 'DESC']],
     limit,
     offset
@@ -260,9 +288,15 @@ const listForSalon = async (salonId, page = 1) => {
   };
 };
 
+// Kept for any caller that still has a bare salon id.
+const listForSalon = (salonId, page = 1) => listForBuyer({
+  buyer: { buyerType: 'SALON', buyerId: salonId, isSalon: true },
+  page
+});
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const getById = async (orderIdOrId, { withEvents = false } = {}) => {
+const getById = async (orderIdOrId, { withEvents = false, buyer = null } = {}) => {
   const where = { orderId: orderIdOrId };
   if (UUID_RE.test(String(orderIdOrId))) {
     where[Op.or] = [{ orderId: orderIdOrId }, { id: orderIdOrId }];
@@ -271,6 +305,8 @@ const getById = async (orderIdOrId, { withEvents = false } = {}) => {
     // Coordinates travel with both ends of the delivery: the salon's (the
     // delivery location) and the distributor's (the dispatch location).
     { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'phoneNumber', 'latitude', 'longitude', 'addressLine1', 'city'] },
+    // A customer order has no salon, so the buyer's name/phone come from here.
+    { model: db.User, as: 'customer', attributes: ['userId', 'fullName', 'phoneNumber'] },
     {
       model: db.Distributor,
       as: 'distributor',
@@ -285,7 +321,13 @@ const getById = async (orderIdOrId, { withEvents = false } = {}) => {
       order: [['createdAt', 'ASC'], ['id', 'ASC']]
     });
   }
-  return await db.ShopOrder.findOne({ where, include });
+  const order = await db.ShopOrder.findOne({ where, include });
+  if (!order) return null;
+  // Internal callers (admin, distributor, webhook) pass no buyer and keep
+  // reading every order. A buyer's own request must match the token — an
+  // order that is not theirs answers exactly like a missing id.
+  if (buyer && !buyerOwnsOrder(buyer, order)) return null;
+  return order;
 };
 
 // The Razorpay webhook correlates a captured payment with an order by the
@@ -458,8 +500,9 @@ const updateStatus = async (orderIdOrId, nextStatus, note, actor = {}) => {
 // the depot (internal: PENDING_ASSIGNMENT / AWAITING_ACCEPTANCE / ASSIGNED /
 // PICKED). Both tracks go terminal; a paid online order is flagged for a
 // refund.
-const cancelBySalon = async (orderIdOrId, reason) => {
-  const order = await getById(orderIdOrId);
+const cancelByBuyer = async (orderIdOrId, { buyer, reason } = {}) => {
+  // Ownership first: an order that belongs to somebody else is "not found".
+  const order = await getById(orderIdOrId, { buyer });
   if (!order) return null;
   if (order.status === 'CANCELLED') {
     throw new Error('Order is already cancelled');
@@ -477,14 +520,29 @@ const cancelBySalon = async (orderIdOrId, reason) => {
   }
   await order.save();
 
-  await logEvent(order, { actorType: 'SALON', actorId: order.salonId, actorLabel: order.salon?.salonName || 'Salon', action: 'CANCELLED', fromStatus, toStatus: 'CANCELLED', note: order.cancelReason || 'Cancelled by salon' });
+  const cancelledBy = buyer && buyer.buyerType === 'CUSTOMER'
+    ? buyerActor(buyer, order.customer?.fullName || 'Customer')
+    : { actorType: 'SALON', actorId: order.salonId, actorLabel: order.salon?.salonName || 'Salon' };
+  await logEvent(order, {
+    ...cancelledBy,
+    action: 'CANCELLED',
+    fromStatus,
+    toStatus: 'CANCELLED',
+    note: order.cancelReason || (cancelledBy.actorType === 'CUSTOMER' ? 'Cancelled by customer' : 'Cancelled by salon')
+  });
   return order;
 };
+
+// Kept for any caller that still has a bare salon id.
+const cancelBySalon = (orderIdOrId, reason) => cancelByBuyer(orderIdOrId, {
+  buyer: null,
+  reason
+});
 
 // Company admin: every salon's orders. Filters: status (INTERNAL track),
 // customerStatus, salonId, distributorId (the admin/distributor view),
 // searchString (order id).
-const listForAdmin = async ({ page = 1, status, customerStatus, salonId, distributorId, searchString = '' } = {}) => {
+const listForAdmin = async ({ page = 1, status, customerStatus, salonId, distributorId, buyerType, searchString = '' } = {}) => {
   const limit = DEFAULT_LIMIT;
   const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
   const offset = (safePage - 1) * limit;
@@ -494,15 +552,29 @@ const listForAdmin = async ({ page = 1, status, customerStatus, salonId, distrib
   if (customerStatus) where.customerStatus = customerStatus;
   if (salonId) where.salonId = salonId;
   if (distributorId) where.distributorId = distributorId;
+  // 'SALON' | 'CUSTOMER' — the dashboard's Buyer type filter.
+  const trimmedBuyerType = String(buyerType || '').trim().toUpperCase();
+  if (['SALON', 'CUSTOMER'].includes(trimmedBuyerType)) where.buyerType = trimmedBuyerType;
+
   const trimmedSearch = String(searchString || '').trim();
   if (trimmedSearch) {
-    where[Op.or] = [{ orderId: { [Op.iLike]: `%${trimmedSearch}%` } }];
+    // An order id, a salon name, or a customer's name / phone — the admin
+    // should not have to know the id to find a customer's parcel.
+    where[Op.or] = [
+      { orderId: { [Op.iLike]: `%${trimmedSearch}%` } },
+      { '$salon.salonName$': { [Op.iLike]: `%${trimmedSearch}%` } },
+      { '$customer.fullName$': { [Op.iLike]: `%${trimmedSearch}%` } },
+      { '$customer.phoneNumber$': { [Op.iLike]: `%${trimmedSearch}%` } }
+    ];
   }
 
   const { count: totalOrders, rows: orders } = await db.ShopOrder.findAndCountAll({
     where,
     include: [
       { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'phoneNumber', 'latitude', 'longitude', 'addressLine1', 'city'] },
+      // Every customer order must arrive with its buyer: `salon` is null on
+      // those rows, so this is the only name/phone the dashboard can show.
+      { model: db.User, as: 'customer', attributes: ['userId', 'fullName', 'phoneNumber'] },
       {
         model: db.Distributor,
         as: 'distributor',
@@ -516,6 +588,11 @@ const listForAdmin = async ({ page = 1, status, customerStatus, salonId, distrib
       }
     ],
     order: [['createdAt', 'DESC']],
+    // The search above matches joined columns ($salon.… / $customer.…), which
+    // Sequelize only exposes to the count query when the join is not wrapped
+    // in a sub-query.
+    subQuery: false,
+    distinct: true,
     limit,
     offset
   });
@@ -540,6 +617,8 @@ const listForDistributor = async (distributorId, { page = 1, status } = {}) => {
     where,
     include: [
       { model: db.Salon, as: 'salon', attributes: ['salonId', 'salonName', 'phoneNumber', 'latitude', 'longitude', 'addressLine1', 'city'] },
+      // A customer parcel has no salon; the partner needs the buyer's name.
+      { model: db.User, as: 'customer', attributes: ['userId', 'fullName', 'phoneNumber'] },
       {
         model: db.Distributor,
         as: 'distributor',
@@ -553,6 +632,10 @@ const listForDistributor = async (distributorId, { page = 1, status } = {}) => {
       }
     ],
     order: [['createdAt', 'DESC']],
+    // The events include is `separate` (its own query), so counting rows here
+    // does not need a sub-query — and skipping it keeps the joins count-safe.
+    subQuery: false,
+    distinct: true,
     limit,
     offset
   });
@@ -603,6 +686,7 @@ module.exports = {
   INTERNAL_STATUSES,
   INTERNAL_TO_CUSTOMER_STATUS,
   createOrder,
+  listForBuyer,
   listForSalon,
   getById,
   findByPaymentId,
@@ -611,6 +695,7 @@ module.exports = {
   rejectOrder,
   distributorUpdateStatus,
   updateStatus,
+  cancelByBuyer,
   cancelBySalon,
   listForAdmin,
   listForDistributor

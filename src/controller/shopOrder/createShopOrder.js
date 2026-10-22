@@ -1,17 +1,21 @@
 const { createShopOrderSchema } = require('../../validations/shopOrder.validation');
 const shopOrderService = require('../../services/shopOrder.service');
+const { resolveShopBuyer } = require('../../utils/shopBuyer');
 
-// A salon places an order for stock (B2B shop). The client sends the exact
-// snapshot shape it keeps locally; the bill is recomputed here so the
-// amounts can never be tampered with. The client's order id is honoured so
-// the web's local record and this record share an id (same for the app).
+// One endpoint, two buyers: a SALON restocking its chairs and a CUSTOMER
+// buying for home. The buyer comes from the TOKEN (resolveShopBuyer) — the
+// body never names a salon or a customer, so a client cannot place an order
+// into somebody else's history. The client sends the exact snapshot shape it
+// keeps locally; the bill is recomputed here so the amounts can never be
+// tampered with. The client's order id is honoured so the web's local record
+// and this record share an id (same for the app).
 const createShopOrder = async (request, response) => {
     try {
-        const salonId = request.salon?.salonId;
-        if (!salonId) {
-            return response.status(400).json({
-                status: 'FAILED',
-                message: 'Salon Id not found in token'
+        const buyer = resolveShopBuyer(request);
+        if (!buyer) {
+            return response.status(401).json({
+                status: 'JWT_FAILED',
+                message: 'Sign in to place this order'
             });
         }
 
@@ -32,7 +36,7 @@ const createShopOrder = async (request, response) => {
 
         const value = validationResult.value;
         const order = await shopOrderService.createOrder({
-            salonId,
+            ...buyer,                       // buyerType, buyerId, isSalon
             orderId: value.orderId || null,
             items: value.items,
             address: value.address,

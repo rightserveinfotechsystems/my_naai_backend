@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateSalon } = require('../utils/middleware/authSalon.middleware');
+const authenticateUserOrSalon = require('../utils/middleware/authUserOrSalon.middleware');
 const { authenticateAdmin } = require('../utils/middleware/auth.middleware');
 const { authenticateDistributorOrAdmin } = require('../utils/middleware/authDistributorOrAdmin.middleware');
 const createShopOrder = require('../controller/shopOrder/createShopOrder');
@@ -18,11 +18,14 @@ const distributorUpdateOrderStatus = require('../controller/shopOrder/distributo
 
 const shopOrderRouter = express.Router();
 
-// Buying salon — its own orders (the SALON status track is what it sees).
-shopOrderRouter.post('/create', authenticateSalon, createShopOrder);
-shopOrderRouter.post('/list', authenticateSalon, listShopOrders);
-shopOrderRouter.post('/get-by-id', authenticateSalon, getShopOrderById);
-shopOrderRouter.post('/cancel', authenticateSalon, cancelShopOrder);
+// The BUYER's own orders — a salon (partner portal) or a customer (app /
+// website). Either token is accepted; the buyer is resolved from it, so one
+// account can never read or cancel another's parcel. They see the customer
+// status track only.
+shopOrderRouter.post('/create', authenticateUserOrSalon, createShopOrder);
+shopOrderRouter.post('/list', authenticateUserOrSalon, listShopOrders);
+shopOrderRouter.post('/get-by-id', authenticateUserOrSalon, getShopOrderById);
+shopOrderRouter.post('/cancel', authenticateUserOrSalon, cancelShopOrder);
 
 // Company admin — every salon's orders, both status tracks, distributor
 // assignment. The admin/distributor view filters by distributorId.

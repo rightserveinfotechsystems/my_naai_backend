@@ -1,13 +1,16 @@
 const { getShopOrderSchema } = require('../../validations/shopOrder.validation');
 const shopOrderService = require('../../services/shopOrder.service');
+const { resolveShopBuyer } = require('../../utils/shopBuyer');
 const { cleanForSalon } = require('./listShopOrders');
 
-// The salon's own order detail — same salon-track view as the list.
+// The buyer's own order detail — same salon-track view as the list. The
+// ownership check runs inside the service, so an order that belongs to
+// somebody else answers exactly like a missing id.
 const getShopOrderById = async (request, response) => {
     try {
-        const salonId = request.salon?.salonId;
-        if (!salonId) {
-            return response.status(400).json({ status: 'FAILED', message: 'Salon Id not found in token' });
+        const buyer = resolveShopBuyer(request);
+        if (!buyer) {
+            return response.status(401).json({ status: 'JWT_FAILED', message: 'Sign in to view this order' });
         }
 
         const { orderId } = request.body || {};
@@ -16,8 +19,8 @@ const getShopOrderById = async (request, response) => {
             return response.status(400).json({ status: 'FAILED', message: validationResult.error.details[0].message });
         }
 
-        const order = await shopOrderService.getById(orderId);
-        if (!order || String(order.salonId) !== String(salonId)) {
+        const order = await shopOrderService.getById(orderId, { buyer });
+        if (!order) {
             return response.status(404).json({ status: 'FAILED', message: 'Order not found' });
         }
 

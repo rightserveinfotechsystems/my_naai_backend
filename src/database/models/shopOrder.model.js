@@ -48,12 +48,31 @@ module.exports = (sequelize) => {
             field: 'order_id'
         },
 
+        // Who bought it. A salon order carries `salonId`; a customer order
+        // (the app / website USER role) carries `customerId` instead, so the
+        // salon column is nullable and `buyerType` says which id to read.
+        // Existing rows are salon orders and default to 'SALON'.
+        buyerType: {
+            type: DataTypes.ENUM('SALON', 'CUSTOMER'),
+            allowNull: false,
+            defaultValue: 'SALON',
+            field: 'buyer_type'
+        },
+
         // The buying salon (salon token in the JWT). Sellers are the
         // company's own stock (shop_products) — no selling salon per line.
+        // NULL for a customer order.
         salonId: {
             type: DataTypes.UUID,
-            allowNull: false,
+            allowNull: true,
             field: 'salon_id'
+        },
+
+        // The buying customer (users.user_id) — NULL for a salon order.
+        customerId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            field: 'customer_id'
         },
 
         // Snapshot of the cart lines at placement time:
@@ -151,6 +170,13 @@ module.exports = (sequelize) => {
         ShopOrder.belongsTo(models.Salon, {
             foreignKey: 'salonId',
             as: 'salon'
+        });
+        // The customer who placed it (null on a salon order). Every admin and
+        // fulfilment payload includes it, so a customer order still has a
+        // name and a phone number to show and to call.
+        ShopOrder.belongsTo(models.User, {
+            foreignKey: 'customerId',
+            as: 'customer'
         });
         ShopOrder.belongsTo(models.Distributor, {
             foreignKey: 'distributorId',
