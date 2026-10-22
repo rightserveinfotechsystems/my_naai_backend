@@ -6,8 +6,30 @@ const shopProductService = require('../../services/shopProduct.service');
 // fields, so no identity is required — the shop must open before sign-in.
 const listShopProducts = async (request, respsone) => {
     try {
-        const { page, searchString } = request.body || {};
-        const data = await shopProductService.listCatalog({ page, searchString });
+        // ONE controller for both doors (`/api/shop-products/list` with a
+        // token and the token-free `/api/shop-public/products/list`), so the
+        // website's browse and a signed-in browse send — and are answered with
+        // — exactly the same query.
+        const {
+            page,
+            pageSize,
+            searchString,
+            category,
+            gender,
+            priceRange,
+            sort,
+            inStock
+        } = request.body || {};
+        const data = await shopProductService.listCatalog({
+            page,
+            pageSize,
+            searchString,
+            category,
+            gender,
+            priceRange,
+            sort,
+            inStock
+        });
 
         return respsone.status(200).json({
             status: 'SUCCESS',
