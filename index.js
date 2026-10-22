@@ -5,6 +5,7 @@ const path = require('path');
 const dotenv = require("dotenv");
 const helmet = require('helmet');
 const { closeConnection, connectDb } = require("./src/database/config/db");
+const { ensureShopBuyerSchema } = require("./src/database/config/ensureShopBuyerSchema");
 const db = require("./src/database/models");
 const routes = require("./src/routes/routes");
 const errorHandler = require("./src/utils/middleware/error.middleware");
@@ -197,7 +198,14 @@ require('./cron/plan-check.cron');
 require('./cron/bookingCompletionCron');
 
 //connect db
-connectDb();
+// The shop takes orders from salons AND customers. `buyer_type` /
+// `customer_id` and the nullable `salon_id` come from a migration; when a
+// deployment ships the code without running it, every customer checkout
+// fails on `salon_id` not-null. Repair it once here (idempotent, no-op on a
+// migrated database) instead of waiting for someone to run SQL.
+connectDb().then((connected) => {
+    if (connected) ensureShopBuyerSchema();
+});
 // sendPushNotification("fc2A21LpQ4W3IBj7ry6RyW:APA91bHexWAirHUAVKOZKqsl_BSxon1wTcvqhk40qWCWE1YGzQjdd76Q520S-zuX0rUtcNfyux60kk7GdtuNtm6H6f_G60SL4ODvKPTUbx55qBmKWtQVrjI","Test Title","This is test notification body")
 // listen on PORT
 // app.listen(PORT,'0.0.0.0', () => {

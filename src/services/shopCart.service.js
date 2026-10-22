@@ -2,6 +2,7 @@ const { Op } = require('sequelize');
 const db = require('../database/models');
 const shopOrderService = require('./shopOrder.service');
 const { buyerWhere, buyerColumns } = require('../utils/shopBuyer');
+const { withBuyerSchema } = require('../database/config/ensureShopBuyerSchema');
 
 /**
  * Server-side shop cart (table `shop_carts`), keyed by the BUYER — a salon
@@ -73,7 +74,7 @@ const addLine = async (buyer, productId, qty = 1) => {
   }
   // `buyerColumns` sets exactly one of salonId / customerId, matching the
   // buyerType the token carried.
-  const row = await db.ShopCart.create({ ...buyerColumns(buyer), productId, qty: nextQty });
+  const row = await withBuyerSchema(() => db.ShopCart.create({ ...buyerColumns(buyer), productId, qty: nextQty }));
   return row.qty;
 };
 

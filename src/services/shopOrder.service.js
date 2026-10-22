@@ -3,6 +3,7 @@ const db = require('../database/models');
 const shopSettingsService = require('./shopSettings.service');
 const { toCoordinate, toPoint, distanceKm, formatKm } = require('../utils/geo');
 const { buyerWhere, buyerColumns, buyerOwnsOrder, buyerActor } = require('../utils/shopBuyer');
+const { withBuyerSchema } = require('../database/config/ensureShopBuyerSchema');
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
 
 /* ------------------------------------------------------------------ *\
@@ -172,7 +173,10 @@ const createOrder = async ({ buyerType, buyerId, isSalon, orderId, items, addres
     customer = await db.User.findByPk(buyerId, { attributes: ['userId', 'fullName', 'phoneNumber'] });
   }
 
-  const order = await db.ShopOrder.create({
+  // `withBuyerSchema` replays this once if the database still has the old
+  // NOT NULL on `salon_id` (see ensureShopBuyerSchema) — a salon order never
+  // trips it, because a salon order always carries a salon id.
+  const order = await withBuyerSchema(() => db.ShopOrder.create({
     orderId: orderId || generateOrderId(),
     // Writes buyerType + exactly one of salonId / customerId.
     ...buyerColumns({ buyerType, buyerId }),
@@ -194,7 +198,7 @@ const createOrder = async ({ buyerType, buyerId, isSalon, orderId, items, addres
     status: 'PENDING_ASSIGNMENT',
     customerStatus: paid ? 'CONFIRMED' : 'PENDING',
     notes: notes || null
-  });
+  }));
 
   // First entries of the audit record: the order arrived on the central
   // dashboard, and (if paid) the payment is confirmed. The actor is whoever
