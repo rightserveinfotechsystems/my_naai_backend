@@ -23,9 +23,26 @@ const ownerActionBooking = async (req, res) => {
             return res.status(200).json({ status: 'FAILED', message: 'Booking request already cancelled' });
         }
 
+        // The 60 second window. A request past it is auto-cancelled whether or
+        // not the sweeper has written that down yet, so the answer is a plain
+        // sentence instead of an accept that cannot succeed. `responded_at` is
+        // stamped with the deadline (not "now") so the lead's response time
+        // stays honest.
+        const expiresAt = bookingRequest.expiresAt ? new Date(bookingRequest.expiresAt).getTime() : null;
+        if (bookingRequest.status === 'PENDING' && expiresAt && expiresAt <= Date.now()) {
+            bookingRequest.status = 'AUTO_CANCELLED';
+            bookingRequest.respondedAt = bookingRequest.respondedAt || bookingRequest.expiresAt;
+            await bookingRequest.save({ transaction: t });
+            await t.commit();
+            return res.status(200).json({
+                status: 'FAILED',
+                message: 'This request has expired and was cancelled automatically'
+            });
+        }
+
         if (['ACCEPTED', 'REJECTED', 'DELAY_PROPOSED'].includes(bookingRequest?.status)) {
             await t.rollback();
-            return res.status(200).json({ status: 'FAILED', message: 'Action is already taken on this booking request' });
+            return res.status(200).json({ status: 'FAILED', message: 'This request was already actioned' });
         }
 
         const user = await db.User.findByPk(bookingRequest.customerId, { attributes: ['userId', 'fullName', 'deviceToken'] });
@@ -45,6 +62,9 @@ const ownerActionBooking = async (req, res) => {
         // --------------------------
         if (action === 'REJECT') {
             bookingRequest.status = 'REJECTED';
+            // An answer, with a time — the leads tab reports the response time
+            // and the admin report takes its median from it.
+            bookingRequest.respondedAt = new Date();
             await bookingRequest.save({ transaction: t });
 
             // Notify customer
@@ -146,6 +166,7 @@ const ownerActionBooking = async (req, res) => {
         // --------------------------
         if (action === 'ACCEPT') {
             bookingRequest.status = 'ACCEPTED';
+            bookingRequest.respondedAt = new Date();
             await bookingRequest.save({ transaction: t });
 
             // ✅ Create Queue
@@ -205,7 +226,14 @@ const ownerActionBooking = async (req, res) => {
             booking.reminderSent = false;
 
 
-            await booking.save();
+            await booking.save({ transaction: t });
+
+            // The request keeps a POINTER to the booking, not a copy of it: the
+            // two stay separate tables (a request is a lead, a booking is a
+            // chair), and this id is the only link between them.
+            bookingRequest.bookingId = booking.bookingId;
+            bookingRequest.routedBarberId = bookingRequest.routedBarberId || bookingRequest.barberId || null;
+            await bookingRequest.save({ transaction: t });
 
 
             // Notify customer

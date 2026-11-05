@@ -206,7 +206,13 @@ const createBookingRequest = async (req, res) => {
                 startTime: bookingTime,
                 endTime,
                 status: 'PENDING',
-                delayMinutes: null
+                delayMinutes: null,
+                // The answer window, stamped by the SERVER. A client never
+                // sends this: whoever sets the deadline would otherwise decide
+                // how long the salon has to answer. The sweeper
+                // (cron/bookingRequestSweeper.cron.js) closes it, and the leads
+                // tab derives the same expiry if the sweep has not run yet.
+                expiresAt: new Date(Date.now() + 60 * 1000)
             },
             { transaction: t }
         );

@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const helmet = require('helmet');
 const { closeConnection, connectDb } = require("./src/database/config/db");
 const { ensureShopBuyerSchema } = require("./src/database/config/ensureShopBuyerSchema");
+const { ensureShopSchema } = require("./src/database/config/ensureShopSchema");
 const db = require("./src/database/models");
 const routes = require("./src/routes/routes");
 const errorHandler = require("./src/utils/middleware/error.middleware");
@@ -196,6 +197,9 @@ process.on('SIGTERM', async () => {
 require('./cron/notification.cron');
 require('./cron/plan-check.cron');
 require('./cron/bookingCompletionCron');
+// The booking-request answer window: every PENDING request whose 60 seconds are
+// up becomes AUTO_CANCELLED (a missed lead, never a rejection).
+require('./cron/bookingRequestSweeper.cron');
 
 //connect db
 // The shop takes orders from salons AND customers. `buyer_type` /
@@ -204,7 +208,14 @@ require('./cron/bookingCompletionCron');
 // fails on `salon_id` not-null. Repair it once here (idempotent, no-op on a
 // migrated database) instead of waiting for someone to run SQL.
 connectDb().then((connected) => {
-    if (connected) ensureShopBuyerSchema();
+    if (connected) {
+        ensureShopBuyerSchema();
+        // `shop_categories`, the booking-request answer window and the bulk
+        // import's columns/tables. Same idea, same reason: the panel's
+        // Categories manager and the leads tabs must answer on a database that
+        // never ran migrations/2026-11-05-shop-categories-leads-bulk.sql.
+        ensureShopSchema();
+    }
 });
 // sendPushNotification("fc2A21LpQ4W3IBj7ry6RyW:APA91bHexWAirHUAVKOZKqsl_BSxon1wTcvqhk40qWCWE1YGzQjdd76Q520S-zuX0rUtcNfyux60kk7GdtuNtm6H6f_G60SL4ODvKPTUbx55qBmKWtQVrjI","Test Title","This is test notification body")
 // listen on PORT

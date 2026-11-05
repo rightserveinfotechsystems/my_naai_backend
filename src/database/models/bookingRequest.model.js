@@ -89,6 +89,43 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+
+      // ── The answer window and the outcome ────────────────────────────────
+      // Stamped by the SERVER when the request is created (created_at + 60s).
+      // A client never sends it: whoever sets the window would otherwise set
+      // how long the salon has to answer, and a request could be kept open
+      // forever.
+      expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'expires_at',
+      },
+
+      // When the salon answered (accept / reject), or when the window closed
+      // with no answer. `created_at` -> `responded_at` is the response time the
+      // leads tab reports.
+      respondedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'responded_at',
+      },
+
+      // Set on ACCEPT: the booking that the acceptance created. This pointer is
+      // the ONLY link between a request and a booking — they stay separate
+      // tables, and a request that was never accepted has no booking at all.
+      bookingId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        field: 'booking_id',
+      },
+
+      // Which barber the request was routed to (the salon's dispatch), distinct
+      // from `barberId`, which is the barber the CUSTOMER chose.
+      routedBarberId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        field: 'routed_barber_id',
+      },
     },
     {
       sequelize,
