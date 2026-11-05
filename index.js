@@ -7,6 +7,7 @@ const helmet = require('helmet');
 const { closeConnection, connectDb } = require("./src/database/config/db");
 const { ensureShopBuyerSchema } = require("./src/database/config/ensureShopBuyerSchema");
 const { ensureShopSchema } = require("./src/database/config/ensureShopSchema");
+const { ensurePlanSchema } = require("./src/database/config/ensurePlanSchema");
 const db = require("./src/database/models");
 const routes = require("./src/routes/routes");
 const errorHandler = require("./src/utils/middleware/error.middleware");
@@ -210,11 +211,10 @@ require('./cron/bookingRequestSweeper.cron');
 connectDb().then((connected) => {
     if (connected) {
         ensureShopBuyerSchema();
-        // `shop_categories`, the booking-request answer window and the bulk
-        // import's columns/tables. Same idea, same reason: the panel's
-        // Categories manager and the leads tabs must answer on a database that
-        // never ran migrations/2026-11-05-shop-categories-leads-bulk.sql.
         ensureShopSchema();
+
+        // Initialize partner plan schema (idempotent).
+        ensurePlanSchema();
     }
 });
 // sendPushNotification("fc2A21LpQ4W3IBj7ry6RyW:APA91bHexWAirHUAVKOZKqsl_BSxon1wTcvqhk40qWCWE1YGzQjdd76Q520S-zuX0rUtcNfyux60kk7GdtuNtm6H6f_G60SL4ODvKPTUbx55qBmKWtQVrjI","Test Title","This is test notification body")

@@ -2,6 +2,7 @@ const salonService = require('../../services/salon.service');
 const { verifySalonOtpValidationSchema } = require('../../validations/salon.validation');
 const { generateToken } = require('../../utils/middleware/token.util');
 const db = require('../../database/models');
+const partnerPlanService = require('../../services/partnerPlan.service');
 const { DeviceToken } = db;
 
 
@@ -129,6 +130,7 @@ const verifySalonOtpLogin = async (request, response) => {
                 isNewSalon: (salon?.isProfileCompleted && salon?.isProfileCompleted === false) ? true : false
             });
         } else {
+            const freeTrialDays = await partnerPlanService.defaultTrialDays();
             const dataToInsert = {
                 salonName: "Your Salon Name",
                 phoneNumber: phoneNumber,
@@ -138,7 +140,11 @@ const verifySalonOtpLogin = async (request, response) => {
                 isPlanActive: true,
                 planType: 'FREE',
                 planStartDate: new Date(),
-                planEndDate: new Date(new Date().setDate(new Date().getDate() + 20)), //set for 20 days free trial
+                // The free trial length is the admin panel's `Free` plan
+                // (`partner_plans.days`), 90 days by default. It used to be a
+                // hard-coded `+ 20`, which is why the portal advertised one
+                // trial length and the backend granted another.
+                planEndDate: new Date(new Date().setDate(new Date().getDate() + freeTrialDays)),
                 totalReviews: 0,
                 totalRating: 0,
                 deviceToken: deviceToken || null,

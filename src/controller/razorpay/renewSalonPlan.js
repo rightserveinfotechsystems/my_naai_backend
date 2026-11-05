@@ -3,6 +3,7 @@ const transactionService = require('../../services/transaction.service');
 const { sequelize } = require('../../database/config/db');
 const razorpay = require("../../services/razorpay.service");
 const { isPlanActive, getPlanEndDate } = require('../../utils/plan.util');
+const partnerPlanService = require('../../services/partnerPlan.service');
 const db = require('../../database/models');
 
 const renewSalonPlan = async (request, response) => {
@@ -59,7 +60,22 @@ const renewSalonPlan = async (request, response) => {
             startDate = new Date(salon.planEndDate);
         }
 
-        const endDate = getPlanEndDate(startDate, planType);
+        // The renewal extension is the admin's `days` for this plan, and the
+        // amount must be the admin's price — a plan re-priced in the panel is
+        // charged (and honoured) at the new price on the very next renewal.
+        const planDays = await partnerPlanService.durationDays(planType);
+        if (totalAmount !== undefined && totalAmount !== null && totalAmount !== '') {
+            try {
+                await partnerPlanService.assertPayableAmount({ planType, amount: totalAmount });
+            } catch (priceError) {
+                await t.rollback();
+                return response.status(400).json({
+                    status: "FAILED",
+                    message: priceError.message,
+                });
+            }
+        }
+        const endDate = getPlanEndDate(startDate, planType, { days: planDays });
 
         
 //  otherwise start from today

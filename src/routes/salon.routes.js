@@ -31,6 +31,11 @@ const renewSalonPlan = require('../controller/razorpay/renewSalonPlan');
 const editSalonProfile = require('../controller/salon/editSalonProfile');
 const getSalonListPublic = require('../controller/salon/get-salon-list-for-public');
 const salonUpdateBookingTime = require('../controller/booking/update-booking-time');
+const listPartnerPlans = require('../controller/salon/plan/listPartnerPlans');
+const adminListPartnerPlans = require('../controller/salon/plan/adminListPartnerPlans');
+const adminCreatePartnerPlan = require('../controller/salon/plan/adminCreatePartnerPlan');
+const adminUpdatePartnerPlan = require('../controller/salon/plan/adminUpdatePartnerPlan');
+const adminDeletePartnerPlan = require('../controller/salon/plan/adminDeletePartnerPlan');
 
 
 
@@ -59,6 +64,10 @@ salonRouter.post('/delete-service', deleteSalonService);
 //user login   
 salonRouter.post('/salon-list', authenticateUser, listSalonsApp);
 salonRouter.post('/salon-list-public', getSalonListPublic);
+// The partner price list — PUBLIC, like `/salon-list-public`: the registration
+// screen shows prices before anyone has an account, and the admin panel owns
+// what those prices are.
+salonRouter.post('/plans/list', listPartnerPlans);
 salonRouter.post('/get-salon-by-id', getSalonByIdUser);
 salonRouter.get('/get-city-list', authenticateUser, getCityFilterUser)
 
@@ -82,6 +91,12 @@ salonRouter.post('/delete-service', deleteSalonService);
 salonRouter.post('/status', toggleStatus);
 salonRouter.delete('/delete-salon-by-admin/:salonId', deleteSalonByAdmin);
 salonRouter.post('/get-salon-by-agent', getSalonsByAgent);
+
+// Partner plans — the ONE price list (admin panel → website → app).
+salonRouter.post('/admin/plans/list', adminListPartnerPlans);
+salonRouter.post('/admin/plans/create', adminCreatePartnerPlan);
+salonRouter.post('/admin/plans/update', adminUpdatePartnerPlan);
+salonRouter.post('/admin/plans/delete', adminDeletePartnerPlan);
 
 
 

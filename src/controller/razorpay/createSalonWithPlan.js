@@ -5,7 +5,8 @@ const { sequelize } = require('../../database/config/db');
 const razorpay = require("../../services/razorpay.service");
 const { getAdminUserByPhone } = require('../../services/admin.service');
 const jwt = require("jsonwebtoken");
-const { isPlanActive, getPlanEndDate } = require('../../utils/plan.util');
+const { getPlanEndDate } = require('../../utils/plan.util');
+const partnerPlanService = require('../../services/partnerPlan.service');
 const db = require('../../database/models');
 
 
@@ -75,8 +76,12 @@ const createSalonWithPlan = async (request, response) => {
         // const daysToAdd = plans[planType] ?? 30;
         // const planEndDate = new Date(planStartDate);
         // planEndDate.setDate(planStartDate.getDate() + daysToAdd);
+        // The length AND the price come from `partner_plans` (the admin panel's
+        // list), not from a map in this file: changing the quarterly plan to 100
+        // days or ₹599 in the panel changes what this endpoint grants and charges.
+        const planDays = await partnerPlanService.durationDays(planType);
         const planStartDate = new Date();
-        const planEndDate = getPlanEndDate(planStartDate, planType);
+        const planEndDate = getPlanEndDate(planStartDate, planType, { days: planDays });
 
 
 
@@ -117,6 +122,21 @@ const createSalonWithPlan = async (request, response) => {
 
                 //     createdBy = agent.id;
                 // }
+            }
+        }
+
+        // Nobody may pay ₹1 for a ₹499 plan: the amount the client sent has to
+        // match the price the admin set for this plan id. A client that omits
+        // `totalAmount` (an older build) is left to Razorpay's own record.
+        if (totalAmount !== undefined && totalAmount !== null && totalAmount !== '') {
+            try {
+                await partnerPlanService.assertPayableAmount({ planType, amount: totalAmount });
+            } catch (priceError) {
+                await t.rollback();
+                return response.status(200).json({
+                    status: "FAILED",
+                    message: priceError.message,
+                });
             }
         }
 
