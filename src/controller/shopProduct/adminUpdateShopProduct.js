@@ -1,6 +1,7 @@
 const { adminUpdateShopProductSchema } = require('../../validations/shopProduct.validation');
 const shopProductService = require('../../services/shopProduct.service');
 const shopCategoryService = require('../../services/shopCategory.service');
+const categoryRules = require('../../services/shopCategoryRules');
 
 // Company admin: partially update a shop product. Unsent fields are left
 // as-is.
@@ -25,7 +26,12 @@ const adminUpdateShopProduct = async (request, response) => {
         // Validated against the shared list, exactly like create — a rename of
         // the category's LABEL must not be typed into a product by hand.
         if (category !== undefined) {
-            dataToUpdate.category = await shopCategoryService.requireCategoryId(category, { allowEmpty: true });
+            const resolved = await shopCategoryService.requireCategoryId(category, { allowEmpty: true });
+            // Cleared (or an unrealised value) alongside a new name: classify the
+            // name, exactly like create. Without a name to go on, the row is left
+            // unclassified and the catalog filter still resolves it from the name
+            // it already has.
+            dataToUpdate.category = resolved || (productName !== undefined ? categoryRules.inferCategory(productName) : '');
         }
         if (gender !== undefined) dataToUpdate.gender = gender || null;
         if (description !== undefined) dataToUpdate.description = description || null;

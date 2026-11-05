@@ -1,6 +1,7 @@
 const { adminCreateShopProductSchema } = require('../../validations/shopProduct.validation');
 const shopProductService = require('../../services/shopProduct.service');
 const shopCategoryService = require('../../services/shopCategory.service');
+const categoryRules = require('../../services/shopCategoryRules');
 
 // Company admin: add a product to the company's own shop catalog. No salon
 // is involved — this table is separate from the salons' customer products.
@@ -30,7 +31,11 @@ const adminCreateShopProduct = async (request, response) => {
             isAvailable: value.isAvailable,
             productImage: value.productImage || null,
             mrp: value.mrp ?? null,
-            category: categoryId,
+            // Empty is still allowed, but it is no longer LEFT empty: the same
+            // keyword rules the storefront uses fill in the shelf the name proves
+            // the product belongs to. That keeps the column equal to the filter
+            // (see services/shopCategoryRules.js) instead of drifting apart.
+            category: categoryId || categoryRules.inferCategory(value.productName),
             // NULL keeps the shop UI's name-based gender fallback alive.
             gender: value.gender || null,
             description: value.description || null

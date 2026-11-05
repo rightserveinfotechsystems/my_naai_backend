@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "shop:backfill-categories": "node scripts/backfill-shop-categories.js",
+    "shop:test-categories": "node scripts/test-shop-categories.js"
   },
   "repository": {
     "type": "git",

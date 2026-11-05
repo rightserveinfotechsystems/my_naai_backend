@@ -1,5 +1,6 @@
-const { Op, fn, col, where } = require('sequelize');
+const { Op, where, literal } = require('sequelize');
 const db = require('../database/models');
+const categoryRules = require('./shopCategoryRules');
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
 // One page of the shop grid: the website asks for 24, the mobile app keeps the
 // server default. Above this a single request would return the whole catalog.
@@ -11,34 +12,12 @@ const MAX_LIMIT = 60;
  * `products`). The catalog is company-wide: there is no salon scoping.
  */
 
-// The shop's category ids, with the labels an admin may have typed instead of
-// the id. Kept in step with the web/mobile taxonomy (src/lib/shopCatalog.js):
-// an id and its label must select the same rows, or the same filter would show
-// a different shelf on the website and in the app.
-const CATEGORY_LABELS = {
-  'hair-care': 'hair care',
-  'beard-grooming': 'beard & grooming',
-  'skin-face': 'skin & face',
-  'fragrance': 'fragrance',
-  'hair-colour': 'hair colour',
-  'tools-equipment': 'tools & equipment',
-  'kits-sets': 'kits & sets'
-};
-
-const KNOWN_CATEGORY_VALUES = [
-  ...Object.keys(CATEGORY_LABELS),
-  ...Object.values(CATEGORY_LABELS)
-];
-
 // priceRange ids come straight from the shop's dropdown.
 const PRICE_RANGES = {
   under500: { [Op.lt]: 500 },
   '500to1000': { [Op.between]: [500, 1000] },
   over1000: { [Op.gt]: 1000 }
 };
-
-// The gender column stores MALE/FEMALE/UNISEX; the shop speaks men/women/unisex.
-const GENDER_VALUES = { men: 'MALE', women: 'FEMALE', unisex: 'UNISEX' };
 
 const SORTS = {
   'price-asc': [['price', 'ASC'], ['productName', 'ASC']],
@@ -50,44 +29,39 @@ const SORTS = {
 const asBool = (value) => value === true || value === 'true' || value === 1 || value === '1';
 
 /**
- * A category is a SUPERSET filter.
+ * The category filter, EXACTLY.
  *
- * `category` on this table is optional and free-text ('' = "let the client
- * classify it from the name"), so the server must return every row the
- * client's own classifier could file under the requested category:
- *   - the id, or the label an admin typed instead of the id;
- *   - rows with no category at all;
- *   - rows with text this service does not recognise (an admin's free-text
- *     shelf) — those are mapped by the client's keyword rules.
- * Anything the client then does not classify into the chosen category is
- * dropped there, so the grid can never show a product the filter excludes.
- * Being a superset only costs a little extra paging, never a missing product.
+ * A product's category is the explicit value when it is known, otherwise the
+ * keyword inference on its name — the same precedence the storefront uses, and
+ * the same table (src/services/shopCategoryRules.js). The SQL CASE that resolves
+ * it is what the WHERE clause compares against, so:
+ *
+ *   · `totalProducts` counts the shelf the user asked for, not the catalogue;
+ *   · page N of a filtered query is page N of THAT list — "Show more" can no
+ *     longer promise 88 products under a category that holds 2;
+ *   · rows whose `category` column is empty or free text are still found, under
+ *     the shelf their name proves they belong to.
+ *
+ * It used to be a superset (id, label, empty and unrecognised rows alike) so the
+ * client could classify what the server could not. That made the pagination a
+ * lie: the count described the whole catalogue while the grid applied the
+ * client's own rules to it.
  */
 const categoryWhere = (category) => {
-  const value = String(category || '').trim().toLowerCase();
-  if (!value) return null;
-  const wanted = [value, CATEGORY_LABELS[value]].filter(Boolean);
-  return {
-    [Op.or]: [
-      where(fn('lower', col('category')), { [Op.in]: wanted }),
-      { category: { [Op.is]: null } },
-      { category: '' },
-      where(fn('lower', col('category')), { [Op.notIn]: KNOWN_CATEGORY_VALUES })
-    ]
-  };
+  const id = categoryRules.resolveCategoryId(category);
+  if (!id) return null;
+  return where(literal(categoryRules.categoryCaseSql()), '=', id);
 };
 
 /**
- * A gender filter keeps the rows whose gender is not set: those are inferred
- * from the product name by the client (the same rule the shop always used), so
- * excluding them here would hide products the user's filter actually matches.
+ * The gender filter, resolved the same way: an explicit MALE/FEMALE/UNISEX wins,
+ * otherwise the name's inference, otherwise UNISEX. The shop's "men / women /
+ * unisex" therefore counts exactly what it shows.
  */
 const genderWhere = (gender) => {
-  const value = GENDER_VALUES[String(gender || '').trim().toLowerCase()];
+  const value = categoryRules.resolveGenderValue(gender);
   if (!value) return null;
-  return {
-    [Op.or]: [{ gender: value }, { gender: { [Op.is]: null } }]
-  };
+  return where(literal(categoryRules.genderCaseSql()), '=', value);
 };
 
 // The buying side (salon app/web, a mobile user, or the public website with no
