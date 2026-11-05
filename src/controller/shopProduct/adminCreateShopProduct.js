@@ -1,5 +1,6 @@
 const { adminCreateShopProductSchema } = require('../../validations/shopProduct.validation');
 const shopProductService = require('../../services/shopProduct.service');
+const shopCategoryService = require('../../services/shopCategory.service');
 
 // Company admin: add a product to the company's own shop catalog. No salon
 // is involved — this table is separate from the salons' customer products.
@@ -16,6 +17,12 @@ const adminCreateShopProduct = async (request, response) => {
         }
 
         const value = validationResult.value;
+        // A product may only be filed under a category from the shared list —
+        // free text is what let "Hair Colour and Chemical Products" put a bottle
+        // of hair oil under HAIR COLOUR on the website. An empty value is still
+        // allowed: the shop then falls back to its name-based inference.
+        const categoryId = await shopCategoryService.requireCategoryId(value.category, { allowEmpty: true });
+
         const dataToInsert = {
             productName: value.productName,
             price: value.price,
@@ -23,7 +30,7 @@ const adminCreateShopProduct = async (request, response) => {
             isAvailable: value.isAvailable,
             productImage: value.productImage || null,
             mrp: value.mrp ?? null,
-            category: value.category || '',
+            category: categoryId,
             // NULL keeps the shop UI's name-based gender fallback alive.
             gender: value.gender || null,
             description: value.description || null
@@ -50,7 +57,7 @@ const adminCreateShopProduct = async (request, response) => {
         });
     } catch (error) {
         console.log('error', error);
-        return response.status(500).json({ status: 'FAILED', message: error.message });
+        return response.status(error.status || 500).json({ status: 'FAILED', message: error.message });
     }
 };
 module.exports = adminCreateShopProduct;

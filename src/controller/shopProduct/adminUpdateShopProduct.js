@@ -1,5 +1,6 @@
 const { adminUpdateShopProductSchema } = require('../../validations/shopProduct.validation');
 const shopProductService = require('../../services/shopProduct.service');
+const shopCategoryService = require('../../services/shopCategory.service');
 
 // Company admin: partially update a shop product. Unsent fields are left
 // as-is.
@@ -21,7 +22,11 @@ const adminUpdateShopProduct = async (request, response) => {
         if (price !== undefined) dataToUpdate.price = price;
         if (rating !== undefined) dataToUpdate.rating = rating;
         if (mrp !== undefined) dataToUpdate.mrp = mrp ?? null;
-        if (category !== undefined) dataToUpdate.category = category || '';
+        // Validated against the shared list, exactly like create — a rename of
+        // the category's LABEL must not be typed into a product by hand.
+        if (category !== undefined) {
+            dataToUpdate.category = await shopCategoryService.requireCategoryId(category, { allowEmpty: true });
+        }
         if (gender !== undefined) dataToUpdate.gender = gender || null;
         if (description !== undefined) dataToUpdate.description = description || null;
         if (typeof isAvailable === 'boolean') {
@@ -45,7 +50,7 @@ const adminUpdateShopProduct = async (request, response) => {
         });
     } catch (error) {
         console.log('error', error);
-        return response.status(500).json({ status: 'FAILED', message: error.message });
+        return response.status(error.status || 500).json({ status: 'FAILED', message: error.message });
     }
 };
 module.exports = adminUpdateShopProduct;

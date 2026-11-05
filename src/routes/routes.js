@@ -14,6 +14,7 @@ const distributorRouter = require('./distributor.routes');
 const shopOrderRouter = require('./shopOrder.routes');
 const shopSettingsRouter = require('./shopSettings.routes');
 const shopPublicRouter = require('./shopPublic.routes');
+const shopCategoryRouter = require('./shopCategory.routes');
 const razorpayWebhook = require('../controller/razorpay/razorpayWebhook');
 const notificationRouter = require('./notification.routes');
 const bookingRequestRouter = require('./bookingRequest.routes');
@@ -42,6 +43,9 @@ routes.use('/shop-cart', shopCartRouter);
 routes.use('/distributors', distributorRouter);
 routes.use('/shop-orders', shopOrderRouter);
 routes.use('/shop-settings', shopSettingsRouter);
+// The shop's category list: ONE table read by the admin panel, the website and
+// the app. Mounted beside the catalog it classifies.
+routes.use('/shop-categories', shopCategoryRouter);
 // The website storefront: catalog + bill rules with NO token (a visitor
 // browses before signing in). Same handlers, no auth chain, edge-cacheable
 // and rate-limited per IP.

@@ -2,6 +2,7 @@ const express = require('express');
 const publicReadLimiter = require('../utils/middleware/publicReadLimiter.middleware');
 const listShopProducts = require('../controller/shopProduct/listShopProducts');
 const getShopSettings = require('../controller/shopSettings/getShopSettings');
+const listShopCategories = require('../controller/shopCategory/listShopCategories');
 
 /**
  * The open storefront: the catalog and the shop's commerce rules, with NO
@@ -40,6 +41,12 @@ const cacheFor = (seconds) => (_request, response, next) => {
 
 shopPublicRouter.post('/products/list', publicReadLimiter, cacheFor(60), listShopProducts);
 shopPublicRouter.get('/products/list', publicReadLimiter, cacheFor(60), bodyFromQuery, listShopProducts);
+
+// The category list the shop's filter is built from. It changes when an admin
+// adds a category, not per visitor, so five minutes of staleness buys a
+// storefront whose filter opens with the page.
+shopPublicRouter.post('/categories/list', publicReadLimiter, cacheFor(300), listShopCategories);
+shopPublicRouter.get('/categories/list', publicReadLimiter, cacheFor(300), bodyFromQuery, listShopCategories);
 
 // Delivery charges, the free-delivery threshold, the COD limit and the
 // discount are terms of sale, not secrets: the shop cannot quote an honest
