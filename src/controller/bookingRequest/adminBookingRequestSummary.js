@@ -1,18 +1,50 @@
 const bookingRequestLeadService = require('../../services/bookingRequestLead.service');
 
-/**
- * The admin panel's lead report: platform counters plus the per-salon table
- * ("which salons get leads and which of them let them die").
- *
- * Body: `{ range?, salonId?, fromDate?, toDate? }`
- *
- * The per-salon rows are sorted worst-first by `autoCancelled`, and
- * `medianResponseSeconds` is null for a salon that never answered (the panel
- * shows a dash — a zero would read as an instant reply).
- */
+const getDateRange = (range = "ALL") => {
+    const now = new Date();
+
+    // Current date in IST
+    const istDate = new Date(
+        now.getTime() + 5.5 * 60 * 60 * 1000
+    );
+
+    // IST midnight represented as UTC timestamp
+    const todayStart = Date.UTC(
+        istDate.getUTCFullYear(),
+        istDate.getUTCMonth(),
+        istDate.getUTCDate()
+    ) - (5.5 * 60 * 60 * 1000);
+
+    let fromDate = null;
+    let toDate = null;
+
+    switch (range) {
+        case "TODAY":
+            fromDate = new Date(todayStart);
+            toDate = new Date(todayStart + 86400000);
+            break;
+
+        case "WEEK":
+            fromDate = new Date(todayStart - 6 * 86400000);
+            toDate = new Date(todayStart + 86400000);
+            break;
+
+        case "MONTH":
+            fromDate = new Date(todayStart - 29 * 86400000);
+            toDate = new Date(todayStart + 86400000);
+            break;
+
+        case "ALL":
+        default:
+            break;
+    }
+
+    return { fromDate, toDate };
+};
 const adminBookingRequestSummary = async (request, response) => {
     try {
-        const { range = 'ALL', salonId, fromDate, toDate } = request.body || {};
+        const { range = 'ALL', salonId } = request.body || {};
+        const { fromDate, toDate } = getDateRange(range);
 
         const data = await bookingRequestLeadService.adminSummary({
             range,

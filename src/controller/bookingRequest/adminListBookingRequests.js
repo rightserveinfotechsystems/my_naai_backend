@@ -1,24 +1,52 @@
 const bookingRequestLeadService = require('../../services/bookingRequestLead.service');
 
-/**
- * The admin panel's Booking requests tab: every lead on the platform, with the
- * salon it went to and how fast that salon answered.
- *
- * Body: `{ salonId?, status?, search?, page?, limit?, fromDate?, toDate? }`
- * `search` matches the customer's name, the customer's phone and the salon's
- * name — the three things somebody on a support call knows.
- *
- * Read-only: an admin does not accept or reject on a salon's behalf. Conversion
- * happens when the salon accepts, and a second path would produce two bookings
- * for one customer.
- *
- * Requests only: this never joins `booking` / `booking_list` for a count. A row
- * carries `bookingId` when the salon accepted, and that is the link.
- */
+const getDateRange = (range = "ALL") => {
+    const now = new Date();
+
+    // Current date in IST
+    const istDate = new Date(
+        now.getTime() + 5.5 * 60 * 60 * 1000
+    );
+
+    // IST midnight represented as UTC timestamp
+    const todayStart = Date.UTC(
+        istDate.getUTCFullYear(),
+        istDate.getUTCMonth(),
+        istDate.getUTCDate()
+    ) - (5.5 * 60 * 60 * 1000);
+
+    let fromDate = null;
+    let toDate = null;
+
+    switch (range) {
+        case "TODAY":
+            fromDate = new Date(todayStart);
+            toDate = new Date(todayStart + 86400000);
+            break;
+
+        case "WEEK":
+            fromDate = new Date(todayStart - 6 * 86400000);
+            toDate = new Date(todayStart + 86400000);
+            break;
+
+        case "MONTH":
+            fromDate = new Date(todayStart - 29 * 86400000);
+            toDate = new Date(todayStart + 86400000);
+            break;
+
+        case "ALL":
+        default:
+            break;
+    }
+
+    return { fromDate, toDate };
+};
+
 const adminListBookingRequests = async (request, response) => {
     try {
-        const { salonId, status, search, page, limit, fromDate, toDate } = request.body || {};
-
+        const { salonId, status, search, page, limit, range } = request.body || {};
+        const { fromDate, toDate } = getDateRange(range);
+        console.log("range", range, fromDate, toDate)
         const data = await bookingRequestLeadService.listAdminLeads({
             salonId: salonId || undefined,
             status: status || 'ALL',
