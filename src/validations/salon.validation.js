@@ -302,6 +302,50 @@ const salonServiceIdValidationSchema = Joi.object({
     serviceId: Joi.string().uuid().required()
 });
 
+/**
+ * One service in the menu editor's save. A row WITH a serviceId is an update of a
+ * service this salon already has; a row WITHOUT one is a new service.
+ */
+const salonServiceItemValidationSchema = Joi.object({
+    serviceId: Joi.string().uuid().allow(null, '').optional(),
+    serviceName: Joi.string().trim().min(2).max(100).required().messages({
+        'string.empty': 'Every service needs a name',
+        'string.min': 'Service name must be at least 2 characters',
+        'string.max': 'Service name cannot exceed 100 characters',
+        'any.required': 'Every service needs a name'
+    }),
+    price: Joi.number().min(0).max(1000000).required().messages({
+        'number.base': 'Every service needs a price',
+        'number.min': 'Price cannot be negative',
+        'number.max': 'Price cannot exceed 1000000',
+        'any.required': 'Every service needs a price'
+    }),
+    durationMinutes: Joi.number().integer().min(1).max(1440).required().messages({
+        'number.base': 'Every service needs a duration in minutes',
+        'number.integer': 'Duration must be a whole number of minutes',
+        'number.min': 'Duration must be at least 1 minute',
+        'number.max': 'Duration cannot exceed 24 hours',
+        'any.required': 'Every service needs a duration in minutes'
+    }),
+    description: Joi.string().trim().max(500).allow(null, '').optional(),
+    displayOrder: Joi.number().integer().min(0).max(9999).optional()
+});
+
+/**
+ * The whole menu in one request — the menu editor's save.
+ * The salon is NEVER taken from this body: it comes from the partner's token
+ * (see controller/salon/saveSalonServices.js), so `unknown(true)` only means a
+ * stray field is ignored rather than rejected.
+ */
+const salonServicesSaveValidationSchema = Joi.object({
+    services: Joi.array().items(salonServiceItemValidationSchema).max(200).required().messages({
+        'any.required': 'Send the services you want to keep',
+        'array.base': 'services must be a list of services',
+        'array.max': 'A menu can hold at most 200 services'
+    }),
+    removedServiceIds: Joi.array().items(Joi.string().uuid()).max(200).optional().default([])
+}).unknown(true);
+
 const salonCreateValidationSchema = Joi.object({
     ownerName: Joi.string().trim().required(),
     salonName: Joi.string().trim().required(),
@@ -365,6 +409,8 @@ module.exports = {
     updateSalonWithDetailsAppSchema,
     updateSalonValidationSchemaApp,
     salonServiceIdValidationSchema,
+    salonServiceItemValidationSchema,
+    salonServicesSaveValidationSchema,
     verifySalonRegOtpValidationSchema,
     salonCreateValidationSchema,
     sendRegSalonOtpValidationSchema,

@@ -16,6 +16,7 @@ const listSalonsApp = require('../controller/salon/salonList');
 const getSalonByIdUser = require('../controller/salon/getSalonByIdUser');
 const listSalons = require('../controller/salon/getSalonList');
 const deleteSalonService = require('../controller/salon/deleteSalonService');
+const saveSalonServices = require('../controller/salon/saveSalonServices');
 const { getListFilter } = require('../controller/salon/getList');
 const { getCityFilterUser } = require('../controller/salon/getFilterListUser');
 const deleteService = require('../controller/salon/deleteServiceBySalon');
@@ -58,6 +59,10 @@ salonRouter.post('/delete-salon-service', authenticateSalon, deleteService);
 salonRouter.post('/renew-salon-plan', authenticateSalon, renewSalonPlan);
 salonRouter.post('/edit-salon-profile', authenticateSalon, editSalonProfile);
 salonRouter.post('/delete-service', deleteSalonService);
+// The menu editor's save: the whole list of services in one transaction, plus the
+// ids to take off the menu. Authenticated as the salon, so the salon it writes is
+// the one in the token — never one named in the body.
+salonRouter.post('/services/save', authenticateSalon, saveSalonServices);
 
 
 
