@@ -74,6 +74,20 @@ const STATEMENTS = [
     `CREATE INDEX IF NOT EXISTS idx_booking_requests_salon_status ON booking_requests (salon_id, status, created_at DESC);`,
     `CREATE INDEX IF NOT EXISTS idx_booking_requests_pending_expiry ON booking_requests (expires_at) WHERE status = 'PENDING';`,
 
+    // ── Who answered, and the index the admin tab pages through ──────────
+    // An admin may answer on a salon's behalf, so the row records the actor.
+    // Nullable on purpose: every existing row was answered by its salon, and
+    // the panel reads a null as exactly that.
+    `ALTER TABLE IF EXISTS booking_requests ADD COLUMN IF NOT EXISTS acted_by_role VARCHAR(16);`,
+    `ALTER TABLE IF EXISTS booking_requests ADD COLUMN IF NOT EXISTS acted_by_admin_id VARCHAR(64);`,
+    `ALTER TABLE IF EXISTS booking_requests ADD COLUMN IF NOT EXISTS acted_at TIMESTAMPTZ;`,
+    `ALTER TABLE IF EXISTS booking_requests ADD COLUMN IF NOT EXISTS on_behalf_of_salon BOOLEAN NOT NULL DEFAULT FALSE;`,
+    `ALTER TABLE IF EXISTS booking_requests ADD COLUMN IF NOT EXISTS admin_note TEXT;`,
+    // The admin tab opens on TODAY and pages newest-first across every salon;
+    // without this it is a sequential scan of the whole lead table per page.
+    `CREATE INDEX IF NOT EXISTS idx_booking_requests_created_at ON booking_requests (created_at DESC);`,
+    `CREATE INDEX IF NOT EXISTS idx_booking_requests_status_created ON booking_requests (status, created_at DESC);`,
+
     // ── Bulk upload ──────────────────────────────────────────────────────
     `CREATE TABLE IF NOT EXISTS shop_product_imports (
         id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -126,6 +126,50 @@ module.exports = (sequelize) => {
         allowNull: true,
         field: 'routed_barber_id',
       },
+
+      // ── Who answered ─────────────────────────────────────────────────────
+      // A booking request is normally answered by its own salon. An admin may
+      // answer on the salon's behalf (a dead phone, a customer at the counter),
+      // and when that happens the row has to say so: the salon's tab shows
+      // "accepted by My Naai on your behalf", and a support conversation can be
+      // settled from the record instead of from memory.
+      //
+      // Null on rows written before this column existed, which read as the
+      // salon's own answer — that is what they were.
+      actedByRole: {
+        type: DataTypes.STRING(16),
+        allowNull: true,
+        field: 'acted_by_role',
+        comment: "'SALON' | 'ADMIN'",
+      },
+
+      actedByAdminId: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+        field: 'acted_by_admin_id',
+      },
+
+      actedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'acted_at',
+      },
+
+      onBehalfOfSalon: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+        field: 'on_behalf_of_salon',
+      },
+
+      // Why the platform team answered this way. Kept short (the controller
+      // caps it at 500 characters) and shown to the salon, never to the
+      // customer.
+      adminNote: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        field: 'admin_note',
+      },
     },
     {
       sequelize,

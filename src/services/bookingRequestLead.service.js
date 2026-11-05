@@ -1,6 +1,7 @@
-const { Op, fn, col, QueryTypes } = require('sequelize');
+const { Op, fn, col, literal, QueryTypes } = require('sequelize');
 const db = require('../database/models');
 const { ensureShopSchema } = require('../database/config/ensureShopSchema');
+const { addDays, parseBound, resolveRange, startOfIstDay } = require('../utils/istRange');
 
 /**
  * Booking REQUESTS — the leads API behind the salon's Booking requests tab and
@@ -27,10 +28,6 @@ const WINDOW_MS = WINDOW_SECONDS * 1000;
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
 const MAX_LIMIT = 100;
 
-// Delhi is UTC+05:30 with no daylight saving, so a fixed offset is exact and
-// avoids pulling a timezone database into a query path.
-const IST_OFFSET_MS = 330 * 60 * 1000;
-
 // Status the client may ask for -> the statuses stored for it.
 //   · 'DELAYED' is the client's word (a new time was proposed); the column
 //     stores 'DELAY_PROPOSED'.
@@ -54,46 +51,22 @@ const statusFilterOf = (value) => {
 };
 
 // ---------------------------------------------------------------- time helpers
+//
+// The maths lives in utils/istRange.js, because the two admin controllers used
+// to carry their own copy and the three disagreed. `rangeStart` stays exported
+// for callers that only need the lower bound.
 
-const startOfIstDay = (date = new Date()) => {
-    const shifted = new Date(date.getTime() + IST_OFFSET_MS);
-    shifted.setUTCHours(0, 0, 0, 0);
-    return new Date(shifted.getTime() - IST_OFFSET_MS);
+const rangeStart = (range) => {
+    const { fromDate } = resolveRange({ range });
+    return fromDate ? new Date(fromDate) : null;
 };
-
-const addDays = (date, days) => new Date(date.getTime() + days * 86400000);
 
 /**
- * The `range` a tab asks for -> a `createdAt` lower bound (null = everything).
- * The panel and the salon tab both speak TODAY / WEEK / MONTH / ALL, and "today"
- * means today in IST for every viewer, wherever they are sitting.
+ * The window for a range, as the ISO pair `resolveRange` returns. Summaries take
+ * `range`; a list takes the instants the controller resolved, so the tiles and
+ * the table below them can never describe different windows.
  */
-const rangeStart = (range) => {
-    const startOfToday = startOfIstDay();
-    switch (String(range || 'ALL').trim().toUpperCase()) {
-        case 'TODAY':
-            return startOfToday;
-        case 'WEEK':
-        case '7D':
-            return addDays(startOfToday, -6);
-        case 'MONTH':
-        case '30D':
-            return addDays(startOfToday, -29);
-        default:
-            return null;
-    }
-};
-
-const parseDate = (value) => {
-    if (!value) return null;
-    const parsed = new Date(`${String(value).slice(0, 10)}T00:00:00.000Z`);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const endOfDay = (value) => {
-    const start = parseDate(value);
-    return start ? new Date(start.getTime() + 86400000) : null;
-};
+const windowOf = ({ range, fromDate, toDate } = {}) => resolveRange({ range, fromDate, toDate });
 
 const clampLimit = (value) => {
     const parsed = parseInt(value, 10);
@@ -180,6 +153,12 @@ const toRow = (row, { now = Date.now(), admin = false } = {}) => {
         salonName: row.salon?.salonName || '',
         salonPhone: row.salon?.phoneNumber || '',
         city: row.salon?.city || '',
+        // Who answered. Null means the salon did (every row written before the
+        // admin-on-behalf feature existed), which the panel prints as such.
+        answeredByRole: row.actedByRole || 'SALON',
+        onBehalfOfSalon: Boolean(row.onBehalfOfSalon),
+        actedAt: row.actedAt || respondedAt,
+        adminNote: row.adminNote || null,
         responseSeconds: minutesBetween(row.createdAt, respondedAt),
         outcome: status === 'ACCEPTED' || status === 'REJECTED'
             ? 'answered'
@@ -226,6 +205,13 @@ const buildWhere = ({ salonId, status, search, fromDate, toDate } = {}) => {
     const where = {};
     if (salonId) where.salonId = salonId;
 
+    // Filters that need an OR of their own are collected here and ANDed
+    // together at the end. They used to be written straight into `where[Op.or]`,
+    // so a status filter plus a search term became ONE flat OR — "auto-cancelled
+    // OR any customer whose name matches" — and either filter stopped
+    // filtering. Two groups, one AND: every filter now narrows the last.
+    const groups = [];
+
     const wanted = statusFilterOf(status);
     const now = new Date();
     if (wanted) {
@@ -236,17 +222,24 @@ const buildWhere = ({ salonId, status, search, fromDate, toDate } = {}) => {
             where.status = 'PENDING';
             where.expiresAt = { [Op.gt]: now };
         } else if (wanted.length === 1 && wanted[0] === 'AUTO_CANCELLED') {
-            where[Op.or] = [
-                { status: 'AUTO_CANCELLED' },
-                { status: 'PENDING', expiresAt: { [Op.lte]: now } }
-            ];
+            groups.push({
+                [Op.or]: [
+                    { status: 'AUTO_CANCELLED' },
+                    { status: 'PENDING', expiresAt: { [Op.lte]: now } }
+                ]
+            });
         } else {
             where.status = { [Op.in]: wanted };
         }
     }
 
-    const from = parseDate(fromDate);
-    const to = endOfDay(toDate);
+    // `parseBound` reads a bare `YYYY-MM-DD` as that day in IST and a timestamp
+    // as the instant it names. The old code sliced ten characters off whatever
+    // it was given and called it UTC midnight, which shifted every window by
+    // 5h30m — requests sent between midnight and 05:30 IST were missing from
+    // "Today".
+    const from = parseBound(fromDate);
+    const to = parseBound(toDate, { end: true });
     if (from || to) {
         where.createdAt = {
             ...(from ? { [Op.gte]: from } : {}),
@@ -258,13 +251,16 @@ const buildWhere = ({ salonId, status, search, fromDate, toDate } = {}) => {
     if (term) {
         // Customer name, customer phone, or the salon's name — the three things
         // somebody on the phone actually knows.
-        where[Op.or] = [
-            ...(where[Op.or] || []),
-            { '$customer.full_name$': { [Op.iLike]: `%${term}%` } },
-            { '$customer.phone_number$': { [Op.iLike]: `%${term}%` } },
-            { '$salon.salon_name$': { [Op.iLike]: `%${term}%` } }
-        ];
+        groups.push({
+            [Op.or]: [
+                { '$customer.full_name$': { [Op.iLike]: `%${term}%` } },
+                { '$customer.phone_number$': { [Op.iLike]: `%${term}%` } },
+                { '$salon.salon_name$': { [Op.iLike]: `%${term}%` } }
+            ]
+        });
     }
+
+    if (groups.length) where[Op.and] = groups;
 
     return where;
 };
@@ -345,17 +341,59 @@ const sweepQuietly = async () => {
 
 // ------------------------------------------------------------------ counting
 
+// A request past its window IS auto-cancelled, whether or not the sweeper has
+// written that down yet. Counting the raw column would put those rows in
+// "awaiting" and make the tab's chips disagree with the rows it returns for the
+// same filter, so the count derives the state exactly as `effectiveStatus` does
+// — in SQL, so a month of leads never has to be shipped to be counted.
+const DERIVED_STATUS_SQL = `CASE
+            WHEN status = 'PENDING' AND expires_at IS NOT NULL AND expires_at <= NOW()
+                THEN 'AUTO_CANCELLED'
+            ELSE status
+        END`;
+
 const countByStatus = async (where) => {
     const rows = await db.BookingRequest.findAll({
         where,
-        attributes: ['status', [fn('COUNT', col('booking_request_id')), 'total']],
-        group: ['status'],
+        attributes: [
+            [literal(DERIVED_STATUS_SQL), 'status'],
+            [fn('COUNT', col('booking_request_id')), 'total']
+        ],
+        group: [literal(DERIVED_STATUS_SQL)],
         raw: true
     });
     return rows.reduce((acc, row) => {
         acc[row.status] = Number(row.total) || 0;
         return acc;
     }, {});
+};
+
+/**
+ * The chip row above the admin table: how many requests the CURRENT window
+ * holds, per status, before the status filter is applied.
+ *
+ * Deliberately range + salon only. Counting through the search join would mean
+ * a GROUP BY over `booking_requests` joined to two tables on every keystroke,
+ * and the chips would then shuffle under the cursor while somebody types. The
+ * panel labels them "in this range" and prints the search's own total next to
+ * the table, so nothing on the screen claims two different numbers are the same
+ * thing.
+ *
+ * A failure here must not take the list down with it — the caller drops the
+ * chips and the table still renders.
+ */
+const statusCounts = async ({ salonId, fromDate, toDate } = {}) => {
+    const counts = await countByStatus(buildWhere({ salonId, fromDate, toDate }));
+    const pick = (key) => counts[key] || 0;
+    return {
+        ALL: Object.values(counts).reduce((sum, value) => sum + value, 0),
+        PENDING: pick('PENDING'),
+        ACCEPTED: pick('ACCEPTED'),
+        REJECTED: pick('REJECTED'),
+        AUTO_CANCELLED: pick('AUTO_CANCELLED'),
+        CANCELLED: pick('CANCELLED'),
+        DELAYED: pick('DELAY_PROPOSED')
+    };
 };
 
 /**
@@ -416,12 +454,23 @@ const salonSummary = async ({ salonId, range = 'ALL', fromDate, toDate } = {}) =
 const listAdminLeads = async ({ salonId, status = 'ALL', search, page, limit, fromDate, toDate } = {}) => {
     await ensureShopSchema();
     await sweepQuietly();
-    return pagedQuery({
-        where: buildWhere({ salonId, status, search, fromDate, toDate }),
-        page,
-        limit,
-        admin: true
-    });
+
+    const [result, chips] = await Promise.all([
+        pagedQuery({
+            where: buildWhere({ salonId, status, search, fromDate, toDate }),
+            page,
+            limit,
+            admin: true
+        }),
+        statusCounts({ salonId, fromDate, toDate }).catch((error) => {
+            console.error('[booking-request] status counts skipped:', error.message);
+            return null;
+        })
+    ]);
+
+    // The chips describe the window; the table describes the window + filters.
+    // Both numbers are on the screen, each labelled, and neither is guessed.
+    return chips ? { ...result, statusCounts: chips } : result;
 };
 
 /**
@@ -568,6 +617,8 @@ module.exports = {
     STATUS_FILTERS,
     statusFilterOf,
     rangeStart,
+    windowOf,
+    statusCounts,
     effectiveStatus,
     servicesOf,
     toRow,
