@@ -81,6 +81,40 @@ module.exports = (sequelize) => {
             defaultValue: 'available'
         },
 
+        // ── Bulk upload ─────────────────────────────────────────────────────
+        // Set on a product CREATED by a spreadsheet import, so the import can be
+        // undone by id (POST /api/shop-products/bulk/undo). A row the import
+        // UPDATED keeps whatever it had — undo must never delete a product the
+        // admin created by hand months ago.
+        bulkImportId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            field: 'bulk_import_id'
+        },
+
+        // The sheet's optional columns. All nullable: a product added from the
+        // single-product form has none of them, and that is not an error.
+        stockCount: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            field: 'stock_count'
+        },
+        barCode: {
+            type: DataTypes.STRING(64),
+            allowNull: true,
+            field: 'bar_code'
+        },
+        hsnCode: {
+            type: DataTypes.STRING(16),
+            allowNull: true,
+            field: 'hsn_code'
+        },
+        gstPercent: {
+            type: DataTypes.DECIMAL(5, 2),
+            allowNull: true,
+            field: 'gst_percent'
+        },
+
         deletedAt: {
             type: DataTypes.DATE,
             allowNull: true,
