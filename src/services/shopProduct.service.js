@@ -7,11 +7,6 @@ const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT, 10) || 20;
 // server default. Above this a single request would return the whole catalog.
 const MAX_LIMIT = 60;
 
-/**
- * Shop catalog service — the company's products that SALONS purchase
- * (table `shop_products`, separate from the salons' customer-facing
- * `products`). The catalog is company-wide: there is no salon scoping.
- */
 
 // priceRange ids come straight from the shop's dropdown.
 const PRICE_RANGES = {

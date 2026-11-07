@@ -1,23 +1,3 @@
-// The shop's taxonomy, in ONE place, for the server to classify with.
-//
-// The storefront has always classified products itself (src/lib/shopCatalog.js in
-// the web repo: an ordered keyword table, first match wins, unmatched names land
-// in "hair care"). That was fine while the catalogue was filtered in the browser,
-// but the moment the server took over filtering the two sides disagreed: the
-// server's category filter was a deliberate SUPERSET (it also returned every row
-// with an empty or unrecognised `category`, so the client could classify those),
-// which made `pagination.totalProducts` describe the whole catalogue instead of
-// the chosen shelf. The shop then showed 2 products with "Show more products
-// (88)" — a count of rows the filter does not actually include.
-//
-// So the rules live here now, next to the data, and the server resolves each row
-// to exactly one category id: the explicit one when it is known, otherwise the
-// same keyword inference the storefront uses on the product name. Filtering on
-// that resolved value makes the count, the pages and the grid the same list —
-// which is what "filter the db, show the db's data" means.
-//
-// Keep this table in step with src/lib/shopCatalog.js in the web repo. They are
-// intentionally identical: id, label, order and keywords.
 
 const SHOP_CATEGORIES = [
   { id: 'hair-care', label: 'Hair care' },
