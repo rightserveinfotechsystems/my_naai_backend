@@ -70,7 +70,10 @@ const STATEMENTS = [
     // A request created before this release has no window; give it the one it
     // would have had. This is a value fill, not a status change — the sweeper
     // decides what happens next.
-    `UPDATE booking_requests SET expires_at = created_at + INTERVAL '60 seconds' WHERE expires_at IS NULL;`,
+    // Five minutes: the answer window this release ships with (WINDOW_SECONDS in
+    // services/bookingRequestLead.service.js). Only rows that never had a window
+    // are touched.
+    `UPDATE booking_requests SET expires_at = created_at + INTERVAL '300 seconds' WHERE expires_at IS NULL;`,
     `CREATE INDEX IF NOT EXISTS idx_booking_requests_salon_status ON booking_requests (salon_id, status, created_at DESC);`,
     `CREATE INDEX IF NOT EXISTS idx_booking_requests_pending_expiry ON booking_requests (expires_at) WHERE status = 'PENDING';`,
 

@@ -13,9 +13,9 @@ const { addDays, parseBound, resolveRange, startOfIstDay } = require('../utils/i
  * request, and nothing counts a request as a booking: the accept path writes
  * `booking_id` on the request, and that pointer is the only link.
  *
- * The answer window: a request is answerable for 60 seconds (WRITE side:
+ * The answer window: a request is answerable for FIVE MINUTES (WRITE side:
  * `expires_at` is stamped by the booking-request create path, never by a
- * client). The only sane reading of "still PENDING, past its window" is
+ * client — see WINDOW_SECONDS below). The only sane reading of "still PENDING, past its window" is
  * AUTO_CANCELLED — the salon missed it — so this service derives that state for
  * every row it returns and the sweeper (§ tasks/bookingRequestSweeper.js) writes
  * it down. Auto-cancelled is NOT a rejection: a salon that misses leads has a
@@ -23,8 +23,18 @@ const { addDays, parseBound, resolveRange, startOfIstDay } = require('../utils/i
  * show them in separate tiles.
  */
 
-const WINDOW_SECONDS = 60;
+// FIVE MINUTES, not one.
+//
+// One minute was too short to be fair: the salon is usually holding clippers when
+// a request lands, and a request that expires while somebody walks to the phone
+// is a customer lost to a timer rather than to a decision. Five minutes is the
+// same promise the app shows, and every surface derives its countdown and its
+// words from these two numbers — the create path stamps `expires_at` from
+// WINDOW_MS, the sweeper closes it, and the leads tabs derive the same deadline
+// when the sweep has not run yet. Change it HERE, nowhere else.
+const WINDOW_SECONDS = 5 * 60;
 const WINDOW_MS = WINDOW_SECONDS * 1000;
+const WINDOW_MINUTES = WINDOW_SECONDS / 60;
 const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
 const MAX_LIMIT = 100;
 
@@ -614,6 +624,7 @@ const adminSummary = async ({ range = 'ALL', salonId, fromDate, toDate } = {}) =
 module.exports = {
     WINDOW_SECONDS,
     WINDOW_MS,
+    WINDOW_MINUTES,
     STATUS_FILTERS,
     statusFilterOf,
     rangeStart,

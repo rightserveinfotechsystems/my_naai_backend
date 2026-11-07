@@ -17,8 +17,9 @@
 //      `status = PENDING`, both passed the guard, and both created a booking.
 //      The lock makes the second one wait, then read ACCEPTED.
 //   2. A request that already carries a `booking_id` never creates another one.
-//   3. Past its window, a request is AUTO_CANCELLED — written down here and
-//      refused, so an accept can never succeed after the deadline.
+//   3. Past its window (five minutes, `WINDOW_SECONDS` in
+//      bookingRequestLead.service.js), a request is AUTO_CANCELLED — written
+//      down here and refused, so an accept can never succeed after the deadline.
 //   4. Only the roles in `ACTOR_ROLES` may answer, and an admin answer is
 //      recorded as such: `acted_by_role`, `acted_by_admin_id`, `acted_at`,
 //      `on_behalf_of_salon`. The salon's tab shows "accepted by My Naai on your
@@ -32,6 +33,13 @@ const { scheduleAutoCancelTask } = require('../tasks/autoCancelTask');
 const { createBookingReminderTask } = require('../tasks/bookingReminderTask');
 
 const ACTOR_ROLES = ['SALON', 'ADMIN'];
+
+// How long the CUSTOMER has to answer a proposed delay. The same five minutes as
+// the request's own answer window: a proposal that expires while the customer is
+// in a meeting is the same unfairness as a request that expires while the salon
+// is cutting hair, and "all of it is five minutes" is the rule the client asked
+// for. Kept as its own name because the two are different promises.
+const DELAY_RESPONSE_SECONDS = 5 * 60;
 
 const ACTIONS = ['ACCEPT', 'REJECT', 'DELAY'];
 
@@ -112,7 +120,7 @@ const applyRequestAction = async ({
             return fail(200, 'Booking request already cancelled');
         }
 
-        // 4. The 60 second window. A request past it is auto-cancelled whether or
+        // 4. The answer window (five minutes). A request past it is auto-cancelled whether or
         //    not the sweeper has written that down yet, so the answer is a plain
         //    sentence instead of an accept that cannot succeed. `responded_at` is
         //    stamped with the deadline (not \"now\") so the lead's response time
@@ -251,11 +259,11 @@ const applyRequestAction = async ({
 
             await transaction.commit();
 
-            // The customer has one minute to answer the proposal.
+            // The customer has DELAY_RESPONSE_SECONDS to answer the proposal.
             try {
                 await scheduleAutoCancelTask({
                     bookingRequestId: bookingRequest.bookingRequestId,
-                    delayInSeconds: 60
+                    delayInSeconds: DELAY_RESPONSE_SECONDS
                 });
             } catch (error) {
                 console.error('Error scheduling auto-cancel for delayed booking:', error);

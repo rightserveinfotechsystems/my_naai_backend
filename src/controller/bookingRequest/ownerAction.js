@@ -4,7 +4,7 @@ const { applyRequestAction } = require('../../services/bookingRequestAction.serv
  * The salon's answer to a lead — the web tab, the mobile app's alert card and
  * everything else that speaks this endpoint.
  *
- * The rules (the 60 second window, "already actioned", one booking per request,
+ * The rules (the five-minute answer window, "already actioned", one booking per request,
  * the queue entry and the reminders) live in
  * `services/bookingRequestAction.service.js`, because an admin may now answer on
  * a salon's behalf through a second endpoint and the two must not be able to

@@ -91,7 +91,7 @@ module.exports = (sequelize) => {
       },
 
       // ── The answer window and the outcome ────────────────────────────────
-      // Stamped by the SERVER when the request is created (created_at + 60s).
+      // Stamped by the SERVER when the request is created (created_at + 5 min).
       // A client never sends it: whoever sets the window would otherwise set
       // how long the salon has to answer, and a request could be kept open
       // forever.

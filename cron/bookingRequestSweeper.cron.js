@@ -2,8 +2,10 @@
 //
 // The booking-request answer window, closed by the server.
 //
-// A customer sends a booking REQUEST and the salon has 60 seconds to accept,
-// reject or propose another time. When nobody answers, the request becomes
+// A customer sends a booking REQUEST and the salon has five minutes to accept,
+// reject or propose another time (WINDOW_SECONDS in
+// src/services/bookingRequestLead.service.js — the one place that window is
+// defined; the copy below is built from it so the words cannot drift). When nobody answers, the request becomes
 // AUTO_CANCELLED — the slot is released and the lead is recorded as MISSED.
 // That is not a rejection: a salon that misses leads has a staffing problem, and
 // the salon and admin tabs count the two separately.
@@ -26,9 +28,12 @@
 const cron = require('node-cron');
 const db = require('../src/database/models');
 const sendNotificationToDevice = require('../src/firebase/sendNotification');
-const { sweepExpiredRequests } = require('../src/services/bookingRequestLead.service');
+const { sweepExpiredRequests, WINDOW_MINUTES } = require('../src/services/bookingRequestLead.service');
 
-const MESSAGE = 'The salon did not answer in time, so this request was cancelled automatically and the slot released. You can send another request — it costs you nothing.';
+const MESSAGE = `The salon did not answer within ${WINDOW_MINUTES} minutes, so this request was cancelled automatically and the slot released. You can send another request — it costs you nothing.`;
+
+const MISSED_SALON_MESSAGE = `A customer asked for a slot and nobody answered within ${WINDOW_MINUTES} minutes, so it was cancelled automatically.`;
+const MISSED_SALON_MESSAGE_LONG = `${MISSED_SALON_MESSAGE} It is counted as missed, not as a rejection.`;
 
 /**
  * Tell the two people involved. Kept best-effort and per row: one customer with
@@ -65,7 +70,7 @@ const notifyMissed = async (row) => {
             await sendNotificationToDevice(
                 token,
                 'You missed a booking request',
-                'A customer asked for a slot and nobody answered within 60 seconds, so it was cancelled automatically. It is counted as missed, not as a rejection.',
+                MISSED_SALON_MESSAGE_LONG,
                 { bookingRequestId: row.bookingRequestId, type: 'BOOKING_REQUEST_MISSED' }
             );
         }
@@ -73,7 +78,7 @@ const notifyMissed = async (row) => {
             receiverType: 'SALON',
             receiverId: row.salonId,
             title: 'You missed a booking request',
-            message: 'A customer asked for a slot and nobody answered within 60 seconds, so it was cancelled automatically.',
+            message: MISSED_SALON_MESSAGE,
             data: { bookingRequestId: row.bookingRequestId }
         });
     } catch (error) {
@@ -89,7 +94,7 @@ const runBookingRequestSweep = async ({ notify = true } = {}) => {
     const cancelled = await sweepExpiredRequests({ force: true });
     if (!cancelled.length) return { cancelled: 0 };
 
-    console.log(`[booking-request sweeper] ${cancelled.length} request(s) auto-cancelled after the 60s window`);
+    console.log(`[booking-request sweeper] ${cancelled.length} request(s) auto-cancelled after the answer window`);
     if (notify) {
         for (const row of cancelled) {
             await notifyMissed(row);
@@ -98,7 +103,7 @@ const runBookingRequestSweep = async ({ notify = true } = {}) => {
     return { cancelled: cancelled.length };
 };
 
-// Every 20 seconds. The window is 60 seconds, so a request is classified within
+// Every 20 seconds. The window is five minutes, so a request is classified within
 // a third of its life at worst — fast enough that the salon's own tab, which
 // derives the same state, never disagrees with the stored one for long.
 // `noOverlap` keeps a slow database from stacking runs.

@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const sendNotificationToDevice = require('../../firebase/sendNotification');
 const { scheduleAutoCancelTask } = require('../../tasks/autoCancelTask');
 const { createBookingRequestSchema } = require('../../validations/bookingRequest.validation');
+const { WINDOW_MS, WINDOW_SECONDS } = require('../../services/bookingRequestLead.service');
 
 
 // 24-hour time (HH:mm) to 12-hour format with AM/PM
@@ -212,15 +213,17 @@ const createBookingRequest = async (req, res) => {
                 // how long the salon has to answer. The sweeper
                 // (cron/bookingRequestSweeper.cron.js) closes it, and the leads
                 // tab derives the same expiry if the sweep has not run yet.
-                expiresAt: new Date(Date.now() + 60 * 1000)
+                // Five minutes, from the ONE constant
+                // (services/bookingRequestLead.service.js -> WINDOW_SECONDS).
+                expiresAt: new Date(Date.now() + WINDOW_MS)
             },
             { transaction: t }
         );
-        // ⏱️ OWNER RESPONSE → 1 MIN
+        // ⏱️ OWNER RESPONSE → the same five minutes the request is stamped with
         try {
             const data = await scheduleAutoCancelTask({
                 bookingRequestId: bookingRequest.bookingRequestId,
-                delayInSeconds: 60,
+                delayInSeconds: WINDOW_SECONDS,
             });
             console.log('Auto-cancel task scheduled:', data);
         } catch (err) {

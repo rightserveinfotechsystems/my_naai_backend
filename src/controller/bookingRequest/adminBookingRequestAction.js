@@ -15,7 +15,7 @@ const { applyRequestAction } = require('../../services/bookingRequestAction.serv
  *
  *   · locks the request row for the whole transaction,
  *   · refuses a request that already has a booking or an answer,
- *   · refuses one past its 60 second window,
+ *   · refuses one past its answer window (five minutes),
  *   · records `acted_by_role / acted_by_admin_id / acted_at / on_behalf_of_salon`,
  *   · tells the salon (in-app + socket) that My Naai answered for it.
  *
