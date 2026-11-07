@@ -1,7 +1,8 @@
 const { Op, where, literal } = require('sequelize');
 const db = require('../database/models');
 const categoryRules = require('./shopCategoryRules');
-const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT) || 20;
+
+const DEFAULT_LIMIT = parseInt(process.env.PAGE_LIMIT, 10) || 20;
 // One page of the shop grid: the website asks for 24, the mobile app keeps the
 // server default. Above this a single request would return the whole catalog.
 const MAX_LIMIT = 60;
@@ -29,34 +30,52 @@ const SORTS = {
 const asBool = (value) => value === true || value === 'true' || value === 1 || value === '1';
 
 /**
+ * The LIVE category list (`shop_categories`) is the authority for category
+ * ids and labels. It is read at request time (with a short cache), so an admin
+ * can add or rename a category without requiring a backend deploy.
+ *
+ * If the table is unavailable (for example, before the migration is deployed),
+ * the taxonomy service still recognizes its built-in seed categories.
+ */
+let categoryCache = { at: 0, rows: [] };
+const CATEGORY_TTL_MS = 30 * 1000;
+
+const liveCategories = async () => {
+  if (categoryCache.at && Date.now() - categoryCache.at < CATEGORY_TTL_MS) {
+    return categoryCache.rows;
+  }
+
+  let rows = [];
+  try {
+    rows = await db.ShopCategory.findAll({
+      attributes: ['id', 'label'],
+      raw: true
+    });
+  } catch (error) {
+    console.warn('[shop] category list unavailable, using the seed taxonomy:', error.message);
+  }
+
+  categoryCache = { at: Date.now(), rows: rows || [] };
+  return categoryCache.rows;
+};
+
+/**
  * The category filter, EXACTLY.
  *
  * A product's category is the explicit value when it is known, otherwise the
- * keyword inference on its name — the same precedence the storefront uses, and
- * the same table (src/services/shopCategoryRules.js). The SQL CASE that resolves
- * it is what the WHERE clause compares against, so:
- *
- *   · `totalProducts` counts the shelf the user asked for, not the catalogue;
- *   · page N of a filtered query is page N of THAT list — "Show more" can no
- *     longer promise 88 products under a category that holds 2;
- *   · rows whose `category` column is empty or free text are still found, under
- *     the shelf their name proves they belong to.
- *
- * It used to be a superset (id, label, empty and unrecognised rows alike) so the
- * client could classify what the server could not. That made the pagination a
- * lie: the count described the whole catalogue while the grid applied the
- * client's own rules to it.
+ * keyword inference on its name. The SQL CASE uses the same live category list
+ * as resolveCategoryId(), so the WHERE clause, count and page describe the same
+ * shelf. Empty or legacy free-text category values are classified consistently.
  */
-const categoryWhere = (category) => {
-  const id = categoryRules.resolveCategoryId(category);
+const categoryWhere = (category, categories = []) => {
+  const id = categoryRules.resolveCategoryId(category, { categories });
   if (!id) return null;
-  return where(literal(categoryRules.categoryCaseSql()), '=', id);
+  return where(literal(categoryRules.categoryCaseSql({ categories })), '=', id);
 };
 
 /**
  * The gender filter, resolved the same way: an explicit MALE/FEMALE/UNISEX wins,
- * otherwise the name's inference, otherwise UNISEX. The shop's "men / women /
- * unisex" therefore counts exactly what it shows.
+ * otherwise the name's inference, otherwise UNISEX.
  */
 const genderWhere = (gender) => {
   const value = categoryRules.resolveGenderValue(gender);
@@ -66,9 +85,7 @@ const genderWhere = (gender) => {
 
 // The buying side (salon app/web, a mobile user, or the public website with no
 // token) browses the catalog. Search, category, gender, price range, stock and
-// ordering are all decided HERE, so the list a caller is paging through is the
-// list its filters describe — the website used to receive the whole shelf and
-// narrow it in the browser, which made pagination a lie.
+// ordering are all decided HERE, so pagination describes the filtered result.
 const listCatalog = async ({
   page = 1,
   pageSize,
@@ -80,16 +97,18 @@ const listCatalog = async ({
   inStock = false
 } = {}) => {
   const requested = parseInt(pageSize, 10);
-  const limit = Math.min(MAX_LIMIT, Math.max(1, Number.isFinite(requested) ? requested : DEFAULT_LIMIT));
-  const safePage = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+  const limit = Math.min(
+    MAX_LIMIT,
+    Math.max(1, Number.isFinite(requested) ? requested : DEFAULT_LIMIT)
+  );
+  const parsedPage = parseInt(page, 10);
+  const safePage = parsedPage > 0 ? parsedPage : 1;
   const offset = (safePage - 1) * limit;
 
   const and = [];
 
   const trimmedSearch = String(searchString || '').trim();
   if (trimmedSearch) {
-    // The same two fields the client searches, so a term means the same thing
-    // before and after the facets ship.
     and.push({
       [Op.or]: [
         { productName: { [Op.iLike]: `%${trimmedSearch}%` } },
@@ -98,7 +117,8 @@ const listCatalog = async ({
     });
   }
 
-  const categoryClause = categoryWhere(category);
+  const categories = await liveCategories();
+  const categoryClause = categoryWhere(category, categories);
   if (categoryClause) and.push(categoryClause);
 
   const genderClause = genderWhere(gender);
@@ -131,13 +151,11 @@ const listCatalog = async ({
       limit,
       totalProducts,
       totalPages: Math.ceil(totalProducts / limit) || 0,
-      // Echo of what the server actually applied. The website reads this to
-      // know whether it may page the answer (server filtering) or has to read
-      // the whole catalog and narrow it locally (an older deployment that
-      // ignores these fields).
+      // Echo what the server actually applied. The website can use this to
+      // distinguish server-filtered pagination from older deployments.
       applied: {
         searchString: trimmedSearch,
-        category: String(category || ''),
+        category: categoryRules.resolveCategoryId(category, { categories }) || '',
         gender: String(gender || ''),
         priceRange: String(priceRange || ''),
         sort: SORTS[sortKey] ? sortKey : 'popular',
@@ -148,12 +166,12 @@ const listCatalog = async ({
 };
 
 const getById = async (productId) => {
-  return await db.ShopProduct.findOne({ where: { productId, deletedAt: null } });
+  return db.ShopProduct.findOne({ where: { productId, deletedAt: null } });
 };
 
 // Admin create — the company adds to its own catalog (no salonId involved).
 const create = async (dataToInsert) => {
-  return await db.ShopProduct.create(dataToInsert);
+  return db.ShopProduct.create(dataToInsert);
 };
 
 // Admin partial update — only the fields actually sent are touched.

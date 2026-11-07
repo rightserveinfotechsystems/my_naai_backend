@@ -67,6 +67,17 @@ const GENDER_VALUES = {
 
 const normalizeText = (value) => String(value ?? '').trim().toLowerCase();
 
+// Labels can carry a double space (\"Waxing  products\") and the stored column
+// may carry it too; comparing the collapsed form is what makes the two match.
+const normalizeValue = (value) => normalizeText(value).replace(/\s+/g, ' ');
+
+const normalizeCategories = (categories) => (Array.isArray(categories) ? categories : [])
+    .map((category) => ({
+        id: String(category?.id ?? '').trim(),
+        label: String(category?.label ?? '').trim()
+    }))
+    .filter((category) => category.id);
+
 const escapeLike = (value) => String(value).replace(/[\\%_]/g, (match) => `\\${match}`);
 
 function keywordMatches(text, keyword) {
@@ -95,11 +106,25 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
  * record may carry ("Hair Colour and Chemical Products") — as a category id.
  * Returns '' when the value says nothing this taxonomy recognises.
  */
-function resolveCategoryId(value) {
-  const text = normalizeText(value);
+function resolveCategoryId(value, { categories } = {}) {
+  const text = normalizeValue(value);
   if (!text) return '';
+
+  // The LIVE list first. This is the fix for the category that exists in the
+  // admin panel and shows nothing in the shop: an admin can rename a category
+  // (\"Fragrance\" — \"Waxing products\"), and a product filed before the write guard
+  // refuses labels still carries that label in `shop_products.category`. The
+  // admin's product count resolves a stored label to its category, so the shop
+  // must resolve it the same way or the number on the tab and the shelf behind
+  // it describe two different catalogues.
+  const live = normalizeCategories(categories);
+  const liveHit = live.find(
+    (category) => normalizeValue(category.id) === text || normalizeValue(category.label) === text
+  );
+  if (liveHit) return liveHit.id;
+
   const direct = SHOP_CATEGORIES.find(
-    (category) => category.id === text || category.label.toLowerCase() === text
+    (category) => category.id === text || normalizeValue(category.label) === text
   );
   if (direct) return direct.id;
   if (SLUG_PATTERN.test(text)) return text; // an admin's newer category
@@ -112,8 +137,8 @@ function resolveCategoryId(value) {
  * explicit value when it resolves, otherwise the name's inference. Always one of
  * CATEGORY_IDS, never ''.
  */
-function resolveCategory({ category, productName } = {}) {
-  return resolveCategoryId(category) || inferCategory(productName);
+function resolveCategory({ category, productName } = {}, options = {}) {
+  return resolveCategoryId(category, options) || inferCategory(productName);
 }
 
 /** The gender a NAME implies, as the column stores it ('' when it implies none). */
@@ -141,7 +166,6 @@ function resolveGender({ gender, productName } = {}) {
   return resolveGenderValue(gender) || inferGender(productName) || 'UNISEX';
 }
 
-// ── SQL ──────────────────────────────────────────────────────────────────────
 // A row's resolved category, as a Postgres CASE expression built from the rules
 // above. Used in WHERE so the COUNT and the page are the same list; the strings
 // are all from this file (never from a request), so nothing here is injectable.
@@ -160,13 +184,22 @@ const anyKeyword = (keywords, column) => `(${keywords.map((keyword) => nameLike(
  * Precedence, exactly like `resolveCategory`:
  *   1. an explicit value that is already an id (a slug) or a label;
  *   2. an explicit value that is free text the keyword rules recognise
- *      ("Hair Colour and Chemical Products" → hair-colour);
+ *      ("Hair Colour and Chemical Products" — hair-colour);
  *   3. the product name, first rule wins;
  *   4. DEFAULT_CATEGORY.
  */
-function categoryCaseSql({ categoryColumn = 'category', nameColumn = 'product_name' } = {}) {
+function categoryCaseSql({ categoryColumn = 'category', nameColumn = 'product_name', categories } = {}) {
   const whens = [];
-  const lowerCategory = `lower(coalesce(${categoryColumn}, ''))`;
+  const lowerCategory = `lower(regexp_replace(btrim(coalesce(${categoryColumn}, '')), '[[:space:]]+', ' ', 'g'))`;
+
+  // 0. The LIVE categories, id and current label. First, because a renamed
+  //    category's label is what legacy rows actually contain — and because a
+  //    label the admin typed must never be re-filed into a different shelf than
+  //    the one the panel shows the product under.
+  for (const category of normalizeCategories(categories)) {
+    whens.push(`WHEN ${lowerCategory} = ${quote(normalizeValue(category.id))} THEN ${quote(category.id)}`);
+    whens.push(`WHEN ${lowerCategory} = ${quote(normalizeValue(category.label))} THEN ${quote(category.id)}`);
+  }
 
   // 1a. a value that is already a category id — this build's, or one the admin
   // added after it — stands for itself.
@@ -174,7 +207,7 @@ function categoryCaseSql({ categoryColumn = 'category', nameColumn = 'product_na
 
   // 1b. a label ("Hair care", "Tools & equipment") stands for its id.
   for (const category of SHOP_CATEGORIES) {
-    whens.push(`WHEN ${lowerCategory} = ${quote(category.label.toLowerCase())} THEN ${quote(category.id)}`);
+    whens.push(`WHEN ${lowerCategory} = ${quote(normalizeValue(category.label))} THEN ${quote(category.id)}`);
   }
 
   // 2. free text on the category column, by keyword, first rule wins.
@@ -221,6 +254,7 @@ module.exports = {
   DEFAULT_CATEGORY,
   GENDER_VALUES,
   normalizeText,
+  normalizeValue,
   inferCategory,
   inferGender,
   resolveCategoryId,
